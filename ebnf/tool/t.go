@@ -35,8 +35,6 @@ func (i *Item) String() (ret string) {
 
 func reorder(i *Item) *Item {
 	fmt.Println("REORDER")
-	depth := 0
-	dm := make(map[int][]*Item)
 	done := make([]*Item, 0)
 
 	isDone := func(i *Item) bool {
@@ -48,26 +46,27 @@ func reorder(i *Item) *Item {
 		return false
 	}
 
-	var dump func(i *Item)
+	var dump func(root *Item, i *Item)
 
-	dump = func(i *Item) {
+	dump = func(root *Item, i *Item) {
 		if !isDone(i) {
-			dm[depth] = append(dm[depth], i)
+			done = append(done, i)
 		}
-		depth++
-		fmt.Println(len(i.up), len(i.down))
-		for _, x := range i.down {
-			dump(x)
+		if len(i.up) == 0 {
+			root.down = append(root.down, i)
+			for _, v := range i.down {
+				dump(root, v)
+			}
 		}
-		depth--
 	}
 
-	dump(i)
-	for k, v := range dm {
-		fmt.Println(k, v)
+	top := &Item{}
+	dump(top, i)
+	for _, v := range top.down {
+		fmt.Println(v)
 	}
 	fmt.Println("REORDERED")
-	return nil
+	return top
 }
 
 func join(up, down *Item) {
@@ -84,7 +83,7 @@ func join(up, down *Item) {
 		if !exists(up.down, down) {
 			up.down = append(up.down, down)
 		}
-		if !exists(down.up, up) {
+		if !exists(down.up, up) && up.this != nil {
 			down.up = append(down.up, up)
 		}
 	}
@@ -92,53 +91,55 @@ func join(up, down *Item) {
 
 func Transform(g ebnf.Grammar) *Item {
 	passed := make(map[string]*Item)
-	var dump func(*Item, interface{}) *Item
+	cache := make(map[string]ebnf.Expression)
+	var dump func(*Item, *Item, interface{})
 
-	dump = func(root *Item, _x interface{}) (ret *Item) {
+	dump = func(root *Item, n *Item, _x interface{}) {
 		switch x := _x.(type) {
 		case ebnf.Grammar:
-			ret = &Item{}
-			join(root, ret)
 			for _, v := range x {
-				dump(ret, v)
+				dump(n, &Item{}, v)
 			}
 		case *ebnf.Production:
-			dump(root, x.Expr)
+			dump(root, n, x.Expr)
 		case ebnf.Sequence:
-			ret = &Item{this: x}
-			join(root, ret)
+			n.this = x
+			join(root, n)
 			for _, v := range x {
-				dump(ret, v)
+				dump(n, &Item{}, v)
 			}
 		case ebnf.Alternative:
-			ret = &Item{this: x}
-			join(root, ret)
+			n.this = x
+			join(root, n)
 			for _, v := range x {
-				dump(ret, v)
+				dump(n, &Item{}, v)
 			}
 		case *ebnf.Option:
-			ret = &Item{this: x}
-			join(root, ret)
-			dump(ret, x.Body)
+			n.this = x
+			join(root, n)
+			dump(n, &Item{}, x.Body)
 		case *ebnf.Repetition:
-			ret = &Item{this: x}
-			join(root, ret)
-			dump(ret, x.Body)
+			n.this = x
+			join(root, n)
+			dump(n, &Item{}, x.Body)
 		case *ebnf.Group:
-			ret = &Item{this: x}
-			join(root, ret)
-			dump(ret, x.Body)
+			n.this = x
+			join(root, n)
+			dump(n, &Item{}, x.Body)
 		case *ebnf.Token:
-			ret = &Item{this: x}
-			join(root, ret)
+			n.this = x
+			join(root, n)
 		case *ebnf.Name:
-			if passed[x.String] == nil {
+			if cache[x.String] == nil {
 				p := g[x.String]
 				if p != nil {
-					passed[x.String] = dump(root, p)
+					cache[x.String] = p
+					passed[x.String] = &Item{}
+					dump(root, passed[x.String], p)
 				} else {
-					ret = &Item{this: x}
-					join(root, ret)
+					cache[x.String] = x
+					passed[x.String] = &Item{this: x}
+					join(root, passed[x.String])
 				}
 			} else {
 				join(root, passed[x.String])
@@ -146,8 +147,8 @@ func Transform(g ebnf.Grammar) *Item {
 		default:
 			halt.As(100, reflect.TypeOf(x))
 		}
-		return
 	}
-	ret := dump(nil, g)
+	ret := &Item{}
+	dump(nil, ret, g)
 	return reorder(ret)
 }
