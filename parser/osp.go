@@ -27,7 +27,24 @@ func (p *pr) check(s scanner.Symbol, msg string) {
 	}
 }
 
+func (p *pr) passDelim() {
+	if p.sym == scanner.Delim {
+		for {
+			p.get()
+			if p.sym != scanner.Delim {
+				break
+			}
+		}
+	}
+}
+
+func (p *pr) checkDelim() {
+	p.check(scanner.Delim, "; expected")
+	p.passDelim()
+}
+
 func (p *pr) module() {
+	p.passDelim()
 	var modid string
 	if p.sym == scanner.Module {
 		p.get()
@@ -38,7 +55,7 @@ func (p *pr) module() {
 		} else {
 			p.oss.Mark("ident?")
 		}
-		p.check(scanner.Semicolon, "; expected")
+		p.checkDelim()
 		if p.sym == scanner.Begin {
 			p.get()
 		}
@@ -58,7 +75,7 @@ func (p *pr) module() {
 			log.Println("Compiled")
 		}
 	} else {
-		p.oss.Mark("MOD?")
+		p.oss.Mark("MODULE?")
 	}
 }
 

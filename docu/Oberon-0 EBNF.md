@@ -25,7 +25,7 @@ IfStatement  =  "IF" expression "THEN" StatementSequence
 
 WhileStatement  =  "WHILE" expression "DO" StatementSequence "END". 
 
-RepeatStatement  =  “REPEAT” StatementSequence “UNTIL” expression. 
+RepeatStatement  =  "REPEAT" StatementSequence "UNTIL" expression. 
 
 statement  =  [assignment | ProcedureCall | IfStatement | WhileStatement | 
 RepeatStatement]. 

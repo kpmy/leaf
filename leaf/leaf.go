@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"github.com/kpmy/ypk/assert"
-	"leaf/parser"
+	"leaf/meta/parser"
 	"log"
 	"os"
 )

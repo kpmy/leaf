@@ -1,0 +1,12 @@
+Ext = Ident {"," Ident}.
+
+Module  =  "MODULE" Ident Delimiter [Ext] Delimiter "END" Ident ".".
+
+Delimiter = ";" | (LF | CR | CR LF).
+
+Ident  =  LETTER {LETTER}.
+
+/* builtin productions */
+/* CR = 0DX. */
+/* LF = 0AX. */
+/* LETTER = abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ and other Unicode chars, hard to repeat it all  */
