@@ -15,9 +15,12 @@ func main() {
 	if f, err := os.Open(name); err == nil {
 		defer f.Close()
 		passed := make(map[string]interface{})
+		invalid := make(map[string]interface{})
+
 		var dump func(interface{})
 		depth := 0
 		if g, err := ebnf.Parse(name, f); err == nil {
+
 			dump = func(_x interface{}) {
 				depth++
 				switch x := _x.(type) {
@@ -58,20 +61,30 @@ func main() {
 				case *ebnf.Name:
 					if passed[x.String] == nil {
 						p := g[x.String]
+						passed[x.String] = x
 						if p != nil && depth < 1 {
-							passed[x.String] = x
 							dump(p)
 						} else {
-							fmt.Print(" ", x.String, " ")
+							if p == nil {
+								invalid[x.String] = x
+							}
+							fmt.Print(" @", x.String, " ")
 						}
 					} else {
-						fmt.Print(" ", x.String, " ")
+						fmt.Print(" ^", x.String, " ")
 					}
 				default:
 					halt.As(100, reflect.TypeOf(x))
 				}
 			}
 			dump(g)
+			fmt.Println(passed)
+			fmt.Println(invalid)
+			for k, _ := range g {
+				if passed[k] == nil {
+					fmt.Println("top", k)
+				}
+			}
 		} else {
 			log.Fatal(err)
 		}

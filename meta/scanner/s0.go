@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/kpmy/ypk/assert"
 	"io"
+	"leaf/ebnf"
+	"leaf/ebnf/tool"
 	"log"
 	"math/big"
 	"strconv"
@@ -15,34 +17,38 @@ type Symbol int
 var keyTab map[string]Symbol
 
 const (
-	wrong   Symbol = 0
-	Null    Symbol = -1
-	Char           = 20
-	Module         = 69
-	Ident          = 31
-	Delim          = 52
-	Times          = 1
-	Neq            = 10
-	Lparen         = 28
-	Rparen         = 44
-	Plus           = 6
-	Minus          = 7
-	Comma          = 40
-	Period         = 18
-	Lbrak          = 29
-	And            = 5
-	Not            = 27
-	Rbrak          = 45
-	Int            = 21
-	Becomes        = 42
-	Colon          = 41
-	Leq            = 12
-	Lss            = 11
-	Gtr            = 13
-	Geq            = 14
-	Eql            = 9
-	Begin          = 67
-	End            = 53
+	NewLine = "\r\n"
+)
+
+const (
+	wrong     Symbol = 0
+	Null      Symbol = -1
+	Ident            = 31
+	Semicolon        = 52
+	CRLF             = 101
+	Char             = 20
+	Times            = 1
+	Neq              = 10
+	Lparen           = 28
+	Rparen           = 44
+	Plus             = 6
+	Minus            = 7
+	Comma            = 40
+	Period           = 18
+	Lbrak            = 29
+	And              = 5
+	Not              = 27
+	Rbrak            = 45
+	Int              = 21
+	Becomes          = 42
+	Colon            = 41
+	Leq              = 12
+	Lss              = 11
+	Gtr              = 13
+	Geq              = 14
+	Eql              = 9
+	Begin            = 67
+	End              = 53
 )
 
 func (s Symbol) String() (ret string) {
@@ -55,8 +61,6 @@ func (s Symbol) String() (ret string) {
 		ret = "ident"
 	case Period:
 		ret = "period"
-	case Delim:
-		ret = "delim"
 	default:
 		for k, v := range keyTab {
 			if v == s {
@@ -71,7 +75,7 @@ func (s Symbol) String() (ret string) {
 }
 
 type Scanner interface {
-	Init(io.Reader)
+	Init(io.RuneReader)
 	Get() Symbol
 	Mark(string)
 	Id() string
@@ -215,14 +219,14 @@ func (s *sc) Get() (sym Symbol) {
 		switch {
 		case s.ch == ';':
 			s.read()
-			sym = Delim
+			sym = Semicolon
 		case s.ch == '\r' || s.ch == '\n':
 			s.read()
 			if s.ch == '\n' {
 				s.read()
-				sym = Delim
+				sym = CRLF
 			} else {
-				sym = Delim
+				sym = CRLF
 			}
 		case s.ch < 'A':
 			switch {
@@ -336,8 +340,12 @@ func (s *sc) Get() (sym Symbol) {
 	return
 }
 
-func (s *sc) Init(rd io.Reader) {
-	s.rd = rd.(io.RuneReader)
+func (s *sc) Apply(ebnf.Expression, tool.Applicator) error {
+	return nil
+}
+
+func (s *sc) Init(rd io.RuneReader) {
+	s.rd = rd
 	s.read()
 }
 
@@ -347,7 +355,4 @@ func New() Scanner {
 
 func init() {
 	keyTab = make(map[string]Symbol)
-	keyTab["MODULE"] = Module
-	keyTab["BEGIN"] = Begin
-	keyTab["END"] = End
 }
