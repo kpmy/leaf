@@ -1,4 +1,4 @@
 (* test leaf *)
-MODULE Test0
+MODULE Test
 
-END Test0.
+END Test.

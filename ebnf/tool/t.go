@@ -1,57 +1,11 @@
 package tool
 
 import (
-	"errors"
-	"fmt"
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
 	"leaf/ebnf"
 	"reflect"
 )
-
-type Applicator func(ebnf.Expression) bool
-
-type Tokenizer interface {
-	Apply(ebnf.Expression, Applicator) error
-}
-
-func Filter(g ebnf.Grammar, std Tokenizer) (filter func(ebnf.Expression, Applicator) error) {
-	filter = func(_e ebnf.Expression, fn Applicator) (ret error) {
-		switch e := _e.(type) {
-		case ebnf.Sequence:
-			for i := 0; i < len(e); i++ {
-				if err := filter(e[i], fn); err != nil {
-					ret = errors.New(fmt.Sprint("EBNF expects ", e[i], err))
-					break
-				}
-			}
-		case *ebnf.Repetition:
-			ret = filter(e.Body, fn)
-		case ebnf.Alternative:
-			ret = errors.New(fmt.Sprint("EBNF expects one of ", e))
-			for i := 0; i < len(e) && ret != nil; i++ {
-				ret = filter(e[i], fn)
-			}
-		case *ebnf.Name:
-			p := g[e.String]
-			if p != nil {
-				ret = filter(p.Expr, fn)
-			} else if ret = std.Apply(e, fn); ret == nil {
-
-			} else {
-				halt.As(100, e.String)
-			}
-		case *ebnf.Token:
-			if ok := fn(e); !ok {
-				ret = errors.New(fmt.Sprint("EBNF expects ", e))
-			}
-		default:
-			halt.As(100, reflect.TypeOf(e))
-		}
-		return
-	}
-	return
-}
 
 func Top(g ebnf.Grammar) (ret *ebnf.Production) {
 	passed := make(map[string]interface{})
