@@ -1,2 +1,2 @@
 # leaf
-Experimental Oberon orphan(s) for easy DSL construction 
+Experimental Oberon orphan [LEAF language](https://github.com/kpmy/leaf/wiki) for the good. 
