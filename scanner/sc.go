@@ -196,8 +196,26 @@ func (s Symbol) String() (ret string) {
 }
 
 type Sym struct {
-	Code   Symbol
-	String string
+	Code Symbol
+	Str  string
+}
+
+func (v Sym) String() (ret string) {
+	switch v.Code {
+	case Ident:
+		ret = fmt.Sprint(`@` + v.Str)
+	case Delimiter:
+		ret = fmt.Sprint(";")
+	case Separator:
+		ret = fmt.Sprint(" ")
+	case String:
+		ret = fmt.Sprint(`"` + v.Str + `"`)
+	case Number:
+		ret = fmt.Sprint(v.String)
+	default:
+		ret = fmt.Sprint(v.Code)
+	}
+	return
 }
 
 type Scanner interface {
@@ -223,7 +241,8 @@ type sc struct {
 func (s *sc) Error() error { return s.err }
 
 func (s *sc) Mark(msg ...interface{}) {
-	log.Println(fmt.Sprintln(msg...))
+	log.Println("at pos ", s.pos, " ", fmt.Sprintln(msg...))
+	halt.As(100, "at pos ", s.pos, " ", fmt.Sprintln(msg...))
 }
 
 func (s *sc) next() rune {
@@ -247,8 +266,8 @@ func (s *sc) ident() (sym Sym) {
 		}
 	}
 	if s.err == nil {
-		sym.String = string(buf)
-		if sym.Code = keyTab[sym.String]; sym.Code == Null {
+		sym.Str = string(buf)
+		if sym.Code = keyTab[sym.Str]; sym.Code == Null {
 			sym.Code = Ident
 		}
 	} else {
@@ -326,7 +345,7 @@ func (s *sc) num() (sym Sym) {
 	}
 	if s.err == nil {
 		sym.Code = Number
-		sym.String = string(buf)
+		sym.Str = string(buf)
 	} else {
 		halt.As(100, "error reading number")
 	}
@@ -367,7 +386,7 @@ func (s *sc) Get() (sym Sym) {
 			sym.Code = Rbrak
 			s.next()
 		case '"', '\'':
-			sym.String = s.str()
+			sym.Str = s.str()
 			sym.Code = String
 		case ':':
 			if s.next() == '=' {

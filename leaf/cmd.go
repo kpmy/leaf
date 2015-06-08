@@ -28,13 +28,13 @@ func trivia(rd io.RuneReader) {
 	for _, v := range buf {
 		switch v.Code {
 		case scanner.Ident:
-			fmt.Print(`@` + v.String)
+			fmt.Print(`@` + v.Str)
 		case scanner.Delimiter:
 			fmt.Println()
 		case scanner.Separator:
 			fmt.Print(" ")
 		case scanner.String:
-			fmt.Print(`"` + v.String + `"`)
+			fmt.Print(`"` + v.Str + `"`)
 		case scanner.Number:
 			fmt.Print(v.String)
 		default:
@@ -50,7 +50,7 @@ func main() {
 	log.Println(name)
 	if f, err := os.Open(name); err == nil {
 		defer f.Close()
-		trivia(bufio.NewReader(f))
+		//trivia(bufio.NewReader(f))
 	} else {
 		log.Fatal(err)
 	}
