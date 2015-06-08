@@ -1,0 +1,191 @@
+(* LEAF module example *)
+MODULE Phonebook ["repo" : 'none']
+
+    IMPORT Errors, Log := ConsoleLog
+
+    CONST
+        One*
+        Two*
+        Three*
+
+    CONST
+        count* = 45
+        err =  -1
+        real = 0.1
+        hello* = "Hello, world!"
+        hello2 = 'Hello, world!'
+    boolean = TRUE
+    trilean = NIL
+    char = 000AU
+(* возможные кандидаты *)
+    hex = 031FH
+    non = 0ZW3N
+    tri = 0+-+-T
+    bin = 01010B
+
+    TYPE
+        Item* POINTER TO NodeDesc
+        ItemDesc* MAP
+            depth* INTEGER
+            name* STRING
+            phone* STRING
+            tags* SET OF ATOM
+                One; Two; Three
+            END
+            type- ATOM
+            parent- List
+            Update- PROCEDURE
+                THIS item Item
+            END
+        END
+
+        List* POINTER TO LIST OF Item
+
+            Contains- PROCEDURE
+                THIS list List
+                IN item Item
+                OUT contains BOOLEAN
+                PRE item # NIL
+            END
+
+            CreateAndAdd- PROCEDURE
+                THIS list List
+                OUT item Item
+                POST item # NIL
+                POST item.parent = list
+            END
+
+        END
+
+    PROCEDURE Contains
+        THIS list List
+        IN item Item
+        OUT contains BOOLEAN
+        PRE item # NIL
+        VAR i INTEGER
+    BEGIN
+        i := 0
+        WHILE i<LEN(list) & ~contains DO
+            contains := list[i] = item
+            INC(i)
+        END
+    END Contains
+
+    PROCEDURE CreateAndAdd
+        THIS list List
+        OUT item Item
+        POST item # NIL
+        POST item.parent = list
+        VAR idx INTEGER
+    BEGIN
+        idx := LEN(list);
+        RESIZE(list, LEN(list)+1)
+        list[idx] := (NewItem list)
+    END CreateAndAdd
+
+    PROCEDURE Remove
+        THIS list List
+        IN item Item
+        PRE item#NIL
+        PRE item.parent = list
+        POST ~(list.Contains item) && item.parent = NIL
+    BEGIN
+        REMOVE(list, item)
+        item.parent = NIL
+    END Remove
+
+    PROCEDURE Update
+        THIS item Item
+    BEGIN
+        HALT(Errors.notImplemented)
+    END Update
+
+    PROCEDURE NewItem
+        IN parent List
+        OUT i Item
+        PRE parent # NIL
+        POST i # NIL & i.parent = parent
+    BEGIN
+        NEW(i)
+        i.parent = parent
+        i.Update = Update
+    END NewItem
+
+    PROCEDURE NewList
+        OUT l List
+        POST l#NIL
+    BEGIN
+        NEW(l)
+        l.Contains = Contains
+        l.CreateAndAdd = CreateAndAdd
+        l(MAP).SET(Delete, Remove)
+    END NewList
+
+    PROCEDURE Init
+        VAR l List; i Item
+    BEGIN
+        NewList(l)
+        l.CreateAndAdd(i)
+        i.name := "Moses"
+        i.phone := "223322"
+        i.tags := {One, Three}
+        i(MAP).SET(surname, "Go Down")
+        Log.String(i.name + " " + i.surname)
+        i.tags := i.tags + {Two}
+        i.Update;
+    END Init
+
+	PROCEDURE Some*
+	BEGIN
+		i
+		a[i]
+		t^.left^.right^.pos
+		t(Tree).node
+		Texts.Pos()
+
+		ok := (Exists item)
+		res := (a[i] Do b[j])
+		x := (cond Tern A B)
+
+		i := 0
+		x := i + 1
+		a := b | c
+		ret := "Hello" + ',' + 0020U + name
+
+		Do(this, count)
+		rec.Handle(msg)
+
+		IF (x # NIL) & (x.a = 0) THEN Do0
+		ELSIF (x # NIL) & (x.a < 0) THEN DoP
+		ELSIF (x # NIL) & (x.a > 0) THEN DoN
+		ELSE (* x = NIL *)
+		    Od
+		END
+
+		MATCH
+		    CASE a & b & c DO DoA
+		    CASE ~a & b DO DoB
+		ELSE DoNothing END
+
+		WHILE a & b DO Do0
+		ELSIF a & ~b DO Do1
+		ELSIF ~a & ~b DO Do2
+		END
+
+		REPEAT Do0 UNTIL isFalse
+
+		MATCH (x)
+		    CASE Node DO DoNode(x)
+		    CASE Leaf DO DoLeaf(x)
+		    CASE NIL DO NilPanic
+		ELSE DoElse(x) END
+
+		x:= a / b
+		x:= a//b
+		x:=a%b
+	END Some
+
+BEGIN
+    DO(Init)
+	CLOSE
+END Phonebook.
