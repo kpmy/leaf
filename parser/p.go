@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"github.com/kpmy/ypk/assert"
+	"github.com/kpmy/ypk/halt"
 	"leaf/scanner"
 )
 
@@ -171,7 +172,28 @@ func (p *pr) importDecl() {
 	}
 }
 
+func (p *pr) factor() {
+	switch p.sym.Code {
+	default:
+		halt.As(100, p.sym.Code)
+	}
+}
+
+func (p *pr) term() {
+	p.factor()
+}
+
+func (p *pr) simpleExpr() {
+	switch p.sym.Code {
+	case scanner.Number:
+		p.term()
+	default:
+		halt.As(100, p.sym.Code)
+	}
+}
+
 func (p *pr) expression() {
+	p.simpleExpr()
 	p.sc.Mark("not implemented")
 }
 
