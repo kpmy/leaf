@@ -3,7 +3,7 @@ package parser
 import (
 	"fmt"
 	"github.com/kpmy/ypk/assert"
-	"github.com/kpmy/ypk/halt"
+	"leaf/ir"
 	"leaf/scanner"
 )
 
@@ -11,28 +11,27 @@ type Parser interface {
 	Module() error
 }
 
-type Type struct{}
+type Type struct {
+	typ ir.Type
+}
+
 type Proc struct{}
 type Value struct{}
 
 var entries map[string]interface{}
 
 func init() {
-	entries = map[string]interface{}{"SET": Type{},
-		"MAP":     Type{},
-		"LIST":    Type{},
-		"POINTER": Type{},
-		"STRING":  Type{},
-		"ATOM":    Type{},
-		"BOOLEAN": Type{},
-		"TRILEAN": Type{},
-		"INTEGER": Type{},
-		"REAL":    Type{},
-		"CHAR":    Type{},
-
-		"NIL":   Value{},
-		"TRUE":  Value{},
-		"FALSE": Value{},
+	entries = map[string]interface{}{"SET": Type{typ: ir.Set},
+		"MAP":     Type{typ: ir.Map},
+		"LIST":    Type{typ: ir.List},
+		"POINTER": Type{typ: ir.Pointer},
+		"STRING":  Type{typ: ir.String},
+		"ATOM":    Type{typ: ir.Atom},
+		"BOOLEAN": Type{typ: ir.Boolean},
+		"TRILEAN": Type{typ: ir.Trilean},
+		"INTEGER": Type{typ: ir.Integer},
+		"REAL":    Type{typ: ir.Real},
+		"CHAR":    Type{typ: ir.Char},
 
 		"LEN": Proc{},
 		"NEW": Proc{}}
@@ -46,11 +45,11 @@ type pr struct {
 func (p *pr) next() scanner.Sym {
 	if p.sym.Code != scanner.Null {
 		fmt.Print("this ")
-		fmt.Print("`" + p.sym.String() + "`")
+		fmt.Print("`" + fmt.Sprint(p.sym) + "`")
 	}
 	p.sym = p.sc.Get()
 	fmt.Print(" next ")
-	fmt.Println("`" + p.sym.String() + "`")
+	fmt.Println("`" + fmt.Sprint(p.sym) + "`")
 	return p.sym
 }
 
@@ -174,8 +173,23 @@ func (p *pr) importDecl() {
 
 func (p *pr) factor() {
 	switch p.sym.Code {
+	case scanner.Number:
+		fmt.Println(p.sym.Str)
+		p.next()
+	case scanner.String:
+		fmt.Println(p.sym.Str)
+		p.next()
+	case scanner.True:
+		fmt.Println("TRUE")
+		p.next()
+	case scanner.False:
+		fmt.Println("FALSE")
+		p.next()
+	case scanner.Nil:
+		fmt.Println("NIL")
+		p.next()
 	default:
-		halt.As(100, p.sym.Code)
+		p.sc.Mark("not a factor")
 	}
 }
 
@@ -187,14 +201,26 @@ func (p *pr) simpleExpr() {
 	switch p.sym.Code {
 	case scanner.Number:
 		p.term()
+	case scanner.Minus:
+		fmt.Print("-")
+		p.next()
+		p.term()
+	case scanner.Plus:
+		fmt.Print("+")
+		p.next()
+		p.term()
 	default:
-		halt.As(100, p.sym.Code)
+		p.term()
 	}
 }
 
 func (p *pr) expression() {
 	p.simpleExpr()
-	p.sc.Mark("not implemented")
+	switch p.sym.Code {
+	case scanner.Delimiter: //do nothing
+	default:
+		p.sc.Mark("not implemented")
+	}
 }
 
 func (p *pr) constDecl() {
@@ -229,6 +255,208 @@ func (p *pr) constDecl() {
 	}
 }
 
+func (p *pr) listTyp() {
+	assert.For(p.sym.Code == scanner.Ident, 20, "identifier expected")
+	t, ok := entries[p.sym.Str].(Type)
+	assert.For(ok && t.typ == ir.List, 21, "list expected here")
+	p.next()
+	if p.await(scanner.Number, scanner.Separator) {
+		fmt.Println("size ", p.sym.Str)
+		p.next()
+	}
+	if p.await(scanner.Of, scanner.Separator) {
+		p.next()
+		fmt.Println("OF")
+		if p.await(scanner.Ident, scanner.Separator) {
+			p.typ()
+		}
+	} else {
+		p.sc.Mark("incorrect list definition")
+	}
+}
+
+func (p *pr) procTyp() {
+	assert.For(p.sym.Code == scanner.Proc, 20, "procedure expected here")
+	p.next()
+}
+
+func (p *pr) mapTyp() {
+	assert.For(p.sym.Code == scanner.Ident, 20, "identifier expected")
+	t, ok := entries[p.sym.Str].(Type)
+	assert.For(ok && t.typ == ir.Map, 21, "map expected here")
+	p.next()
+	if p.await(scanner.Of, scanner.Separator) {
+		//simple key:value map
+		p.next()
+		if p.await(scanner.Ident, scanner.Separator) {
+			fmt.Println("KEY TYP")
+			p.typ()
+			if p.await(scanner.Comma, scanner.Separator) {
+				p.next()
+				if p.await(scanner.Ident, scanner.Separator) {
+					fmt.Println("VALUE TYP")
+					p.typ()
+				} else {
+					p.sc.Mark("identifier expected")
+				}
+			} else {
+				p.sc.Mark("comma expected")
+			}
+		} else {
+			p.sc.Mark("identifier expected")
+		}
+	} else if p.await(scanner.Ident, scanner.Separator, scanner.Delimiter) {
+		//map with predefined fields
+		for {
+			fmt.Println("FIELD ", p.sym.Str)
+			p.next()
+			switch p.sym.Code {
+			case scanner.Times:
+				p.next()
+				fmt.Println("exported")
+			case scanner.Plus:
+				p.next()
+				fmt.Println("semi exported")
+			case scanner.Minus:
+				p.next()
+				fmt.Println("semi hidden")
+			}
+
+			if p.await(scanner.Ident, scanner.Separator) {
+				p.typ()
+			} else if p.sym.Code == scanner.Proc {
+				p.procTyp()
+			} else {
+				p.sc.Mark("unexpected")
+			}
+			if p.await(scanner.Delimiter, scanner.Separator) {
+				if p.await(scanner.End, scanner.Separator, scanner.Delimiter) {
+					break
+				} else if p.sym.Code == scanner.Ident {
+					//очередное поле
+				} else {
+					p.sc.Mark("identifier expected")
+				}
+			} else {
+				p.sc.Mark("delimiter expected")
+			}
+		}
+		if p.await(scanner.End, scanner.Separator, scanner.Delimiter) {
+			p.next()
+		} else {
+			p.sc.Mark("END expected")
+		}
+	} else {
+		p.sc.Mark("incorrect map definition")
+	}
+}
+
+func (p *pr) setTyp() {
+	assert.For(p.sym.Code == scanner.Ident, 20, "identifier expected")
+	t, ok := entries[p.sym.Str].(Type)
+	assert.For(ok && t.typ == ir.Set, 21, "set expected here")
+	p.next()
+	if p.await(scanner.Of, scanner.Separator) {
+		p.next()
+		fmt.Println("OF")
+		if p.await(scanner.Ident, scanner.Separator) {
+			p.typ()
+		}
+		if p.await(scanner.With, scanner.Delimiter, scanner.Separator) {
+			//expect allowed values
+			fmt.Println("SET CONTENT SKIPPED")
+			for p.next().Code != scanner.End {
+			}
+			p.next()
+		}
+	} else {
+		p.sc.Mark("incorrect set definition")
+	}
+}
+
+func (p *pr) typ() {
+	assert.For(p.sym.Code == scanner.Ident, 20, "identifier expected")
+	if t, ok := entries[p.sym.Str].(Type); ok {
+		switch t.typ {
+		case ir.Pointer:
+			fmt.Println("POINTER")
+			p.next()
+			if p.await(scanner.To, scanner.Separator) {
+				p.next()
+				fmt.Println("TO")
+				if p.await(scanner.Ident, scanner.Separator) {
+					fmt.Println(p.sym.Str)
+					if t0, ok := entries[p.sym.Str].(Type); ok {
+						if t0.typ == ir.Map || t0.typ == ir.Set || t0.typ == ir.List {
+							p.typ()
+						}
+					} else {
+						p.next()
+					}
+				} else {
+					p.sc.Mark("identifier expected")
+				}
+			} else {
+				p.sc.Mark("TO expected")
+			}
+		case ir.Map:
+			fmt.Println("MAP")
+			p.mapTyp()
+		case ir.String:
+			fmt.Println("STRING")
+			p.next()
+		case ir.Integer:
+			fmt.Println("INTEGER")
+			p.next()
+		case ir.Atom:
+			fmt.Println("ATOM")
+			p.next()
+		case ir.List:
+			fmt.Println("LIST")
+			p.listTyp()
+		case ir.Set:
+			fmt.Println("SET")
+			p.setTyp()
+		default:
+			p.sc.Mark("unexpected or unknown type", t.typ)
+		}
+	} else {
+		fmt.Println("TYPE " + p.sym.Str)
+		p.next()
+	}
+}
+
+func (p *pr) typeDecl() {
+	assert.For(p.sym.Code == scanner.Type, 20, "type section here")
+	p.next()
+	if p.sym.Code == scanner.Separator || p.sym.Code == scanner.Delimiter {
+		for {
+			if p.await(scanner.Ident, scanner.Separator, scanner.Delimiter) {
+				fmt.Println("TYPE ", p.sym.Str)
+				p.next()
+				if p.sym.Code == scanner.Times {
+					p.next()
+					fmt.Println("exported")
+				}
+				if p.await(scanner.Ident, scanner.Separator) {
+					p.typ()
+					if p.await(scanner.Delimiter, scanner.Separator) {
+						p.next()
+					} else {
+						p.sc.Mark("delimiter expected")
+					}
+				} else {
+					p.sc.Mark("base type expected")
+				}
+			} else {
+				break
+			}
+		}
+	} else {
+		p.sc.Mark("separator expected")
+	}
+}
+
 func (p *pr) Module() (err error) {
 	fmt.Println("COMPILER")
 	if p.await(scanner.Module, scanner.Separator, scanner.Delimiter) {
@@ -246,6 +474,9 @@ func (p *pr) Module() (err error) {
 				}
 				for p.await(scanner.Const, scanner.Delimiter, scanner.Separator) {
 					p.constDecl()
+				}
+				for p.await(scanner.Type, scanner.Delimiter, scanner.Separator) {
+					p.typeDecl()
 				}
 			} else {
 				p.sc.Mark("delimiter expected")

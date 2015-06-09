@@ -76,6 +76,10 @@ const (
 	Repeat
 	Until
 	Else
+	True
+	False
+	Nil
+	With
 )
 
 var keyTab map[string]Symbol
@@ -107,7 +111,11 @@ func init() {
 		"THEN":      Then,
 		"REPEAT":    Repeat,
 		"UNTIL":     Until,
-		"ELSE":      Else}
+		"ELSE":      Else,
+		"TRUE":      True,
+		"FALSE":     False,
+		"NIL":       Nil,
+		"WITH":      With}
 }
 
 func keyByTab(s Symbol) (ret string) {
@@ -121,7 +129,7 @@ func keyByTab(s Symbol) (ret string) {
 
 func (s Symbol) String() (ret string) {
 	switch s {
-	case Module, End, Do, While, Elsif, Import, Const, Type, Of, To, This, In, Out, Io, Pre, Post, Proc, Var, Begin, Close, Match, If, Case, Then, Repeat, Until, Else:
+	case Module, End, Do, While, Elsif, Import, Const, Type, Of, To, This, In, Out, Io, Pre, Post, Proc, Var, Begin, Close, Match, If, Case, Then, Repeat, Until, Else, True, False, Nil, With:
 		ret = keyByTab(s)
 	case Null:
 		ret = "null"
@@ -211,7 +219,7 @@ func (v Sym) String() (ret string) {
 	case String:
 		ret = fmt.Sprint(`"` + v.Str + `"`)
 	case Number:
-		ret = fmt.Sprint(v.String)
+		ret = fmt.Sprint(v.Str)
 	default:
 		ret = fmt.Sprint(v.Code)
 	}
@@ -261,7 +269,8 @@ func (s *sc) ident() (sym Sym) {
 	var buf []rune
 	for {
 		buf = append(buf, s.ch)
-		if s.err != nil || !unicode.IsLetter(s.next()) {
+		s.next()
+		if s.err != nil || !(unicode.IsLetter(s.ch) || unicode.IsDigit(s.ch)) {
 			break
 		}
 	}
@@ -335,7 +344,7 @@ func (s *sc) num() (sym Sym) {
 	for {
 		buf = append(buf, s.ch)
 		s.next()
-		if s.err != nil || s.ch == '.' || !(Is(hex, s.ch) || Is(non, s.ch) || Is(tri, s.ch)) {
+		if s.err != nil || !(s.ch == '.' || Is(hex, s.ch) || Is(non, s.ch) || Is(tri, s.ch)) {
 			break
 		}
 	}

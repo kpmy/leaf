@@ -24,12 +24,13 @@ MODULE Phonebook ["repo" : 'none']
     bin = 01010B
 
     TYPE
-        Item* POINTER TO NodeDesc
+         hash POINTER TO MAP OF STRING, LIST 16 OF INTEGER;
+        Item* POINTER TO ItemDesc
         ItemDesc* MAP
             depth* INTEGER
             name* STRING
             phone* STRING
-            tags* SET OF ATOM
+            tags* SET OF ATOM WITH
                 One; Two; Three
             END
             type- ATOM
@@ -39,7 +40,7 @@ MODULE Phonebook ["repo" : 'none']
             END
         END
 
-        List* POINTER TO LIST OF Item
+        List* POINTER TO LIST OF Item WITH
 
             Contains- PROCEDURE
                 THIS list List
@@ -56,6 +57,12 @@ MODULE Phonebook ["repo" : 'none']
             END
 
         END
+
+	Some POINTER TO MAP OF STRING, LIST OF INTEGER;
+	Some POINTER TO MAP OF STRING, POINTER TO LIST OF INTEGER;
+	Some SET OF INTEGER WITH
+		0, 1..50, 88
+	END
 
     PROCEDURE Contains
         THIS list List
