@@ -64,6 +64,9 @@ MODULE Phonebook ["repo" : 'none']
 		0, 1..50, 88
 	END
 
+VAR
+	dir- Directory
+
     PROCEDURE Contains
         THIS list List
         IN item Item

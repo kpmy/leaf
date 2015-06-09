@@ -270,6 +270,33 @@ func (p *pr) listTyp() {
 		if p.await(scanner.Ident, scanner.Separator) {
 			p.typ()
 		}
+		if p.await(scanner.With, scanner.Separator) {
+			//list with predefined fields
+			p.next()
+			if p.await(scanner.Ident, scanner.Separator, scanner.Delimiter) {
+				for {
+					p.field()
+					if p.await(scanner.Delimiter, scanner.Separator) {
+						if p.await(scanner.End, scanner.Separator, scanner.Delimiter) {
+							break
+						} else if p.sym.Code == scanner.Ident {
+							//очередное поле
+						} else {
+							p.sc.Mark("identifier expected")
+						}
+					} else {
+						p.sc.Mark("map delimiter expected")
+					}
+				}
+				if p.await(scanner.End, scanner.Separator, scanner.Delimiter) {
+					p.next()
+				} else {
+					p.sc.Mark("END of list expected")
+				}
+			} else {
+				p.sc.Mark("incorrect list definition")
+			}
+		}
 	} else {
 		p.sc.Mark("incorrect list definition")
 	}
@@ -278,6 +305,63 @@ func (p *pr) listTyp() {
 func (p *pr) procTyp() {
 	assert.For(p.sym.Code == scanner.Proc, 20, "procedure expected here")
 	p.next()
+	p.pass(scanner.Delimiter, scanner.Separator)
+	method := false
+	stop := false
+	for !stop {
+		switch p.sym.Code {
+		case scanner.This:
+			p.next()
+			if !method {
+				method = true
+				if p.await(scanner.Ident, scanner.Separator) {
+					fmt.Println("THIS " + p.sym.Str)
+					p.next()
+					if p.await(scanner.Ident, scanner.Separator) {
+						fmt.Println(p.sym.Str)
+						p.typ()
+					} else {
+						p.sc.Mark("type name expected")
+					}
+				} else {
+					p.sc.Mark("identifier expected")
+				}
+			} else {
+				p.sc.Mark("THIS already exists")
+			}
+		default:
+			stop = true
+		}
+	}
+	if p.await(scanner.End, scanner.Delimiter, scanner.Separator) {
+		p.next()
+	} else {
+		p.sc.Mark("END expected")
+	}
+}
+
+func (p *pr) field() {
+	fmt.Println("FIELD ", p.sym.Str)
+	p.next()
+	switch p.sym.Code {
+	case scanner.Times:
+		p.next()
+		fmt.Println("exported")
+	case scanner.Plus:
+		p.next()
+		fmt.Println("semi exported")
+	case scanner.Minus:
+		p.next()
+		fmt.Println("semi hidden")
+	}
+
+	if p.await(scanner.Ident, scanner.Separator) {
+		p.typ()
+	} else if p.sym.Code == scanner.Proc {
+		p.procTyp()
+	} else {
+		p.sc.Mark("unexpected field typ")
+	}
 }
 
 func (p *pr) mapTyp() {
@@ -308,27 +392,7 @@ func (p *pr) mapTyp() {
 	} else if p.await(scanner.Ident, scanner.Separator, scanner.Delimiter) {
 		//map with predefined fields
 		for {
-			fmt.Println("FIELD ", p.sym.Str)
-			p.next()
-			switch p.sym.Code {
-			case scanner.Times:
-				p.next()
-				fmt.Println("exported")
-			case scanner.Plus:
-				p.next()
-				fmt.Println("semi exported")
-			case scanner.Minus:
-				p.next()
-				fmt.Println("semi hidden")
-			}
-
-			if p.await(scanner.Ident, scanner.Separator) {
-				p.typ()
-			} else if p.sym.Code == scanner.Proc {
-				p.procTyp()
-			} else {
-				p.sc.Mark("unexpected")
-			}
+			p.field()
 			if p.await(scanner.Delimiter, scanner.Separator) {
 				if p.await(scanner.End, scanner.Separator, scanner.Delimiter) {
 					break
@@ -338,7 +402,7 @@ func (p *pr) mapTyp() {
 					p.sc.Mark("identifier expected")
 				}
 			} else {
-				p.sc.Mark("delimiter expected")
+				p.sc.Mark("map delimiter expected")
 			}
 		}
 		if p.await(scanner.End, scanner.Separator, scanner.Delimiter) {
@@ -443,7 +507,7 @@ func (p *pr) typeDecl() {
 					if p.await(scanner.Delimiter, scanner.Separator) {
 						p.next()
 					} else {
-						p.sc.Mark("delimiter expected")
+						p.sc.Mark("type delimiter expected")
 					}
 				} else {
 					p.sc.Mark("base type expected")
@@ -479,7 +543,7 @@ func (p *pr) Module() (err error) {
 					p.typeDecl()
 				}
 			} else {
-				p.sc.Mark("delimiter expected")
+				p.sc.Mark("mod delimiter expected")
 			}
 		} else {
 			p.sc.Mark("module name expected")
