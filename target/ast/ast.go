@@ -5,6 +5,7 @@ import (
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
+	"leaf/scanner"
 	"leaf/target"
 )
 
@@ -72,6 +73,26 @@ func (t *tg) EndObject() {
 func (t *tg) Name(name string) {
 	assert.For(t.top().this != nil, 20)
 	t.top().this.Name(name)
+}
+
+func (t *tg) BeginStatement(scanner.Symbol) {
+
+}
+
+func (t *tg) EndStatement() {
+
+}
+
+func (t *tg) Select(name string) {
+
+}
+
+func (t *tg) BeginExpression() {
+
+}
+
+func (t *tg) EndExpression() {
+
 }
 
 func New(e ErrorMarker) target.Target {

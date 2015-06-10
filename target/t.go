@@ -1,5 +1,9 @@
 package target
 
+import (
+	"leaf/scanner"
+)
+
 type Class int
 
 const (
@@ -13,4 +17,9 @@ type Target interface {
 	Name(string)
 	EndObject()
 	Close(string)
+	BeginStatement(scanner.Symbol)
+	EndStatement()
+	Select(string)
+	BeginExpression()
+	EndExpression()
 }

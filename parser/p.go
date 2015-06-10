@@ -217,9 +217,11 @@ func (p *pr) simpleExpr() {
 }
 
 func (p *pr) expression() {
+	p.tg.BeginExpression()
 	p.simpleExpr()
 	switch p.sym.Code {
 	case scanner.Delimiter: //do nothing
+		p.tg.EndExpression()
 	default:
 		p.sc.Mark("not implemented")
 	}
@@ -583,6 +585,7 @@ func (p *pr) varDecl() {
 				if p.await(scanner.Ident, scanner.Separator) {
 					p.typ()
 					if p.await(scanner.Delimiter, scanner.Separator) {
+						p.tg.EndObject()
 						p.next()
 					} else {
 						p.sc.Mark("var delimiter expected")
@@ -604,6 +607,26 @@ func (p *pr) statSeq() {
 	stop := false
 	for !stop {
 		switch p.sym.Code {
+		case scanner.Ident:
+			id := p.sym.Str
+			p.next()
+			p.pass(scanner.Separator)
+			switch p.sym.Code {
+			case scanner.Becomes:
+				p.tg.BeginStatement(scanner.Becomes)
+				p.next()
+				p.tg.Select(id)
+				p.pass(scanner.Separator)
+				p.expression()
+				if p.await(scanner.Delimiter, scanner.Separator) {
+					p.tg.EndStatement()
+					p.next()
+				} else {
+					p.sc.Mark("statement delimiter expected")
+				}
+			default:
+				p.sc.Mark("unexpected ", p.sym)
+			}
 		case scanner.Close, scanner.End: //do nothing
 			stop = true
 		default:

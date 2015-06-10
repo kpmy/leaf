@@ -5,7 +5,6 @@ import (
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
 	"io"
-	"log"
 	"strconv"
 	"strings"
 	"unicode"
@@ -249,7 +248,7 @@ type sc struct {
 func (s *sc) Error() error { return s.err }
 
 func (s *sc) Mark(msg ...interface{}) {
-	log.Println("at pos ", s.pos, " ", fmt.Sprintln(msg...))
+	//log.Println("at pos ", s.pos, " ", fmt.Sprintln(msg...))
 	halt.As(100, "at pos ", s.pos, " ", fmt.Sprintln(msg...))
 }
 
