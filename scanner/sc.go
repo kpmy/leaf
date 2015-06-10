@@ -260,7 +260,6 @@ func (s *sc) next() rune {
 	if s.err == nil {
 		s.pos += read
 	}
-	assert.For(s.pos < 4096, 60)
 	return s.ch
 }
 

@@ -5,6 +5,7 @@ import (
 	"github.com/kpmy/ypk/assert"
 	"leaf/ir"
 	"leaf/scanner"
+	"leaf/target"
 )
 
 type Parser interface {
@@ -40,16 +41,17 @@ func init() {
 type pr struct {
 	sc  scanner.Scanner
 	sym scanner.Sym
+	tg  target.Target
 }
 
 func (p *pr) next() scanner.Sym {
 	if p.sym.Code != scanner.Null {
-		fmt.Print("this ")
-		fmt.Print("`" + fmt.Sprint(p.sym) + "`")
+		//		fmt.Print("this ")
+		//		fmt.Print("`" + fmt.Sprint(p.sym) + "`")
 	}
 	p.sym = p.sc.Get()
-	fmt.Print(" next ")
-	fmt.Println("`" + fmt.Sprint(p.sym) + "`")
+	//	fmt.Print(" next ")
+	//	fmt.Println("`" + fmt.Sprint(p.sym) + "`")
 	return p.sym
 }
 
@@ -329,9 +331,42 @@ func (p *pr) procTyp() {
 			} else {
 				p.sc.Mark("THIS already exists")
 			}
+		case scanner.In:
+			p.next()
+			if p.await(scanner.Ident, scanner.Separator) {
+				fmt.Println("IN " + p.sym.Str)
+				p.next()
+				if p.await(scanner.Ident, scanner.Separator) {
+					fmt.Println(p.sym.Str)
+					p.typ()
+				} else {
+					p.sc.Mark("type name expected")
+				}
+			} else {
+				p.sc.Mark("identifier expected")
+			}
+		case scanner.Out:
+			p.next()
+			if p.await(scanner.Ident, scanner.Separator) {
+				fmt.Println("OUT " + p.sym.Str)
+				p.next()
+				if p.await(scanner.Ident, scanner.Separator) {
+					fmt.Println(p.sym.Str)
+					p.typ()
+				} else {
+					p.sc.Mark("type name expected")
+				}
+			} else {
+				p.sc.Mark("identifier expected")
+			}
+		case scanner.Pre:
+			p.next()
+		case scanner.Post:
+			p.next()
 		default:
 			stop = true
 		}
+		p.pass(scanner.Separator, scanner.Delimiter)
 	}
 	if p.await(scanner.End, scanner.Delimiter, scanner.Separator) {
 		p.next()
@@ -472,6 +507,9 @@ func (p *pr) typ() {
 		case ir.Integer:
 			fmt.Println("INTEGER")
 			p.next()
+		case ir.Boolean:
+			fmt.Println("BOOLEAN")
+			p.next()
 		case ir.Atom:
 			fmt.Println("ATOM")
 			p.next()
@@ -521,12 +559,66 @@ func (p *pr) typeDecl() {
 	}
 }
 
+func (p *pr) varDecl() {
+	assert.For(p.sym.Code == scanner.Var, 20, "var section here")
+	p.next()
+	if p.sym.Code == scanner.Separator || p.sym.Code == scanner.Delimiter {
+		for {
+			if p.await(scanner.Ident, scanner.Separator, scanner.Delimiter) {
+				fmt.Println("VAR ", p.sym.Str)
+				p.tg.BeginObject(target.Variable)
+				p.tg.Name(p.sym.Str)
+				p.next()
+				switch p.sym.Code {
+				case scanner.Times:
+					p.next()
+					fmt.Println("exported")
+				case scanner.Plus:
+					p.next()
+					fmt.Println("semi exported")
+				case scanner.Minus:
+					p.next()
+					fmt.Println("semi hidden")
+				}
+				if p.await(scanner.Ident, scanner.Separator) {
+					p.typ()
+					if p.await(scanner.Delimiter, scanner.Separator) {
+						p.next()
+					} else {
+						p.sc.Mark("var delimiter expected")
+					}
+				} else {
+					p.sc.Mark("var type expected")
+				}
+			} else {
+				break
+			}
+		}
+	} else {
+		p.sc.Mark("separator expected")
+	}
+}
+
+func (p *pr) statSeq() {
+	p.pass(scanner.Delimiter, scanner.Separator)
+	stop := false
+	for !stop {
+		switch p.sym.Code {
+		case scanner.Close, scanner.End: //do nothing
+			stop = true
+		default:
+			p.sc.Mark("unexpected ", p.sym)
+		}
+	}
+}
+
 func (p *pr) Module() (err error) {
 	fmt.Println("COMPILER")
 	if p.await(scanner.Module, scanner.Separator, scanner.Delimiter) {
 		p.next()
 		if p.await(scanner.Ident, scanner.Separator) {
 			fmt.Println("MODULE", p.sym.Str)
+			p.tg.Open(p.sym.Str)
 			p.next()
 			p.pass(scanner.Separator)
 			if p.sym.Code == scanner.Lbrak {
@@ -542,6 +634,35 @@ func (p *pr) Module() (err error) {
 				for p.await(scanner.Type, scanner.Delimiter, scanner.Separator) {
 					p.typeDecl()
 				}
+				for p.await(scanner.Var, scanner.Delimiter, scanner.Separator) {
+					p.varDecl()
+				}
+				if p.await(scanner.Begin, scanner.Separator, scanner.Delimiter) {
+					p.next()
+					p.statSeq()
+				}
+				if p.await(scanner.Close, scanner.Separator, scanner.Delimiter) {
+					p.next()
+					p.statSeq()
+				}
+				if p.await(scanner.End, scanner.Separator, scanner.Delimiter) {
+					p.next()
+					if p.await(scanner.Ident, scanner.Separator) {
+						fmt.Println("END ", p.sym.Str)
+						p.tg.Close(p.sym.Str)
+						p.next()
+						if p.await(scanner.Period) {
+							p.next()
+							fmt.Println("end compilation")
+						} else {
+							p.sc.Mark("period expected")
+						}
+					} else {
+						p.sc.Mark("module name expected")
+					}
+				} else {
+					p.sc.Mark("END expected")
+				}
 			} else {
 				p.sc.Mark("mod delimiter expected")
 			}
@@ -554,8 +675,10 @@ func (p *pr) Module() (err error) {
 	return
 }
 
-func ConnectTo(s scanner.Scanner) Parser {
-	ret := &pr{sc: s}
+func ConnectTo(s scanner.Scanner, t target.Target) Parser {
+	assert.For(s != nil, 20)
+	assert.For(t != nil, 21)
+	ret := &pr{sc: s, tg: t}
 	ret.init()
 	return ret
 }
