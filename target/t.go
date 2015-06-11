@@ -8,18 +8,12 @@ type Class int
 
 const (
 	Wrong Class = iota
+	Constant
 	Variable
 )
 
 type Target interface {
-	Open(string)
-	BeginObject(Class)
-	Name(string)
-	EndObject()
-	Close(string)
-	BeginStatement(scanner.Symbol)
-	EndStatement()
-	Select(string)
-	BeginExpression()
-	EndExpression()
+	Declare(Class)
+	BeginBlock(...scanner.Symbol)
+	EndBlock()
 }

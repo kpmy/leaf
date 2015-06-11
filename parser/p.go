@@ -177,18 +177,33 @@ func (p *pr) factor() {
 	switch p.sym.Code {
 	case scanner.Number:
 		fmt.Println(p.sym.Str)
+		p.tg.BeginObject(target.Constant)
+		p.tg.Value(p.sym.Code, p.sym.Str)
+		p.tg.EndObject()
 		p.next()
 	case scanner.String:
 		fmt.Println(p.sym.Str)
+		p.tg.BeginObject(target.Constant)
+		p.tg.Value(p.sym.Code, p.sym.Str)
+		p.tg.EndObject()
 		p.next()
 	case scanner.True:
 		fmt.Println("TRUE")
+		p.tg.BeginObject(target.Constant)
+		p.tg.Value(p.sym.Code)
+		p.tg.EndObject()
 		p.next()
 	case scanner.False:
 		fmt.Println("FALSE")
+		p.tg.BeginObject(target.Constant)
+		p.tg.Value(p.sym.Code)
+		p.tg.EndObject()
 		p.next()
 	case scanner.Nil:
 		fmt.Println("NIL")
+		p.tg.BeginObject(target.Constant)
+		p.tg.Value(p.sym.Code)
+		p.tg.EndObject()
 		p.next()
 	default:
 		p.sc.Mark("not a factor")

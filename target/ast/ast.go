@@ -3,7 +3,6 @@ package ast
 import (
 	"container/list"
 	"github.com/kpmy/ypk/assert"
-	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
 	"leaf/scanner"
 	"leaf/target"
@@ -13,11 +12,6 @@ type ErrorMarker interface {
 	Mark(...interface{})
 }
 
-type scope struct {
-	sc   *ir.Scope
-	this ir.Object
-}
-
 type tg struct {
 	em      ErrorMarker
 	modName string
@@ -25,8 +19,8 @@ type tg struct {
 	stack   *list.List
 }
 
-func (t *tg) push(s *ir.Scope) {
-	t.stack.PushFront(&scope{sc: s})
+func (t *tg) push(c target.Consumer) {
+	t.stack.PushFront(c)
 }
 
 func (t *tg) pop() {
@@ -35,9 +29,9 @@ func (t *tg) pop() {
 	}
 }
 
-func (t *tg) top() (ret *scope) {
+func (t *tg) top() (ret target.Consumer) {
 	if t.stack.Len() > 0 {
-		ret = t.stack.Front().Value.(*scope)
+		ret = t.stack.Front().Value.(target.Consumer)
 	}
 	return
 }
@@ -45,7 +39,7 @@ func (t *tg) top() (ret *scope) {
 func (t *tg) Open(name string) {
 	t.modName = name
 	t.mod = ir.NewMod(name)
-	t.push(t.mod.Top)
+	t.push(&modCons{mod: t.mod, root: t})
 }
 
 func (t *tg) Close(name string) {
@@ -55,44 +49,48 @@ func (t *tg) Close(name string) {
 }
 
 func (t *tg) BeginObject(c target.Class) {
-	assert.For(t.top().this == nil, 20)
-	switch c {
-	case target.Variable:
-		t.top().this = ir.NewVar()
-		t.top().sc.Add(t.top().this)
-	default:
-		halt.As(100, "неизвестный класс ", c)
-	}
+	assert.For(t.top() != nil, 20)
+	t.top().BeginObject(c)
 }
 
 func (t *tg) EndObject() {
-	assert.For(t.top().this != nil, 20)
-	t.top().this = nil
+	assert.For(t.top() != nil, 20)
+	t.top().EndObject()
 }
 
 func (t *tg) Name(name string) {
-	assert.For(t.top().this != nil, 20)
-	t.top().this.Name(name)
+	assert.For(t.top() != nil, 20)
+	t.top().Name(name)
 }
 
-func (t *tg) BeginStatement(scanner.Symbol) {
-
+func (t *tg) BeginStatement(sym scanner.Symbol) {
+	assert.For(t.top() != nil, 20)
+	t.top().BeginStatement(sym)
 }
 
 func (t *tg) EndStatement() {
-
+	assert.For(t.top() != nil, 20)
+	t.top().EndStatement()
 }
 
 func (t *tg) Select(name string) {
-
+	assert.For(t.top() != nil, 20)
+	t.top().Select(name)
 }
 
 func (t *tg) BeginExpression() {
-
+	assert.For(t.top() != nil, 20)
+	t.top().BeginExpression()
 }
 
 func (t *tg) EndExpression() {
+	assert.For(t.top() != nil, 20)
+	t.top().EndExpression()
+}
 
+func (t *tg) Value(sym scanner.Symbol, val ...string) {
+	assert.For(t.top() != nil, 20)
+	t.top().Value(sym, val...)
 }
 
 func New(e ErrorMarker) target.Target {
