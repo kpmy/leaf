@@ -3,9 +3,7 @@ package demo
 import (
 	"bufio"
 	"fmt"
-	"leaf/parser"
 	"leaf/scanner"
-	"leaf/target/ast"
 	"log"
 	"os"
 	"strconv"
@@ -49,9 +47,7 @@ func TestParser(t *testing.T) {
 		if _, err = os.Stat(name); err == nil {
 			if f, err := os.Open(name); err == nil {
 				defer f.Close()
-				sc := scanner.ConnectTo(bufio.NewReader(f))
-				p := parser.ConnectTo(sc, ast.New(sc))
-				p.Module()
+				_ = scanner.ConnectTo(bufio.NewReader(f))
 			}
 		}
 	}
