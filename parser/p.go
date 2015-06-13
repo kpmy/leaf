@@ -30,6 +30,12 @@ func (p *pr) init() {
 	p.next()
 }
 
+func (p *pr) expect(sym scanner.Symbol, msg string, skip ...scanner.Symbol) {
+	if !p.await(sym, skip...) {
+		p.sc.Mark(msg)
+	}
+}
+
 func (p *pr) await(sym scanner.Symbol, skip ...scanner.Symbol) bool {
 
 	skipped := func() (ret bool) {
