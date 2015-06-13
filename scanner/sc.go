@@ -79,6 +79,8 @@ const (
 	False
 	Nil
 	With
+	For
+	By
 )
 
 var keyTab map[string]Symbol
@@ -114,7 +116,9 @@ func init() {
 		"TRUE":      True,
 		"FALSE":     False,
 		"NIL":       Nil,
-		"WITH":      With}
+		"WITH":      With,
+		"FOR":       For,
+		"BY":        By}
 }
 
 func keyByTab(s Symbol) (ret string) {
@@ -128,7 +132,7 @@ func keyByTab(s Symbol) (ret string) {
 
 func (s Symbol) String() (ret string) {
 	switch s {
-	case Module, End, Do, While, Elsif, Import, Const, Type, Of, To, This, In, Out, Io, Pre, Post, Proc, Var, Begin, Close, Match, If, Case, Then, Repeat, Until, Else, True, False, Nil, With:
+	case Module, End, Do, While, Elsif, Import, Const, Type, Of, To, This, In, Out, Io, Pre, Post, Proc, Var, Begin, Close, Match, If, Case, Then, Repeat, Until, Else, True, False, Nil, With, For, By:
 		ret = keyByTab(s)
 	case Null:
 		ret = "null"
@@ -249,7 +253,7 @@ func (s *sc) Error() error { return s.err }
 
 func (s *sc) Mark(msg ...interface{}) {
 	//log.Println("at pos ", s.pos, " ", fmt.Sprintln(msg...))
-	halt.As(100, "at pos ", s.pos, " ", fmt.Sprintln(msg...))
+	halt.As(100, "at pos ", s.pos, " ", fmt.Sprint(msg...))
 }
 
 func (s *sc) next() rune {
