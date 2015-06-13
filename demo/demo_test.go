@@ -3,6 +3,7 @@ package demo
 import (
 	"bufio"
 	"fmt"
+	"leaf/parser"
 	"leaf/scanner"
 	"log"
 	"os"
@@ -47,7 +48,8 @@ func TestParser(t *testing.T) {
 		if _, err = os.Stat(name); err == nil {
 			if f, err := os.Open(name); err == nil {
 				defer f.Close()
-				_ = scanner.ConnectTo(bufio.NewReader(f))
+				p := parser.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)))
+				p.Module()
 			}
 		}
 	}

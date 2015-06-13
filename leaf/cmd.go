@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"github.com/kpmy/ypk/assert"
+	"leaf/parser"
 	"leaf/scanner"
 	"log"
 	"os"
@@ -22,7 +23,8 @@ func main() {
 	log.Println(name)
 	if f, err := os.Open(name); err == nil {
 		defer f.Close()
-		_ = scanner.ConnectTo(bufio.NewReader(f))
+		p := parser.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)))
+		p.Module()
 	} else {
 		log.Fatal(err)
 	}
