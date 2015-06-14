@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"leaf/parser"
 	"leaf/scanner"
+	"leaf/target"
 	"log"
 	"os"
 	"strconv"
@@ -49,7 +50,8 @@ func TestParser(t *testing.T) {
 			if f, err := os.Open(name); err == nil {
 				defer f.Close()
 				p := parser.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)))
-				p.Module()
+				ir, _ := p.Module()
+				target.Do(ir)
 			}
 		}
 	}
