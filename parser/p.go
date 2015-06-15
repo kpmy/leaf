@@ -4,8 +4,20 @@ import (
 	"fmt"
 	"github.com/kpmy/ypk/assert"
 	"leaf/ir"
+	"leaf/ir/types"
 	"leaf/scanner"
+	"strconv"
 )
+
+type Type struct {
+	typ types.Type
+}
+
+var entries map[string]interface{}
+
+func init() {
+	entries = map[string]interface{}{"INTEGER": Type{typ: types.INTEGER}}
+}
 
 type Parser interface {
 	Module() (*ir.Module, error)
@@ -25,7 +37,7 @@ type pr struct {
 	sc   scanner.Scanner
 	sym  scanner.Sym
 	done bool
-	t    target
+	target
 	idgen
 }
 
@@ -90,10 +102,12 @@ func (p *pr) pass(skip ...scanner.Symbol) {
 
 //run runs to the first sym through any other sym
 func (p *pr) run(sym scanner.Symbol) {
-	for p.next().Code != sym {
-		if p.sc.Error() != nil {
-			p.sc.Mark("not found")
-			break
+	if p.sym.Code != sym {
+		for p.next().Code != sym {
+			if p.sc.Error() != nil {
+				p.sc.Mark("not found")
+				break
+			}
 		}
 	}
 }
@@ -108,24 +122,39 @@ func (p *pr) is(sym scanner.Symbol) bool {
 	return p.sym.Code == sym
 }
 
-func (p *pr) factor() {
-	if p.is(scanner.Number) {
+func (p *pr) number() (types.Type, interface{}) {
+	assert.For(p.is(scanner.Number), 20, "number expected here")
+	x, err := strconv.Atoi(p.sym.Str)
+	assert.For(err == nil, 40)
+	return types.INTEGER, x
+}
+
+func (p *pr) factor(b *exprBuilder) {
+	switch p.sym.Code {
+	case scanner.Number:
+		val := &ir.ConstExpr{}
+		val.Type, val.Value = p.number()
+		b.factor(val)
 		p.next()
-	} else {
-		p.sc.Mark("not implemented")
+	case scanner.Ident:
+		e := b.as(p.ident())
+		b.factor(e)
+		p.next()
+	default:
+		p.sc.Mark("not implemented for ", p.sym)
 	}
 }
 
-func (p *pr) term() {
-	p.factor()
+func (p *pr) product(b *exprBuilder) {
+	p.factor(b)
 }
 
-func (p *pr) simpleExpression() {
-	p.term()
+func (p *pr) quantum(b *exprBuilder) {
+	p.product(b)
 }
 
-func (p *pr) expression() {
-	p.simpleExpression()
+func (p *pr) expression(b *exprBuilder) {
+	p.quantum(b)
 }
 
 func (p *pr) constDecl() {
@@ -133,18 +162,94 @@ func (p *pr) constDecl() {
 	p.next()
 	for {
 		if p.await(scanner.Ident, scanner.Delimiter, scanner.Separator) {
+			id := p.ident()
+			if p.root.ConstDecl[id] != nil {
+				p.sc.Mark("identifier already exists")
+			}
 			p.next()
-			if p.await(scanner.Equal, scanner.Separator) {
+			obj := &ir.Const{Name: id}
+			if p.await(scanner.Equal, scanner.Separator) { //const expression
 				p.next()
 				p.pass(scanner.Separator)
-				p.expression()
-			} else if p.is(scanner.Delimiter) {
+				obj.Expr = &exprBuilder{}
+				p.expression(obj.Expr.(*exprBuilder))
+			} else if p.is(scanner.Delimiter) { //ATOM
+				obj.Expr = &ir.AtomExpr{Value: id}
 				p.next()
+			} else {
+				p.sc.Mark("delimiter or expression expected")
 			}
+			p.root.ConstDecl[id] = obj
 		} else {
 			break
 		}
+	}
+}
 
+func (p *pr) typ(cons func(t types.Type)) {
+	assert.For(p.sym.Code == scanner.Ident, 20, "type identifier expected here")
+	id := p.ident()
+	if t, ok := entries[id].(Type); ok {
+		switch t.typ {
+		case types.INTEGER:
+			p.next()
+			cons(t.typ)
+		default:
+			p.sc.Mark("unexpected type")
+		}
+	} else {
+		p.sc.Mark("unknown type")
+	}
+}
+
+func (p *pr) varDecl() {
+	assert.For(p.sym.Code == scanner.Var, 20, "VAR block expected")
+	p.next()
+	for {
+		if p.await(scanner.Ident, scanner.Delimiter, scanner.Separator) {
+			obj := &ir.Variable{}
+			id := p.ident()
+			if p.root.ConstDecl[id] != nil {
+				p.sc.Mark("identifier already exists")
+			}
+			obj.Name = id
+			p.next()
+			p.expect(scanner.Ident, "type identifier expected", scanner.Separator)
+			p.typ(func(t types.Type) {
+				obj.Type = t
+			})
+			p.root.VarDecl[obj.Name] = obj
+		} else {
+			break
+		}
+	}
+
+}
+
+func (p *pr) stmtSeq(b *blockBuilder) {
+	for stop := false; !stop; {
+		p.pass(scanner.Separator, scanner.Delimiter)
+		switch p.sym.Code {
+		case scanner.Ident:
+			obj := b.obj(p.ident())
+			p.next()
+			p.pass(scanner.Separator)
+			if p.is(scanner.Becomes) {
+				stmt := &ir.AssignStmt{}
+				p.next()
+				p.pass(scanner.Separator)
+				expr := &exprBuilder{}
+				expr.scope = b.scope
+				p.expression(expr)
+				stmt.Object = obj
+				stmt.Expr = expr
+				b.put(stmt)
+			} else {
+				p.sc.Mark("illegal statement")
+			}
+		default:
+			stop = true
+		}
 	}
 }
 
@@ -152,21 +257,39 @@ func (p *pr) Module() (ret *ir.Module, err error) {
 	p.expect(scanner.Module, "MODULE expected", scanner.Delimiter, scanner.Separator)
 	p.next()
 	p.expect(scanner.Ident, "module name expected", scanner.Separator)
-	p.t.init(p.ident())
+	p.target.init(p.ident())
 	p.next()
 	p.pass(scanner.Separator, scanner.Delimiter)
 	for p.await(scanner.Const, scanner.Delimiter, scanner.Separator) {
 		p.constDecl()
 	}
+	for p.await(scanner.Var, scanner.Delimiter, scanner.Separator) {
+		p.varDecl()
+	}
+	if p.await(scanner.Begin, scanner.Delimiter, scanner.Separator) {
+		p.next()
+		b := &blockBuilder{}
+		b.scope = scopeLevel{varScope: p.root.VarDecl, constScope: p.root.ConstDecl}
+		p.stmtSeq(b)
+		p.root.BeginSeq = b.seq
+	}
+	if p.await(scanner.Close, scanner.Delimiter, scanner.Separator) {
+		p.next()
+		b := &blockBuilder{}
+		b.scope = scopeLevel{varScope: p.root.VarDecl, constScope: p.root.ConstDecl}
+		p.stmtSeq(b)
+		p.root.CloseSeq = b.seq
+	}
+	//p.run(scanner.End)
 	p.expect(scanner.End, "no END", scanner.Delimiter, scanner.Separator)
 	p.next()
 	p.expect(scanner.Ident, "module name expected", scanner.Separator)
-	if p.ident() != p.t.root.ModName {
+	if p.ident() != p.root.Name {
 		p.sc.Mark("module name does not match")
 	}
 	p.next()
 	p.expect(scanner.Period, "end of module expected")
-	ret = p.t.root
+	ret = p.root
 	return
 }
 
