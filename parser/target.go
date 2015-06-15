@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
 )
 
@@ -31,11 +30,19 @@ func (e *exprBuilder) factor(expr ir.Expression) {
 	e.stack = append(e.stack, expr)
 }
 
+func (e *exprBuilder) quantum(expr ir.Expression) {
+	e.stack = append(e.stack, expr)
+}
+
+func (e *exprBuilder) product(expr ir.Expression) {
+	e.stack = append(e.stack, expr)
+}
+
 func (e *exprBuilder) as(id string) ir.Expression {
 	if c := e.scope.constScope[id]; c != nil {
 		return &ir.NamedConstExpr{Named: c}
 	} else if v := e.scope.varScope[id]; v != nil {
-		halt.As(100)
+		return &ir.VariableExpr{Obj: v}
 	}
 	panic(0)
 }

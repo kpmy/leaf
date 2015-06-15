@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/kpmy/ypk/assert"
 	"leaf/ir"
+	"leaf/ir/operation"
 	"leaf/ir/types"
 	"leaf/scanner"
 	"strconv"
@@ -147,10 +148,43 @@ func (p *pr) factor(b *exprBuilder) {
 
 func (p *pr) product(b *exprBuilder) {
 	p.factor(b)
+	for stop := false; !stop; {
+		p.pass(scanner.Separator)
+		switch p.sym.Code {
+		case scanner.Times, scanner.Div, scanner.Mod:
+			op := p.sym.Code
+			p.next()
+			p.pass(scanner.Separator)
+			p.factor(b)
+			b.product(&ir.Dyadic{Op: operation.Map(op)})
+		default:
+			stop = true
+		}
+	}
 }
 
 func (p *pr) quantum(b *exprBuilder) {
+	if p.is(scanner.Minus) {
+		p.next()
+		b.quantum(&ir.Monadic{Op: operation.Neg})
+	} else if p.is(scanner.Plus) {
+		p.next()
+	}
+	p.pass(scanner.Separator)
 	p.product(b)
+	for stop := false; !stop; {
+		p.pass(scanner.Separator)
+		switch p.sym.Code {
+		case scanner.Plus, scanner.Minus:
+			op := p.sym.Code
+			p.next()
+			p.pass(scanner.Separator)
+			p.product(b)
+			b.quantum(&ir.Dyadic{Op: operation.Map(op)})
+		default:
+			stop = true
+		}
+	}
 }
 
 func (p *pr) expression(b *exprBuilder) {
@@ -202,23 +236,36 @@ func (p *pr) typ(cons func(t types.Type)) {
 	}
 }
 
+// VarDecl := "VAR" [ident{","ident}_Type";"]
 func (p *pr) varDecl() {
 	assert.For(p.sym.Code == scanner.Var, 20, "VAR block expected")
 	p.next()
 	for {
 		if p.await(scanner.Ident, scanner.Delimiter, scanner.Separator) {
-			obj := &ir.Variable{}
-			id := p.ident()
-			if p.root.ConstDecl[id] != nil {
-				p.sc.Mark("identifier already exists")
+			var vl []*ir.Variable
+			for {
+				obj := &ir.Variable{}
+				id := p.ident()
+				if p.root.ConstDecl[id] != nil {
+					p.sc.Mark("identifier already exists")
+				}
+				obj.Name = id
+				vl = append(vl, obj)
+				p.root.VarDecl[obj.Name] = obj
+				p.next()
+				if p.await(scanner.Comma, scanner.Separator) {
+					p.next()
+					p.pass(scanner.Separator)
+				} else {
+					break
+				}
 			}
-			obj.Name = id
-			p.next()
 			p.expect(scanner.Ident, "type identifier expected", scanner.Separator)
 			p.typ(func(t types.Type) {
-				obj.Type = t
+				for _, obj := range vl {
+					obj.Type = t
+				}
 			})
-			p.root.VarDecl[obj.Name] = obj
 		} else {
 			break
 		}
@@ -244,6 +291,7 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 				stmt.Object = obj
 				stmt.Expr = expr
 				b.put(stmt)
+				p.expect(scanner.Delimiter, "delimiter expected", scanner.Separator)
 			} else {
 				p.sc.Mark("illegal statement")
 			}

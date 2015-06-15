@@ -1,6 +1,7 @@
 package ir
 
 import (
+	"leaf/ir/operation"
 	"leaf/ir/types"
 )
 
@@ -55,3 +56,21 @@ type NamedConstExpr struct {
 }
 
 func (e *NamedConstExpr) Eval() {}
+
+type VariableExpr struct {
+	Obj *Variable
+}
+
+func (v *VariableExpr) Eval() {}
+
+type Monadic struct {
+	Op operation.Operation
+}
+
+func (m *Monadic) Eval() {}
+
+type Dyadic struct {
+	Op operation.Operation
+}
+
+func (d *Dyadic) Eval() {}
