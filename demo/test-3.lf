@@ -1,0 +1,12 @@
+MODULE Test3
+	VAR a, b, c BOOLEAN
+	VAR p, q, r TRILEAN
+BEGIN
+	a:=TRUE
+	b:=FALSE
+	c:=~a & b | c | TRUE
+CLOSE
+	p:=TRUE
+	q:=FALSE
+	r:=NIL
+END Test3.

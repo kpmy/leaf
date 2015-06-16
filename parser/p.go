@@ -17,7 +17,7 @@ type Type struct {
 var entries map[string]interface{}
 
 func init() {
-	entries = map[string]interface{}{"INTEGER": Type{typ: types.INTEGER}}
+	entries = map[string]interface{}{"INTEGER": Type{typ: types.INTEGER}, "BOOLEAN": Type{typ: types.BOOLEAN}, "TRILEAN": Type{typ: types.TRILEAN}}
 }
 
 type Parser interface {
@@ -137,9 +137,32 @@ func (p *pr) factor(b *exprBuilder) {
 		val.Type, val.Value = p.number()
 		b.factor(val)
 		p.next()
+	case scanner.True, scanner.False:
+		val := &ir.ConstExpr{}
+		val.Type = types.BOOLEAN
+		val.Value = (p.sym.Code == scanner.True)
+		b.factor(val)
+		p.next()
+	case scanner.Nil:
+		val := &ir.ConstExpr{}
+		val.Type = types.TRILEAN
+		b.factor(val)
+		p.next()
+	case scanner.Not:
+		p.next()
+		p.factor(b)
+		p.pass(scanner.Separator)
+		b.factor(&ir.Monadic{Op: operation.Not})
 	case scanner.Ident:
 		e := b.as(p.ident())
 		b.factor(e)
+		p.next()
+	case scanner.Lparen:
+		p.next()
+		expr := &exprBuilder{scope: b.scope}
+		p.expression(expr)
+		b.factor(expr)
+		p.expect(scanner.Rparen, ") expected", scanner.Separator)
 		p.next()
 	default:
 		p.sc.Mark("not implemented for ", p.sym)
@@ -151,7 +174,7 @@ func (p *pr) product(b *exprBuilder) {
 	for stop := false; !stop; {
 		p.pass(scanner.Separator)
 		switch p.sym.Code {
-		case scanner.Times, scanner.Div, scanner.Mod:
+		case scanner.Times, scanner.Div, scanner.Mod, scanner.And:
 			op := p.sym.Code
 			p.next()
 			p.pass(scanner.Separator)
@@ -175,7 +198,7 @@ func (p *pr) quantum(b *exprBuilder) {
 	for stop := false; !stop; {
 		p.pass(scanner.Separator)
 		switch p.sym.Code {
-		case scanner.Plus, scanner.Minus:
+		case scanner.Plus, scanner.Minus, scanner.Or:
 			op := p.sym.Code
 			p.next()
 			p.pass(scanner.Separator)
@@ -189,6 +212,15 @@ func (p *pr) quantum(b *exprBuilder) {
 
 func (p *pr) expression(b *exprBuilder) {
 	p.quantum(b)
+	p.pass(scanner.Separator)
+	switch p.sym.Code {
+	case scanner.Equal, scanner.Nequal, scanner.Geq, scanner.Leq, scanner.Gtr, scanner.Lss:
+		op := p.sym.Code
+		p.next()
+		p.pass(scanner.Separator)
+		p.quantum(b)
+		b.expr(&ir.Dyadic{Op: operation.Map(op)})
+	}
 }
 
 func (p *pr) constDecl() {
@@ -225,7 +257,7 @@ func (p *pr) typ(cons func(t types.Type)) {
 	id := p.ident()
 	if t, ok := entries[id].(Type); ok {
 		switch t.typ {
-		case types.INTEGER:
+		case types.INTEGER, types.BOOLEAN, types.TRILEAN:
 			p.next()
 			cons(t.typ)
 		default:

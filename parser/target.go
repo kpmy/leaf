@@ -38,6 +38,10 @@ func (e *exprBuilder) product(expr ir.Expression) {
 	e.stack = append(e.stack, expr)
 }
 
+func (e *exprBuilder) expr(expr ir.Expression) {
+	e.stack = append(e.stack, expr)
+}
+
 func (e *exprBuilder) as(id string) ir.Expression {
 	if c := e.scope.constScope[id]; c != nil {
 		return &ir.NamedConstExpr{Named: c}

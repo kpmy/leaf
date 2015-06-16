@@ -16,6 +16,17 @@ const (
 	Quot
 	Div
 	Mod
+
+	And
+	Or
+	Not
+
+	Eq
+	Neq
+	Gtr
+	Geq
+	Lss
+	Leq
 )
 
 var ops map[scanner.Symbol]Operation
@@ -26,7 +37,16 @@ func init() {
 		scanner.Times:  Prod,
 		scanner.Divide: Quot,
 		scanner.Div:    Div,
-		scanner.Mod:    Mod}
+		scanner.Mod:    Mod,
+		scanner.And:    And,
+		scanner.Or:     Or,
+		scanner.Not:    Not,
+		scanner.Equal:  Eq,
+		scanner.Geq:    Geq,
+		scanner.Gtr:    Gtr,
+		scanner.Nequal: Neq,
+		scanner.Lss:    Lss,
+		scanner.Leq:    Leq}
 }
 
 func Map(sym scanner.Symbol) (ret Operation) {
