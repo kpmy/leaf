@@ -1,4 +1,4 @@
-MODULE Test2
+MODULE Test3
 VAR
 	i, j INTEGER
 	k INTEGER
@@ -12,4 +12,4 @@ BEGIN
 	k := i * 2
 	j := k  // 2 + 1 - 89 * 4 * 4
 	i := (i + 5) // (j % 4)
-END Test2.
+END Test3.

@@ -1,4 +1,4 @@
-MODULE Test4
+MODULE Test5
 
 VAR
 	i, j INTEGER
@@ -11,4 +11,4 @@ BEGIN
 	ok:= i > 4
 	ok := ((i + 4) >= (j+49)) & (i <= 144)
 	ok := ok & (i#j) | (i = j)
-END Test4.
+END Test5.

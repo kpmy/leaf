@@ -1,4 +1,4 @@
-MODULE Test1
+MODULE Test2
 CONST
 	I = 4
 VAR
@@ -7,4 +7,4 @@ BEGIN
 	i:=1
 CLOSE
 	i:=I
-END Test1.
+END Test2.

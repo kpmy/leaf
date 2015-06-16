@@ -12,6 +12,8 @@ import (
 
 type Symbol int
 
+type Foreign int
+
 const (
 	Null = iota
 	Period
@@ -209,6 +211,7 @@ func (s Symbol) String() (ret string) {
 type Sym struct {
 	Code Symbol
 	Str  string
+	User Foreign
 }
 
 func (v Sym) String() (ret string) {
@@ -232,6 +235,7 @@ func (v Sym) String() (ret string) {
 type Scanner interface {
 	Get() Sym
 	Error() error
+	Register(Foreign, string)
 	Mark(...interface{})
 }
 
@@ -246,7 +250,15 @@ type sc struct {
 	err error
 	pos int
 
-	ch rune
+	ch         rune
+	evil       *bool //evil mode without capitalized keywords, true if "module" found first
+	foreignTab map[string]Foreign
+}
+
+func (s *sc) Register(f Foreign, name string) {
+	assert.For(name != "", 20)
+	assert.For(name == strings.ToUpper(name), 21, "upper case idents only")
+	s.foreignTab[name] = f
 }
 
 func (s *sc) Error() error { return s.err }
@@ -278,7 +290,35 @@ func (s *sc) ident() (sym Sym) {
 	}
 	if s.err == nil {
 		sym.Str = string(buf)
-		if sym.Code = keyTab[sym.Str]; sym.Code == Null {
+		key := sym.Str
+		if s.evil == nil {
+			x := true
+			s.evil = &x
+			if keyTab[key] == Null && keyTab[strings.ToUpper(key)] == Module {
+				*s.evil = true
+			} else if keyTab[key] == Module {
+				*s.evil = false
+			}
+		}
+		set := func() {
+			if sym.Code = keyTab[key]; sym.Code == Null {
+				sym.Code = Ident
+				sym.User = s.foreignTab[key]
+			}
+		}
+		if s.evil != nil {
+			if *s.evil {
+				key = strings.ToUpper(sym.Str)
+				if key != sym.Str {
+					set()
+				} else {
+					sym.Code = Ident
+				}
+			} else {
+				set()
+			}
+
+		} else {
 			sym.Code = Ident
 		}
 	} else {
@@ -486,5 +526,6 @@ func (s *sc) Get() (sym Sym) {
 
 func (s *sc) init() {
 	s.pos = 0
+	s.foreignTab = make(map[string]Foreign)
 	s.next()
 }

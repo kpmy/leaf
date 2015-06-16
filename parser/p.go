@@ -14,10 +14,24 @@ type Type struct {
 	typ types.Type
 }
 
-var entries map[string]interface{}
+var entries map[scanner.Foreign]interface{}
+var idents map[string]scanner.Foreign
+
+const (
+	none scanner.Foreign = iota
+	integer
+	boolean
+	trilean
+)
 
 func init() {
-	entries = map[string]interface{}{"INTEGER": Type{typ: types.INTEGER}, "BOOLEAN": Type{typ: types.BOOLEAN}, "TRILEAN": Type{typ: types.TRILEAN}}
+	idents = map[string]scanner.Foreign{"INTEGER": integer,
+		"BOOLEAN": boolean,
+		"TRILEAN": trilean}
+
+	entries = map[scanner.Foreign]interface{}{integer: Type{typ: types.INTEGER},
+		boolean: Type{typ: types.BOOLEAN},
+		trilean: Type{typ: types.TRILEAN}}
 }
 
 type Parser interface {
@@ -55,6 +69,9 @@ func (p *pr) next() scanner.Sym {
 }
 
 func (p *pr) init() {
+	for k, v := range idents {
+		p.sc.Register(v, k)
+	}
 	p.next()
 }
 
@@ -255,16 +272,16 @@ func (p *pr) constDecl() {
 func (p *pr) typ(cons func(t types.Type)) {
 	assert.For(p.sym.Code == scanner.Ident, 20, "type identifier expected here")
 	id := p.ident()
-	if t, ok := entries[id].(Type); ok {
+	if t, ok := entries[p.sym.User].(Type); ok {
 		switch t.typ {
 		case types.INTEGER, types.BOOLEAN, types.TRILEAN:
 			p.next()
 			cons(t.typ)
 		default:
-			p.sc.Mark("unexpected type")
+			p.sc.Mark("unexpected type ", id)
 		}
 	} else {
-		p.sc.Mark("unknown type")
+		p.sc.Mark("unknown type ", id)
 	}
 }
 

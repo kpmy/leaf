@@ -44,8 +44,8 @@ func TestScanner(t *testing.T) {
 
 func TestParser(t *testing.T) {
 	var err error
-	for i := 0; err == nil; i++ {
-		name := "test" + "-" + strconv.Itoa(i) + ".lf"
+	for i := int64(0); err == nil; i++ {
+		name := "Test" + strconv.FormatInt(i, 16) + ".lf"
 		if _, err = os.Stat(name); err == nil {
 			if f, err := os.Open(name); err == nil {
 				defer f.Close()
