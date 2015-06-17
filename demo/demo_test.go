@@ -55,7 +55,25 @@ func TestParser(t *testing.T) {
 				ir, _ := p.Module()
 				if t, err := os.Create(mname + ".li"); err == nil {
 					defer t.Close()
-					target.Do(ir, t)
+					target.New(ir, t)
+				}
+			}
+		}
+	}
+}
+
+func TestAST(t *testing.T) {
+	var err error
+	for i := int64(0); err == nil; i++ {
+		mname := "Test" + strconv.FormatInt(i, 16)
+		sname := mname + ".li"
+		if _, err = os.Stat(sname); err == nil {
+			if f, err := os.Open(sname); err == nil {
+				defer f.Close()
+				ir := target.Old(f)
+				if t, err := os.Create(mname + ".lio"); err == nil {
+					defer t.Close()
+					target.New(ir, t)
 				}
 			}
 		}

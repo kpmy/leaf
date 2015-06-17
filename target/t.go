@@ -7,9 +7,10 @@ import (
 	"leaf/ir"
 )
 
-var Code func(*ir.Module, io.Writer)
+var Ext func(*ir.Module, io.Writer)
+var Int func(io.Reader) *ir.Module
 
-func Do(mod *ir.Module, tg io.Writer) {
+func New(mod *ir.Module, tg io.Writer) {
 	fmt.Println("MODULE", mod.Name)
 	for k, v := range mod.ConstDecl {
 		fmt.Println("CONST", k, v)
@@ -26,6 +27,11 @@ func Do(mod *ir.Module, tg io.Writer) {
 		fmt.Println(v)
 	}
 	fmt.Println("END", mod.Name)
-	assert.For(Code != nil, 20)
-	Code(mod, tg)
+	assert.For(Ext != nil, 20)
+	Ext(mod, tg)
+}
+
+func Old(sc io.Reader) *ir.Module {
+	assert.For(Int != nil, 20)
+	return Int(sc)
 }

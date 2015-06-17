@@ -13,6 +13,11 @@ type Module struct {
 	CloseSeq  []Statement
 }
 
+func (m *Module) Init() {
+	m.ConstDecl = make(map[string]*Const)
+	m.VarDecl = make(map[string]*Variable)
+}
+
 type Const struct {
 	Name string
 	Expr Expression

@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
@@ -14,8 +13,7 @@ type target struct {
 
 func (t *target) init(mod string) {
 	t.root = &ir.Module{Name: mod}
-	t.root.ConstDecl = make(map[string]*ir.Const)
-	t.root.VarDecl = make(map[string]*ir.Variable)
+	t.root.Init()
 }
 
 type scopeLevel struct {
@@ -68,16 +66,18 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 		stack = append(stack, v)
 		stack = append(stack, tmp...)
 	}
-	fmt.Print("(")
-	for _, v := range stack {
-		if _, ok := v.e.(*exprBuilder); ok {
-			fmt.Print(v.priority, " ")
-			v.e.(ir.EvaluatedExpression).Eval()
-		} else {
-			fmt.Print(v.priority, reflect.TypeOf(v.e), " ")
+	/*
+		fmt.Print("(")
+		for _, v := range stack {
+			if _, ok := v.e.(*exprBuilder); ok {
+				fmt.Print(v.priority, " ")
+				v.e.(ir.EvaluatedExpression).Eval()
+			} else {
+				fmt.Print(v.priority, reflect.TypeOf(v.e), " ")
+			}
 		}
-	}
-	fmt.Print(")")
+		fmt.Print(")")
+	*/
 	var trav func(*exprItem, []*exprItem) []*exprItem
 	bypass := func(expr *exprItem) (ret *exprItem, skip bool) {
 		ret = expr
