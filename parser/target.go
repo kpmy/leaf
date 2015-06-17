@@ -1,7 +1,11 @@
 package parser
 
 import (
+	"fmt"
+	"github.com/kpmy/ypk/assert"
+	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
+	"reflect"
 )
 
 type target struct {
@@ -19,27 +23,128 @@ type scopeLevel struct {
 	constScope map[string]*ir.Const
 }
 
-type exprBuilder struct {
-	scope scopeLevel
-	stack []ir.Expression
+type level int
+
+const (
+	low level = iota
+	normal
+	high
+	highest
+)
+
+type exprItem struct {
+	e        ir.Expression
+	priority level
 }
 
-func (e *exprBuilder) Eval() {}
+type exprBuilder struct {
+	scope scopeLevel
+	stack []*exprItem
+}
+
+func (e *exprBuilder) Self() {}
+
+func (e *exprBuilder) Eval() (ret ir.Expression) {
+	assert.For(len(e.stack) > 0, 20)
+	last := func(s []*exprItem) []*exprItem {
+		if len(s) > 1 {
+			return s[1:]
+		}
+		return nil
+	}
+	first := func(s []*exprItem) (ret *exprItem, tail []*exprItem) {
+		if len(s) > 0 {
+			ret = s[0]
+			tail = s
+		}
+		tail = last(tail)
+		return
+	}
+	//invert stack
+	var stack []*exprItem
+	for _, v := range e.stack {
+		tmp := stack
+		stack = nil
+		stack = append(stack, v)
+		stack = append(stack, tmp...)
+	}
+	fmt.Print("(")
+	for _, v := range stack {
+		if _, ok := v.e.(*exprBuilder); ok {
+			fmt.Print(v.priority, " ")
+			v.e.(ir.EvaluatedExpression).Eval()
+		} else {
+			fmt.Print(v.priority, reflect.TypeOf(v.e), " ")
+		}
+	}
+	fmt.Print(")")
+	var trav func(*exprItem, []*exprItem) []*exprItem
+	bypass := func(expr *exprItem) (ret *exprItem, skip bool) {
+		ret = expr
+		if b, ok := ret.e.(*exprBuilder); ok {
+			skip = true
+			ret = &exprItem{e: b.Eval(), priority: ret.priority}
+		}
+		return
+	}
+	trav = func(r *exprItem, stack []*exprItem) (ret []*exprItem) {
+		switch root := r.e.(type) {
+		case *ir.ConstExpr, *ir.NamedConstExpr, *ir.VariableExpr: //do nothing
+			ret = stack
+		case *ir.Monadic:
+			expr, tail := first(stack)
+			assert.For(expr != nil, 40)
+			ok := false
+			expr, ok = bypass(expr)
+			if !ok {
+				ret = trav(expr, tail)
+			}
+			root.Operand = expr.e
+		case *ir.Dyadic:
+			ret = stack
+			ok := false
+
+			right, ret := first(ret)
+			assert.For(right != nil, 40)
+			right, ok = bypass(right)
+			if !ok {
+				ret = trav(right, ret)
+			}
+			root.Right = right.e
+
+			left, ret := first(ret)
+			assert.For(left != nil, 40)
+			left, ok = bypass(left)
+			if !ok {
+				ret = trav(left, ret)
+			}
+			root.Left = left.e
+		case nil: //do nothing
+		default:
+			halt.As(100, "unsupported type ", reflect.TypeOf(root))
+		}
+		return
+	}
+	root, tail := first(stack)
+	trav(root, tail)
+	ret = root.e
+	return
+}
 
 func (e *exprBuilder) factor(expr ir.Expression) {
-	e.stack = append(e.stack, expr)
+	e.stack = append(e.stack, &exprItem{e: expr, priority: highest})
 }
 
 func (e *exprBuilder) quantum(expr ir.Expression) {
-	e.stack = append(e.stack, expr)
+	e.stack = append(e.stack, &exprItem{e: expr, priority: normal})
 }
 
 func (e *exprBuilder) product(expr ir.Expression) {
-	e.stack = append(e.stack, expr)
+	e.stack = append(e.stack, &exprItem{e: expr, priority: high})
 }
 
 func (e *exprBuilder) expr(expr ir.Expression) {
-	e.stack = append(e.stack, expr)
+	e.stack = append(e.stack, &exprItem{e: expr, priority: low})
 }
 
 func (e *exprBuilder) as(id string) ir.Expression {

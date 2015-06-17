@@ -24,7 +24,12 @@ type Variable struct {
 }
 
 type Expression interface {
-	Eval()
+	Self()
+}
+
+type EvaluatedExpression interface {
+	Expression
+	Eval() Expression
 }
 
 type Statement interface {
@@ -35,14 +40,14 @@ type AtomExpr struct {
 	Value string
 }
 
-func (a *AtomExpr) Eval() {}
+func (a *AtomExpr) Self() {}
 
 type ConstExpr struct {
 	Type  types.Type
 	Value interface{}
 }
 
-func (c *ConstExpr) Eval() {}
+func (c *ConstExpr) Self() {}
 
 type AssignStmt struct {
 	Object *Variable
@@ -55,22 +60,24 @@ type NamedConstExpr struct {
 	Named *Const
 }
 
-func (e *NamedConstExpr) Eval() {}
+func (e *NamedConstExpr) Self() {}
 
 type VariableExpr struct {
 	Obj *Variable
 }
 
-func (v *VariableExpr) Eval() {}
+func (v *VariableExpr) Self() {}
 
 type Monadic struct {
-	Op operation.Operation
+	Op      operation.Operation
+	Operand Expression
 }
 
-func (m *Monadic) Eval() {}
+func (m *Monadic) Self() {}
 
 type Dyadic struct {
-	Op operation.Operation
+	Op          operation.Operation
+	Left, Right Expression
 }
 
-func (d *Dyadic) Eval() {}
+func (d *Dyadic) Self() {}

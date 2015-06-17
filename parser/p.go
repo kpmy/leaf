@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"github.com/kpmy/ypk/assert"
 	"leaf/ir"
 	"leaf/ir/operation"
@@ -64,7 +63,7 @@ func (p *pr) next() scanner.Sym {
 	}
 	p.sym = p.sc.Get()
 	//	fmt.Print(" next ")
-	fmt.Println("`" + fmt.Sprint(p.sym) + "`")
+	//	fmt.Println("`" + fmt.Sprint(p.sym) + "`")
 	return p.sym
 }
 
@@ -206,12 +205,17 @@ func (p *pr) product(b *exprBuilder) {
 func (p *pr) quantum(b *exprBuilder) {
 	if p.is(scanner.Minus) {
 		p.next()
-		b.quantum(&ir.Monadic{Op: operation.Neg})
+		p.pass(scanner.Separator)
+		p.product(b)
+		b.product(&ir.Monadic{Op: operation.Neg})
 	} else if p.is(scanner.Plus) {
 		p.next()
+		p.pass(scanner.Separator)
+		p.product(b)
+	} else {
+		p.pass(scanner.Separator)
+		p.product(b)
 	}
-	p.pass(scanner.Separator)
-	p.product(b)
 	for stop := false; !stop; {
 		p.pass(scanner.Separator)
 		switch p.sym.Code {

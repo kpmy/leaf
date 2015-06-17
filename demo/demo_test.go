@@ -6,6 +6,7 @@ import (
 	"leaf/parser"
 	"leaf/scanner"
 	"leaf/target"
+	_ "leaf/target/yt"
 	"log"
 	"os"
 	"strconv"
@@ -45,13 +46,17 @@ func TestScanner(t *testing.T) {
 func TestParser(t *testing.T) {
 	var err error
 	for i := int64(0); err == nil; i++ {
-		name := "Test" + strconv.FormatInt(i, 16) + ".lf"
-		if _, err = os.Stat(name); err == nil {
-			if f, err := os.Open(name); err == nil {
+		mname := "Test" + strconv.FormatInt(i, 16)
+		sname := mname + ".lf"
+		if _, err = os.Stat(sname); err == nil {
+			if f, err := os.Open(sname); err == nil {
 				defer f.Close()
 				p := parser.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)))
 				ir, _ := p.Module()
-				target.Do(ir)
+				if t, err := os.Create(mname + ".li"); err == nil {
+					defer t.Close()
+					target.Do(ir, t)
+				}
 			}
 		}
 	}

@@ -2,13 +2,14 @@ package target
 
 import (
 	"fmt"
-)
-
-import (
+	"github.com/kpmy/ypk/assert"
+	"io"
 	"leaf/ir"
 )
 
-func Do(mod *ir.Module) {
+var Code func(*ir.Module, io.Writer)
+
+func Do(mod *ir.Module, tg io.Writer) {
 	fmt.Println("MODULE", mod.Name)
 	for k, v := range mod.ConstDecl {
 		fmt.Println("CONST", k, v)
@@ -25,4 +26,6 @@ func Do(mod *ir.Module) {
 		fmt.Println(v)
 	}
 	fmt.Println("END", mod.Name)
+	assert.For(Code != nil, 20)
+	Code(mod, tg)
 }
