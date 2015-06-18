@@ -6,6 +6,8 @@ import (
 	"github.com/kpmy/ypk/assert"
 	"leaf/parser"
 	"leaf/scanner"
+	"leaf/target"
+	_ "leaf/target/yt"
 	"log"
 	"os"
 )
@@ -13,7 +15,7 @@ import (
 var name string
 
 func init() {
-	flag.StringVar(&name, "i", "simple.lf", "-i name.ext")
+	flag.StringVar(&name, "i", "Simple0", "-i name.ext")
 }
 
 func main() {
@@ -21,10 +23,15 @@ func main() {
 	flag.Parse()
 	assert.For(name != "", 20)
 	log.Println(name)
-	if f, err := os.Open(name); err == nil {
+	sname := name + ".lf"
+	if f, err := os.Open(sname); err == nil {
 		defer f.Close()
 		p := parser.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)))
-		p.Module()
+		ir, _ := p.Module()
+		if t, err := os.Create(name + ".li"); err == nil {
+			defer t.Close()
+			target.New(ir, t)
+		}
 	} else {
 		log.Fatal(err)
 	}
