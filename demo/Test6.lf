@@ -1,0 +1,6 @@
+MODULE Test6
+	CONST
+		num = count -1
+		len = 5
+		count  = len // 2
+END Test6.

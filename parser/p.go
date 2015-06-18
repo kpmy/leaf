@@ -258,7 +258,7 @@ func (p *pr) constDecl() {
 			if p.await(scanner.Equal, scanner.Separator) { //const expression
 				p.next()
 				p.pass(scanner.Separator)
-				obj.Expr = &exprBuilder{}
+				obj.Expr = &exprBuilder{scope: scopeLevel{constScope: p.root.ConstDecl}}
 				p.expression(obj.Expr.(*exprBuilder))
 			} else if p.is(scanner.Delimiter) { //ATOM
 				obj.Expr = &ir.AtomExpr{Value: id}

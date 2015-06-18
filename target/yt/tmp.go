@@ -6,12 +6,17 @@ import (
 )
 
 type dumbExpr struct {
-	e ir.Expression
+	e     ir.Expression
+	later func() ir.Expression
 }
 
 func (d *dumbExpr) Self() {}
 func (d *dumbExpr) Eval() ir.Expression {
-	return d.e
+	if d.e != nil {
+		return d.e
+	} else {
+		return d.later()
+	}
 }
 
 func treatExpr(_m interface{}) (ret *Expression) {

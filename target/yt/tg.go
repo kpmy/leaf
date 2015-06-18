@@ -16,7 +16,7 @@ import (
 
 type Expression struct {
 	Type ExprType
-	Leaf map[string]interface{}
+	Leaf map[string]interface{} `yaml:"leaf,omitempty"`
 }
 
 type Var struct {
@@ -30,8 +30,8 @@ type Const struct {
 }
 
 type Statement struct {
-	Type StmtType
-	Leaf map[string]interface{}
+	Type StmtType               `yaml:"statement"`
+	Leaf map[string]interface{} `yaml:"leaf,omitempty"`
 }
 
 type Module struct {
@@ -58,6 +58,8 @@ func (m *Module) this(item interface{}) (ret string) {
 	return
 }
 
+type futureThat func() interface{}
+
 func (m *Module) that(id string, i ...interface{}) (ret interface{}) {
 	find := func(s string) (ret interface{}) {
 		for k, v := range m.id {
@@ -68,8 +70,18 @@ func (m *Module) that(id string, i ...interface{}) (ret interface{}) {
 		return
 	}
 	if x := find(id); x == nil {
-		assert.For(len(i) == 1, 20)
-		m.id[i[0]] = id
+		if len(i) == 1 {
+			m.id[i[0]] = id
+		} else {
+			ret = func() interface{} {
+				if x := find(id); x != nil {
+					return x
+				} else {
+					halt.As(100, "undefined object ", id)
+				}
+				return nil
+			}
+		}
 	} else {
 		ret = x
 	}
@@ -91,8 +103,24 @@ func internalize(m *Module) (ret *ir.Module) {
 		case NamedConstant:
 			this := &ir.NamedConstExpr{}
 			id := e.Leaf["object"].(string)
-			this.Named = m.that(id).(*ir.Const)
-			d.e = this
+			_n := m.that(id)
+			if n, ok := _n.(*ir.Const); ok {
+				this.Named = n
+				d.e = this
+			} else if _n != nil {
+				d.later = func() ir.Expression {
+					fn := _n.(func() interface{})
+					if x, ok := fn().(*ir.Const); ok {
+						this.Named = x
+						return this
+					} else {
+						halt.As(101, "wrong future expr")
+					}
+					panic(0)
+				}
+			} else {
+				halt.As(100, "unexpected nil")
+			}
 		case Variable:
 			this := &ir.VariableExpr{}
 			id := e.Leaf["object"].(string)
@@ -110,7 +138,7 @@ func internalize(m *Module) (ret *ir.Module) {
 		default:
 			halt.As(100, "unknown type ", e.Type)
 		}
-		assert.For(d.e != nil, 60)
+		assert.For(d.e != nil || d.later != nil, 60)
 		return d
 	}
 
@@ -183,7 +211,7 @@ func externalize(mod *ir.Module) (ret *Module) {
 			ex.Leaf["left"] = expr(e.Left)
 			ex.Leaf["right"] = expr(e.Right)
 		case *dumbExpr:
-			return expr(e.e)
+			return expr(e.Eval())
 		default:
 			halt.As(100, "unexpected ", reflect.TypeOf(e))
 		}

@@ -35,6 +35,22 @@ type exprItem struct {
 	priority level
 }
 
+type forwardNamedConstExpr struct {
+	name  string
+	scope map[string]*ir.Const
+}
+
+func (e *forwardNamedConstExpr) Self() {}
+
+func (e *forwardNamedConstExpr) Eval() (ret ir.Expression) {
+	if c := e.scope[e.name]; c != nil {
+		return &ir.NamedConstExpr{Named: c}
+	} else {
+		halt.As(100, "undefined constant ", e.name)
+	}
+	panic(0)
+}
+
 type exprBuilder struct {
 	scope scopeLevel
 	stack []*exprItem
@@ -84,6 +100,9 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 		if b, ok := ret.e.(*exprBuilder); ok {
 			skip = true
 			ret = &exprItem{e: b.Eval(), priority: ret.priority}
+		} else if f, ok := ret.e.(*forwardNamedConstExpr); ok {
+			skip = true
+			ret = &exprItem{e: f.Eval(), priority: ret.priority}
 		}
 		return
 	}
@@ -148,10 +167,18 @@ func (e *exprBuilder) expr(expr ir.Expression) {
 }
 
 func (e *exprBuilder) as(id string) ir.Expression {
-	if c := e.scope.constScope[id]; c != nil {
-		return &ir.NamedConstExpr{Named: c}
-	} else if v := e.scope.varScope[id]; v != nil {
-		return &ir.VariableExpr{Obj: v}
+	if e.scope.constScope != nil && e.scope.varScope != nil {
+		if c := e.scope.constScope[id]; c != nil {
+			return &ir.NamedConstExpr{Named: c}
+		} else if v := e.scope.varScope[id]; v != nil {
+			return &ir.VariableExpr{Obj: v}
+		}
+	} else if e.scope.constScope != nil && e.scope.varScope == nil {
+		if c := e.scope.constScope[id]; c != nil {
+			return &ir.NamedConstExpr{Named: c}
+		} else {
+			return &forwardNamedConstExpr{name: id, scope: e.scope.constScope}
+		}
 	}
 	panic(0)
 }
