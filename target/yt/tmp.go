@@ -34,9 +34,11 @@ func treatExpr(_m interface{}) (ret *Expression) {
 		ret.Leaf["object"] = leaf["object"]
 	case Monadic:
 		ret.Leaf["operand"] = leaf["operand"]
+		ret.Leaf["operation"] = leaf["operation"]
 	case Dyadic:
 		ret.Leaf["left"] = leaf["left"]
 		ret.Leaf["right"] = leaf["right"]
+		ret.Leaf["operation"] = leaf["operation"]
 	default:
 		halt.As(100, "unexpected ", _m, " ", ret.Type)
 	}

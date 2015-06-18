@@ -3,6 +3,7 @@ package operation
 import (
 	"github.com/kpmy/ypk/assert"
 	"leaf/scanner"
+	"strconv"
 )
 
 type Operation int
@@ -31,6 +32,44 @@ const (
 
 var ops map[scanner.Symbol]Operation
 
+func (o Operation) String() string {
+	switch o {
+	case Neg:
+		return "-"
+	case Sum:
+		return "+"
+	case Diff:
+		return "-"
+	case Prod:
+		return "*"
+	case Quot:
+		return "/"
+	case Div:
+		return "//"
+	case Mod:
+		return "%"
+	case And:
+		return "&"
+	case Or:
+		return "|"
+	case Not:
+		return "~"
+	case Eq:
+		return "="
+	case Neq:
+		return "#"
+	case Gtr:
+		return ">"
+	case Geq:
+		return ">="
+	case Lss:
+		return "<"
+	case Leq:
+		return "<="
+	default:
+		return strconv.Itoa(int(o))
+	}
+}
 func init() {
 	ops = map[scanner.Symbol]Operation{scanner.Plus: Sum,
 		scanner.Minus:  Diff,

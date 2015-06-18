@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"flag"
 	"github.com/kpmy/ypk/assert"
+	"leaf/li"
+	_ "leaf/li/trav"
 	"leaf/parser"
 	"leaf/scanner"
 	"leaf/target"
@@ -32,6 +34,7 @@ func main() {
 			defer t.Close()
 			target.New(ir, t)
 		}
+		li.Do(ir)
 	} else {
 		log.Fatal(err)
 	}

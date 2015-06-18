@@ -9,6 +9,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"io"
 	"leaf/ir"
+	"leaf/ir/operation"
 	"leaf/ir/types"
 	"leaf/target"
 	"reflect"
@@ -129,11 +130,13 @@ func internalize(m *Module) (ret *ir.Module) {
 		case Monadic:
 			this := &ir.Monadic{}
 			this.Operand = expr(treatExpr(e.Leaf["operand"]))
+			this.Op = operation.Operation(e.Leaf["operation"].(int))
 			d.e = this
 		case Dyadic:
 			this := &ir.Dyadic{}
 			this.Left = expr(treatExpr(e.Leaf["left"]))
 			this.Right = expr(treatExpr(e.Leaf["right"]))
+			this.Op = operation.Operation(e.Leaf["operation"].(int))
 			d.e = this
 		default:
 			halt.As(100, "unknown type ", e.Type)
@@ -206,10 +209,12 @@ func externalize(mod *ir.Module) (ret *Module) {
 		case *ir.Monadic:
 			ex.Type = Monadic
 			ex.Leaf["operand"] = expr(e.Operand)
+			ex.Leaf["operation"] = int(e.Op)
 		case *ir.Dyadic:
 			ex.Type = Dyadic
 			ex.Leaf["left"] = expr(e.Left)
 			ex.Leaf["right"] = expr(e.Right)
+			ex.Leaf["operation"] = int(e.Op)
 		case *dumbExpr:
 			return expr(e.Eval())
 		default:
