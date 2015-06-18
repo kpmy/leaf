@@ -3,13 +3,13 @@ package trav
 import (
 	"container/list"
 	"fmt"
+	"github.com/kpmy/trigo"
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
 	"leaf/ir/operation"
 	"leaf/ir/types"
 	"leaf/li"
-	"leaf/tri"
 	"math/big"
 	"reflect"
 )
