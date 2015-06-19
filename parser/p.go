@@ -107,7 +107,7 @@ func (p *pr) await(sym scanner.Symbol, skip ...scanner.Symbol) bool {
 		return
 	}
 
-	for sym != p.sym.Code && skipped() {
+	for sym != p.sym.Code && skipped() && p.sc.Error() == nil {
 		p.next()
 	}
 	p.done = p.sym.Code != sym
@@ -124,7 +124,7 @@ func (p *pr) pass(skip ...scanner.Symbol) {
 		}
 		return
 	}
-	for skipped() {
+	for skipped() && p.sc.Error() == nil {
 		p.next()
 	}
 }
@@ -132,7 +132,7 @@ func (p *pr) pass(skip ...scanner.Symbol) {
 //run runs to the first sym through any other sym
 func (p *pr) run(sym scanner.Symbol) {
 	if p.sym.Code != sym {
-		for p.next().Code != sym {
+		for p.sc.Error() == nil && p.next().Code != sym {
 			if p.sc.Error() != nil {
 				p.mark("not found")
 				break
@@ -418,7 +418,13 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 }
 
 func (p *pr) Module() (ret *ir.Module, err error) {
-	p.expect(scanner.Module, "MODULE expected", scanner.Delimiter, scanner.Separator)
+	if !p.await(scanner.Module, scanner.Delimiter, scanner.Separator) {
+		if p.sc.Error() != nil {
+			return nil, p.sc.Error()
+		} else {
+			p.mark("MODULE expected")
+		}
+	}
 	p.next()
 	p.expect(scanner.Ident, "module name expected", scanner.Separator)
 	p.target.init(p.ident())

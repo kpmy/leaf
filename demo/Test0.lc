@@ -1,0 +1,134 @@
+(* evil no caps ;) *)
+module TestEvil
+var i integer
+end TestEvil.
+
+(* empty module *)
+MODULE TestEmpty
+END TestEmpty.
+
+(* assign statement *)
+MODULE TestAssign
+CONST I = 4
+VAR i INTEGER
+BEGIN
+	i:=1
+CLOSE
+	i:=I
+END TestAssign.
+
+(* arithmetics *)
+MODULE TestArithmetics
+VAR
+	i, j INTEGER
+	k INTEGER
+BEGIN
+	i := 0
+	j := i
+	k := -5
+	k := j + 1
+	i := -i + k
+	j := i + i + k - j
+	k := i * 2
+	j := k // 2 + 1 - 89 * 4 * 4
+	i := (i + 5) // (1 + j % 7)
+END TestArithmetics.
+
+(* logic *)
+MODULE TestLogic
+	VAR a, b, c BOOLEAN
+	VAR p, q, r TRILEAN
+BEGIN
+	a:=TRUE
+	b:=FALSE
+	c:=~a & b | c | TRUE
+CLOSE
+	p:=TRUE
+	q:=FALSE
+	r:=NIL
+	r:=p & ~q | r | TRUE
+END TestLogic.
+
+(* comparisions, braces *)
+MODULE TestComp
+VAR
+	i, j INTEGER
+	ok BOOLEAN
+
+BEGIN
+	i := 4
+	j := (i + 9) % 2
+	ok := i < 4
+	ok:= i > 4
+	ok := ((i + 4) >= (j+49)) & (i <= 144)
+	ok := ok & (i#j) | (i = j)
+END TestComp.
+
+(* forwarding expr in CONST *)
+MODULE TestExpr
+	CONST
+		num = count -1
+		len = 5
+		count  = len // 2
+	VAR i INTEGER
+BEGIN
+	i:= count - num
+END TestExpr.
+
+(* pow and long sequences *)
+MODULE TestExpr2
+	VAR i INTEGER
+	VAR j INTEGER
+BEGIN
+	i := 2 ^ 2 * 2
+	j := i ^ (i - 3) // 2 // 3 // 4 // 5 // 6 // 7
+END TestExpr2.
+
+(* chars and complex comparisions *)
+MODULE TestChars
+	CONST
+		cr = 0DU
+		lf = 0AU
+		space = ' '
+		tab = 09U
+
+	VAR
+		x CHAR
+		y CHAR
+		ok BOOLEAN
+		p, q TRILEAN
+BEGIN
+	x := '$'
+	x := 0DU
+	x := space
+	y := 0DU
+CLOSE
+	ok := (x = '$')
+	ok := (x = space) & (y = cr)
+	ok := (x = space) # (y = cr)
+	ok := (x # space) = (y # cr)
+	ok := (y > cr) | (y >= cr) & (x < lf) | (x <=lf)
+	ok := (p = q) & (p # q)
+END TestChars.
+
+(* strings and string comparision *)
+MODULE TestStrings
+	CONST
+		hello = "Hello"
+		world = "World"
+	VAR
+		s STRING
+		t STRING
+		ok BOOLEAN
+BEGIN
+	s := hello + ", "+ world + `!`
+	t := s
+	ok :=~(t # s) & (t = s)
+	s := `?` + "DLROW" + ` ` +  "`" + "OLLEH"
+	t := "" + '!'
+	t := "~"
+	s := "abba"
+	t := "baab"
+	ok := (s > t) | (s >= t) & (t < s) | (t <= s)
+END TestStrings.
+

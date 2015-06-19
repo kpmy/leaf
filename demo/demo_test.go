@@ -3,6 +3,7 @@ package demo
 import (
 	"bufio"
 	"fmt"
+	"leaf/ir"
 	"leaf/li"
 	_ "leaf/li/trav"
 	"leaf/parser"
@@ -93,6 +94,27 @@ func TestInterp(t *testing.T) {
 				p := parser.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)))
 				ir, _ := p.Module()
 				li.Do(ir)
+			}
+		}
+	}
+}
+
+func TestCollection(t *testing.T) {
+	var err error
+	for i := int64(0); err == nil; i++ {
+		mname := "Test" + strconv.FormatInt(i, 16)
+		sname := mname + ".lc"
+		if _, err = os.Stat(sname); err == nil {
+			if f, err := os.Open(sname); err == nil {
+				defer f.Close()
+				rd := bufio.NewReader(f)
+				for err == nil {
+					p := parser.ConnectTo(scanner.ConnectTo(rd))
+					var ast *ir.Module
+					if ast, err = p.Module(); err == nil {
+						li.Do(ast)
+					}
+				}
 			}
 		}
 	}
