@@ -7,7 +7,14 @@ const (
 	INTEGER
 	BOOLEAN
 	TRILEAN
+	CHAR
+	STRING
+
+	// leave this last
+	NONE
 )
+
+var TypMap map[string]Type
 
 func (t Type) String() (ret string) {
 	switch t {
@@ -17,7 +24,18 @@ func (t Type) String() (ret string) {
 		return "BOOLEAN"
 	case TRILEAN:
 		return "TRILEAN"
+	case CHAR:
+		return "CHAR"
+	case STRING:
+		return "STRING"
 	default:
 		return ""
+	}
+}
+
+func init() {
+	TypMap = make(map[string]Type)
+	for i := int(Undef); i < int(NONE); i++ {
+		TypMap[Type(i).String()] = Type(i)
 	}
 }

@@ -28,6 +28,7 @@ func treatExpr(_m interface{}) (ret *Expression) {
 	switch ret.Type {
 	case Constant:
 		ret.Leaf["value"] = leaf["value"]
+		ret.Leaf["type"] = leaf["type"]
 	case NamedConstant:
 		ret.Leaf["object"] = leaf["object"]
 	case Variable:

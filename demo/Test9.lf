@@ -1,0 +1,20 @@
+(* strings and string comparision *)
+MODULE Test9
+	CONST
+		hello = "Hello"
+		world = "World"
+	VAR
+		s STRING
+		t STRING
+		ok BOOLEAN
+BEGIN
+	s := hello + ", "+ world + `!`
+	t := s
+	ok :=~(t # s) & (t = s)
+	s := `?` + "DLROW" + ` ` +  "`" + "OLLEH"
+	t := "" + '!'
+	t := "~"
+	s := "abba"
+	t := "baab"
+	ok := (s > t) | (s >= t) & (t < s) | (t <= s)
+END Test9.

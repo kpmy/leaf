@@ -209,9 +209,16 @@ func (s Symbol) String() (ret string) {
 }
 
 type Sym struct {
-	Code Symbol
-	Str  string
-	User Foreign
+	Code       Symbol
+	Str        string
+	User       Foreign
+	NumberOpts struct {
+		Modifier string
+		Period   bool
+	}
+	StringOpts struct {
+		Apos bool
+	}
 }
 
 func (v Sym) String() (ret string) {
@@ -225,7 +232,7 @@ func (v Sym) String() (ret string) {
 	case String:
 		ret = fmt.Sprint(`"` + v.Str + `"`)
 	case Number:
-		ret = fmt.Sprint(v.Str)
+		ret = fmt.Sprint(v.Str, v.NumberOpts.Modifier, " real:", v.NumberOpts.Period)
 	default:
 		ret = fmt.Sprint(v.Code)
 	}
@@ -236,7 +243,7 @@ type Scanner interface {
 	Get() Sym
 	Error() error
 	Register(Foreign, string)
-	Mark(...interface{})
+	Pos() (int, int)
 }
 
 func ConnectTo(r io.RuneReader) Scanner {
@@ -263,9 +270,13 @@ func (s *sc) Register(f Foreign, name string) {
 
 func (s *sc) Error() error { return s.err }
 
-func (s *sc) Mark(msg ...interface{}) {
+func (s *sc) Pos() (int, int) {
+	return s.pos, 0
+}
+
+func (s *sc) mark(msg ...interface{}) {
 	//log.Println("at pos ", s.pos, " ", fmt.Sprintln(msg...))
-	halt.As(100, "at pos ", s.pos, " ", fmt.Sprint(msg...))
+	panic(fmt.Sprint("scanner: ", "at pos ", s.pos, " ", fmt.Sprint(msg...)))
 }
 
 func (s *sc) next() rune {
@@ -349,12 +360,12 @@ func (s *sc) comment() {
 	if s.err == nil {
 		s.next()
 	} else {
-		s.Mark("unclosed comment")
+		s.mark("unclosed comment")
 	}
 }
 
 func (s *sc) str() string {
-	assert.For(s.ch == '"' || s.ch == '\'', 20, "quote expected")
+	assert.For(s.ch == '"' || s.ch == '\'' || s.ch == '`', 20, "quote expected")
 	var buf []rune
 	ending := s.ch
 	s.next()
@@ -375,28 +386,44 @@ const non = "01234WXYZ"
 const tri = "-0+"
 const modifier = "BHNTU"
 
-func Is(pattern string, x rune) bool {
-	return strings.ContainsRune(pattern, x)
+func (s *sc) is(pattern string, x rune) bool {
+	ep := pattern
+	if s.evil != nil && *s.evil {
+		ep = strings.ToLower(pattern)
+	}
+	return strings.ContainsRune(ep, x)
 }
 
 //first char always 0..9
 func (s *sc) num() (sym Sym) {
 	assert.For(unicode.IsDigit(s.ch), 20, "digit expected")
 	var buf []rune
+	var mbuf []rune
+	hasDot := false
+
 	for {
 		buf = append(buf, s.ch)
 		s.next()
-		if s.err != nil || !(s.ch == '.' || Is(hex, s.ch) || Is(non, s.ch) || Is(tri, s.ch)) {
+		if s.ch == '.' {
+			if !hasDot {
+				hasDot = true
+			} else if hasDot {
+				s.mark("dot unexpected")
+			}
+		}
+		if s.err != nil || !(s.ch == '.' || s.is(hex, s.ch) || s.is(non, s.ch) || s.is(tri, s.ch)) {
 			break
 		}
 	}
-	if Is(modifier, s.ch) {
-		buf = append(buf, s.ch)
+	if s.is(modifier, s.ch) {
+		mbuf = append(mbuf, s.ch)
 		s.next()
 	}
 	if s.err == nil {
 		sym.Code = Number
 		sym.Str = string(buf)
+		sym.NumberOpts.Modifier = string(mbuf)
+		sym.NumberOpts.Period = hasDot
 	} else {
 		halt.As(100, "error reading number")
 	}
@@ -436,7 +463,8 @@ func (s *sc) Get() (sym Sym) {
 		case ']':
 			sym.Code = Rbrak
 			s.next()
-		case '"', '\'':
+		case '"', '\'', '`':
+			sym.StringOpts.Apos = (s.ch == '\'' || s.ch == '`')
 			sym.Str = s.str()
 			sym.Code = String
 		case ':':
@@ -453,8 +481,11 @@ func (s *sc) Get() (sym Sym) {
 			sym.Code = Times
 			s.next()
 		case '=':
-			sym.Code = Equal
-			s.next()
+			if s.next() == '=' {
+				s.mark("shame on you")
+			} else {
+				sym.Code = Equal
+			}
 		case '-':
 			sym.Code = Minus
 			s.next()

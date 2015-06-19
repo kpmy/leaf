@@ -1,3 +1,4 @@
+(* arithmetics *)
 MODULE Test3
 VAR
 	i, j INTEGER
@@ -11,5 +12,5 @@ BEGIN
 	j := i + i + k - j
 	k := i * 2
 	j := k // 2 + 1 - 89 * 4 * 4
-	i := (i + 5) // (1 + j % 4)
+	i := (i + 5) // (1 + j % 7)
 END Test3.

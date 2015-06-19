@@ -1,5 +1,5 @@
+(* comparisions, braces *)
 MODULE Test5
-
 VAR
 	i, j INTEGER
 	ok BOOLEAN

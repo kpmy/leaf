@@ -1,0 +1,26 @@
+(* chars and complex comparisions *)
+MODULE Test8
+	CONST
+		cr = 0DU
+		lf = 0AU
+		space = ' '
+		tab = 09U
+
+	VAR
+		x CHAR
+		y CHAR
+		ok BOOLEAN
+		p, q TRILEAN
+BEGIN
+	x := '$'
+	x := 0DU
+	x := space
+	y := 0DU
+CLOSE
+	ok := (x = '$')
+	ok := (x = space) & (y = cr)
+	ok := (x = space) # (y = cr)
+	ok := (x # space) = (y # cr)
+	ok := (y > cr) | (y >= cr) & (x < lf) | (x <=lf)
+	ok := (p = q) & (p # q)
+END Test8.

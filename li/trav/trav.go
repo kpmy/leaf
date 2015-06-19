@@ -20,7 +20,7 @@ type Int struct {
 
 func NewInt(x int64) (ret *Int) {
 	ret = &Int{}
-	ret.Int = *big.NewInt(0)
+	ret.Int = *big.NewInt(x)
 	return
 }
 
@@ -61,19 +61,75 @@ func (v *value) toInt() (ret *big.Int) {
 	case int:
 		ret = big.NewInt(int64(x))
 	case *Int:
-		ret = &x.Int
+		ret = big.NewInt(0)
+		ret.Add(ret, &x.Int)
 	default:
-		halt.As(100, "wrong int")
+		halt.As(100, "wrong integer ", reflect.TypeOf(x))
 	}
 	return
 }
 
 func (v *value) toBool() (ret bool) {
+	assert.For(v.typ == types.BOOLEAN, 20)
 	switch x := v.val.(type) {
 	case bool:
 		ret = x
 	default:
-		halt.As(100, "wrong bool")
+		halt.As(100, "wrong boolean ", reflect.TypeOf(x))
+	}
+	return
+}
+
+func (v *value) toStr() (ret string) {
+	assert.For(v.typ == types.STRING, 20)
+	switch x := v.val.(type) {
+	case string:
+		ret = x
+	default:
+		halt.As(100, "wrong string ", reflect.TypeOf(x))
+	}
+	return
+}
+
+func (v *value) toRune() (ret rune) {
+	assert.For(v.typ == types.CHAR, 20)
+	switch x := v.val.(type) {
+	case rune:
+		ret = x
+	default:
+		halt.As(100, "wrong rune ", reflect.TypeOf(x))
+	}
+	return
+}
+
+func (v *value) toTril() (ret tri.Trit) {
+	assert.For(v.typ == types.TRILEAN, 20)
+	switch x := v.val.(type) {
+	case tri.Trit:
+		ret = x
+	default:
+		halt.As(100, "wrong trilean ", reflect.TypeOf(x))
+	}
+	return
+}
+
+func cval(e *ir.ConstExpr) (ret *value) {
+	t := e.Type
+	switch t {
+	case types.INTEGER:
+		v := NewInt(int64(e.Value.(int)))
+		ret = &value{typ: t, val: v}
+	case types.BOOLEAN:
+		v := e.Value.(bool)
+		ret = &value{typ: t, val: v}
+	case types.CHAR:
+		v := rune(e.Value.(int32))
+		ret = &value{typ: t, val: v}
+	case types.STRING:
+		v := e.Value.(string)
+		ret = &value{typ: t, val: v}
+	default:
+		halt.As(100, "unknown type ", t, " for ", e)
 	}
 	return
 }
@@ -95,6 +151,10 @@ func (s *storage) alloc(vl map[string]*ir.Variable) {
 			s.data[v.Name] = false
 		case types.TRILEAN:
 			s.data[v.Name] = tri.NIL
+		case types.CHAR:
+			s.data[v.Name] = rune(0)
+		case types.STRING:
+			s.data[v.Name] = ""
 		default:
 			halt.As(100, "unknown type ", v.Type)
 		}
@@ -105,7 +165,7 @@ func (s *storage) findObj(o *ir.Variable, fn func(*value) *value) {
 	data := s.data[o.Name]
 	nv := fn(&value{typ: o.Type, val: data})
 	if nv != nil {
-		assert.For(nv.typ == o.Type, 40, nv.typ, " != ", o.Type)
+		assert.For(nv.typ == o.Type, 40, "provided ", nv.typ, " != expected ", o.Type)
 		assert.For(nv.val != nil, 41)
 		s.data[o.Name] = nv.val
 	}
@@ -147,10 +207,8 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 			eval(this.Named.Expr)
 		case *ir.ConstExpr:
 			switch typ {
-			case types.INTEGER:
-				c.push(&value{typ: this.Type, val: this.Value})
-			case types.BOOLEAN:
-				c.push(&value{typ: this.Type, val: this.Value})
+			case types.INTEGER, types.BOOLEAN, types.CHAR, types.STRING:
+				c.push(cval(this))
 			case types.TRILEAN:
 				c.push(&value{typ: typ, val: tri.This(this.Value)})
 			default:
@@ -166,14 +224,22 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 			v := c.pop()
 			switch this.Op {
 			case operation.Neg:
-				i := v.toInt()
-				i = i.Neg(i)
-				c.push(&value{typ: v.typ, val: ThisInt(i)})
+				switch v.typ {
+				case types.INTEGER:
+					i := v.toInt()
+					i = i.Neg(i)
+					c.push(&value{typ: v.typ, val: ThisInt(i)})
+				default:
+					halt.As(100, "unknown type of operand ", v.typ)
+				}
 			case operation.Not:
 				switch typ {
 				case types.BOOLEAN:
 					b := v.toBool()
 					c.push(&value{typ: v.typ, val: !b})
+				case types.TRILEAN:
+					t := v.toTril()
+					c.push(&value{typ: v.typ, val: tri.Not(t)})
 				default:
 					halt.As(100, "unexpected logical type")
 				}
@@ -193,30 +259,125 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 			}
 			switch this.Op {
 			case operation.Sum:
-				li := l.toInt()
-				ri := r.toInt()
-				x := li.Add(li, ri)
-				c.push(&value{typ: l.typ, val: ThisInt(x)})
+				switch l.typ {
+				case types.INTEGER:
+					switch r.typ {
+					case types.INTEGER:
+						li := l.toInt()
+						ri := r.toInt()
+						x := li.Add(li, ri)
+						c.push(&value{typ: l.typ, val: ThisInt(x)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.STRING:
+					switch r.typ {
+					case types.STRING:
+						ls := l.toStr()
+						rs := r.toStr()
+						c.push(&value{typ: l.typ, val: (ls + rs)})
+					case types.CHAR:
+						ls := l.toStr()
+						rc := r.toRune()
+						buf := []rune(ls)
+						buf = append(buf, rc)
+						ls = string(buf)
+						c.push(&value{typ: l.typ, val: ls})
+					default:
+						halt.As(100, "unknown type on right ", r.typ)
+					}
+				case types.CHAR:
+					switch r.typ {
+					case types.STRING:
+						rs := r.toStr()
+						lc := l.toRune()
+						var buf []rune
+						buf = append(buf, lc)
+						buf2 := []rune(rs)
+						buf = append(buf, buf2...)
+						rs = string(buf)
+						c.push(&value{typ: r.typ, val: rs})
+					default:
+						halt.As(100, "unknown type on right ", r.typ)
+					}
+				default:
+					halt.As(100, "unknown type on left ", l.typ)
+				}
 			case operation.Diff:
-				li := l.toInt()
-				ri := r.toInt()
-				x := li.Sub(li, ri)
-				c.push(&value{typ: l.typ, val: ThisInt(x)})
+				switch l.typ {
+				case types.INTEGER:
+					switch r.typ {
+					case types.INTEGER:
+						li := l.toInt()
+						ri := r.toInt()
+						x := li.Sub(li, ri)
+						c.push(&value{typ: l.typ, val: ThisInt(x)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				default:
+					halt.As(100, "unknown type on left ", l.typ)
+				}
 			case operation.Prod:
-				li := l.toInt()
-				ri := r.toInt()
-				x := li.Mul(li, ri)
-				c.push(&value{typ: l.typ, val: ThisInt(x)})
+				switch l.typ {
+				case types.INTEGER:
+					switch r.typ {
+					case types.INTEGER:
+						li := l.toInt()
+						ri := r.toInt()
+						x := li.Mul(li, ri)
+						c.push(&value{typ: l.typ, val: ThisInt(x)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				default:
+					halt.As(100, "unknown type on left ", l.typ)
+				}
 			case operation.Mod:
-				li := l.toInt()
-				ri := r.toInt()
-				x := li.Mod(li, ri)
-				c.push(&value{typ: l.typ, val: ThisInt(x)})
+				switch l.typ {
+				case types.INTEGER:
+					switch r.typ {
+					case types.INTEGER:
+						li := l.toInt()
+						ri := r.toInt()
+						x := li.Mod(li, ri)
+						c.push(&value{typ: l.typ, val: ThisInt(x)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				default:
+					halt.As(100, "unknown type on left ", l.typ)
+				}
 			case operation.Div:
-				li := l.toInt()
-				ri := r.toInt()
-				x := li.Div(li, ri)
-				c.push(&value{typ: l.typ, val: ThisInt(x)})
+				switch l.typ {
+				case types.INTEGER:
+					switch r.typ {
+					case types.INTEGER:
+						li := l.toInt()
+						ri := r.toInt()
+						x := li.Div(li, ri)
+						c.push(&value{typ: l.typ, val: ThisInt(x)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				default:
+					halt.As(100, "unknown type on left ", l.typ)
+				}
+			case operation.Pow:
+				switch l.typ {
+				case types.INTEGER:
+					switch r.typ {
+					case types.INTEGER:
+						li := l.toInt()
+						ri := r.toInt()
+						x := li.Exp(li, ri, big.NewInt(0))
+						c.push(&value{typ: l.typ, val: ThisInt(x)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				default:
+					halt.As(100, "unknown type on left ", l.typ)
+				}
 			case operation.And:
 				switch typ {
 				case types.BOOLEAN:
@@ -228,6 +389,15 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 						lb = lb && rb
 					}
 					c.push(&value{typ: typ, val: lb})
+				case types.TRILEAN:
+					lt := l.toTril()
+					if !tri.False(lt) {
+						eval(this.Right)
+						r = c.pop()
+						rt := r.toTril()
+						lt = tri.And(lt, rt)
+					}
+					c.push(&value{typ: typ, val: lt})
 				default:
 					halt.As(100, "unexpected logical type")
 				}
@@ -242,39 +412,252 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 						lb = lb || rb
 					}
 					c.push(&value{typ: typ, val: lb})
+				case types.TRILEAN:
+					lt := l.toTril()
+					if !tri.True(lt) {
+						eval(this.Right)
+						r = c.pop()
+						rt := r.toTril()
+						lt = tri.Or(lt, rt)
+					}
+					c.push(&value{typ: typ, val: lt})
 				default:
 					halt.As(100, "unexpected logical type")
 				}
 			case operation.Lss:
-				li := l.toInt()
-				ri := r.toInt()
-				res := li.Cmp(ri)
-				c.push(&value{typ: typ, val: (res == lss)})
+				switch l.typ {
+				case types.INTEGER:
+					switch r.typ {
+					case types.INTEGER:
+						li := l.toInt()
+						ri := r.toInt()
+						res := li.Cmp(ri)
+						c.push(&value{typ: types.BOOLEAN, val: (res == lss)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.CHAR:
+					switch r.typ {
+					case types.CHAR:
+						lc := l.toRune()
+						rc := r.toRune()
+						c.push(&value{typ: types.BOOLEAN, val: (lc < rc)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.STRING:
+					switch r.typ {
+					case types.STRING:
+						ls := l.toStr()
+						rs := r.toStr()
+						c.push(&value{typ: types.BOOLEAN, val: (ls < rs)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				default:
+					halt.As(100, "unknown type on left ", l.typ)
+				}
 			case operation.Gtr:
-				li := l.toInt()
-				ri := r.toInt()
-				res := li.Cmp(ri)
-				c.push(&value{typ: typ, val: (res == gtr)})
+				switch l.typ {
+				case types.INTEGER:
+					switch r.typ {
+					case types.INTEGER:
+						li := l.toInt()
+						ri := r.toInt()
+						res := li.Cmp(ri)
+						c.push(&value{typ: types.BOOLEAN, val: (res == gtr)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.CHAR:
+					switch r.typ {
+					case types.CHAR:
+						lc := l.toRune()
+						rc := r.toRune()
+						c.push(&value{typ: types.BOOLEAN, val: (lc > rc)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.STRING:
+					switch r.typ {
+					case types.STRING:
+						ls := l.toStr()
+						rs := r.toStr()
+						c.push(&value{typ: types.BOOLEAN, val: (ls > rs)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				default:
+					halt.As(100, "unknown type on left ", l.typ)
+				}
 			case operation.Leq:
-				li := l.toInt()
-				ri := r.toInt()
-				res := li.Cmp(ri)
-				c.push(&value{typ: typ, val: (res != gtr)})
+				switch l.typ {
+				case types.INTEGER:
+					switch r.typ {
+					case types.INTEGER:
+						li := l.toInt()
+						ri := r.toInt()
+						res := li.Cmp(ri)
+						c.push(&value{typ: types.BOOLEAN, val: (res != gtr)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.CHAR:
+					switch r.typ {
+					case types.CHAR:
+						lc := l.toRune()
+						rc := r.toRune()
+						c.push(&value{typ: types.BOOLEAN, val: (lc <= rc)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.STRING:
+					switch r.typ {
+					case types.STRING:
+						ls := l.toStr()
+						rs := r.toStr()
+						c.push(&value{typ: types.BOOLEAN, val: (ls <= rs)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				default:
+					halt.As(100, "unknown type on left ", l.typ)
+				}
 			case operation.Geq:
-				li := l.toInt()
-				ri := r.toInt()
-				res := li.Cmp(ri)
-				c.push(&value{typ: typ, val: (res != lss)})
+				switch l.typ {
+				case types.INTEGER:
+					switch r.typ {
+					case types.INTEGER:
+						li := l.toInt()
+						ri := r.toInt()
+						res := li.Cmp(ri)
+						c.push(&value{typ: types.BOOLEAN, val: (res != lss)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.CHAR:
+					switch r.typ {
+					case types.CHAR:
+						lc := l.toRune()
+						rc := r.toRune()
+						c.push(&value{typ: types.BOOLEAN, val: (lc >= rc)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.STRING:
+					switch r.typ {
+					case types.STRING:
+						ls := l.toStr()
+						rs := r.toStr()
+						c.push(&value{typ: types.BOOLEAN, val: (ls >= rs)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				default:
+					halt.As(100, "unknown type on left ", l.typ)
+				}
 			case operation.Eq:
-				li := l.toInt()
-				ri := r.toInt()
-				res := li.Cmp(ri)
-				c.push(&value{typ: typ, val: (res == eq)})
+				switch l.typ {
+				case types.INTEGER:
+					switch r.typ {
+					case types.INTEGER:
+						li := l.toInt()
+						ri := r.toInt()
+						res := li.Cmp(ri)
+						c.push(&value{typ: types.BOOLEAN, val: (res == eq)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.CHAR:
+					switch r.typ {
+					case types.CHAR:
+						lc := l.toRune()
+						rc := r.toRune()
+						c.push(&value{typ: types.BOOLEAN, val: (lc == rc)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.BOOLEAN:
+					switch r.typ {
+					case types.BOOLEAN:
+						lb := l.toBool()
+						rb := r.toBool()
+						c.push(&value{typ: types.BOOLEAN, val: (lb == rb)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.TRILEAN:
+					switch r.typ {
+					case types.TRILEAN:
+						lt := l.toTril()
+						rt := r.toTril()
+						c.push(&value{typ: types.BOOLEAN, val: (tri.Ord(lt) == tri.Ord(rt))})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.STRING:
+					switch r.typ {
+					case types.STRING:
+						ls := l.toStr()
+						rs := r.toStr()
+						c.push(&value{typ: types.BOOLEAN, val: (ls == rs)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				default:
+					halt.As(100, "unknown type on left ", l.typ)
+				}
 			case operation.Neq:
-				li := l.toInt()
-				ri := r.toInt()
-				res := li.Cmp(ri)
-				c.push(&value{typ: typ, val: (res != eq)})
+				switch l.typ {
+				case types.INTEGER:
+					switch r.typ {
+					case types.INTEGER:
+						li := l.toInt()
+						ri := r.toInt()
+						res := li.Cmp(ri)
+						c.push(&value{typ: types.BOOLEAN, val: (res != eq)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.CHAR:
+					switch r.typ {
+					case types.CHAR:
+						lc := l.toRune()
+						rc := r.toRune()
+						c.push(&value{typ: types.BOOLEAN, val: (lc != rc)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.BOOLEAN:
+					switch r.typ {
+					case types.BOOLEAN:
+						lb := l.toBool()
+						rb := r.toBool()
+						c.push(&value{typ: types.BOOLEAN, val: (lb != rb)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.STRING:
+					switch r.typ {
+					case types.STRING:
+						ls := l.toStr()
+						rs := r.toStr()
+						c.push(&value{typ: types.BOOLEAN, val: (ls != rs)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.TRILEAN:
+					switch r.typ {
+					case types.TRILEAN:
+						lt := l.toTril()
+						rt := r.toTril()
+						c.push(&value{typ: types.BOOLEAN, val: (tri.Ord(lt) != tri.Ord(rt))})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				default:
+					halt.As(100, "unknown type on left ", l.typ)
+				}
 			default:
 				halt.As(100, "unknown dyadic op ", this.Op)
 			}

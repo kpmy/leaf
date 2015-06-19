@@ -1,0 +1,8 @@
+(* pow and long sequences *)
+MODULE Test7
+	VAR i INTEGER
+	VAR j INTEGER
+BEGIN
+	i := 2 ^ 2 * 2
+	j := i ^ (i - 3) // 2 // 3 // 4 // 5 // 6 // 7
+END Test7.

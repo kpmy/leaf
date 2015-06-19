@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"github.com/kpmy/ypk/assert"
 	"leaf/ir"
 	"leaf/ir/operation"
@@ -21,16 +22,22 @@ const (
 	integer
 	boolean
 	trilean
+	char
+	str
 )
 
 func init() {
 	idents = map[string]scanner.Foreign{"INTEGER": integer,
 		"BOOLEAN": boolean,
-		"TRILEAN": trilean}
+		"TRILEAN": trilean,
+		"CHAR":    char,
+		"STRING":  str}
 
 	entries = map[scanner.Foreign]interface{}{integer: Type{typ: types.INTEGER},
 		boolean: Type{typ: types.BOOLEAN},
-		trilean: Type{typ: types.TRILEAN}}
+		trilean: Type{typ: types.TRILEAN},
+		char:    Type{typ: types.CHAR},
+		str:     Type{typ: types.STRING}}
 }
 
 type Parser interface {
@@ -53,6 +60,11 @@ type pr struct {
 	done bool
 	target
 	idgen
+}
+
+func (p *pr) mark(msg ...interface{}) {
+	str, pos := p.sc.Pos()
+	panic(fmt.Sprint("parser: ", "at pos ", str, " ", pos, " ", fmt.Sprint(msg...)))
 }
 
 func (p *pr) next() scanner.Sym {
@@ -78,7 +90,7 @@ func (p *pr) init() {
 func (p *pr) expect(sym scanner.Symbol, msg string, skip ...scanner.Symbol) {
 	assert.For(p.done, 20)
 	if !p.await(sym, skip...) {
-		p.sc.Mark(msg)
+		p.mark(msg)
 	}
 	p.done = false
 }
@@ -122,7 +134,7 @@ func (p *pr) run(sym scanner.Symbol) {
 	if p.sym.Code != sym {
 		for p.next().Code != sym {
 			if p.sc.Error() != nil {
-				p.sc.Mark("not found")
+				p.mark("not found")
 				break
 			}
 		}
@@ -139,15 +151,46 @@ func (p *pr) is(sym scanner.Symbol) bool {
 	return p.sym.Code == sym
 }
 
-func (p *pr) number() (types.Type, interface{}) {
+func (p *pr) number() (t types.Type, v interface{}) {
 	assert.For(p.is(scanner.Number), 20, "number expected here")
-	x, err := strconv.Atoi(p.sym.Str)
-	assert.For(err == nil, 40)
-	return types.INTEGER, x
+	switch p.sym.NumberOpts.Modifier {
+	case "":
+		assert.For(!p.sym.NumberOpts.Period, 21)
+		x, err := strconv.Atoi(p.sym.Str)
+		assert.For(err == nil, 40)
+		t, v = types.INTEGER, x
+	case "U":
+		if p.sym.NumberOpts.Period {
+			p.mark("hex integer value expected")
+		}
+		//fmt.Println(p.sym)
+		if r, err := strconv.ParseUint(p.sym.Str, 16, 64); err == nil {
+			t = types.CHAR
+			v = rune(r)
+		} else {
+			p.mark("error while reading integer")
+		}
+	default:
+		p.mark("unknown number format `", p.sym.NumberOpts.Modifier, "`")
+	}
+	return
 }
 
 func (p *pr) factor(b *exprBuilder) {
 	switch p.sym.Code {
+	case scanner.String:
+		val := &ir.ConstExpr{}
+		if len(p.sym.Str) == 1 && p.sym.StringOpts.Apos { //do it symbol
+			val.Type = types.CHAR
+			val.Value = rune(p.sym.Str[0])
+			b.factor(val)
+			p.next()
+		} else { //do string later
+			val.Type = types.STRING
+			val.Value = p.sym.Str
+			b.factor(val)
+			p.next()
+		}
 	case scanner.Number:
 		val := &ir.ConstExpr{}
 		val.Type, val.Value = p.number()
@@ -181,12 +224,29 @@ func (p *pr) factor(b *exprBuilder) {
 		p.expect(scanner.Rparen, ") expected", scanner.Separator)
 		p.next()
 	default:
-		p.sc.Mark("not implemented for ", p.sym)
+		p.mark("not implemented for ", p.sym)
+	}
+}
+
+func (p *pr) power(b *exprBuilder) {
+	p.factor(b)
+	for stop := false; !stop; {
+		p.pass(scanner.Separator)
+		switch p.sym.Code {
+		case scanner.Arrow:
+			op := p.sym.Code
+			p.next()
+			p.pass(scanner.Separator)
+			p.factor(b)
+			b.power(&ir.Dyadic{Op: operation.Map(op)})
+		default:
+			stop = true
+		}
 	}
 }
 
 func (p *pr) product(b *exprBuilder) {
-	p.factor(b)
+	p.power(b)
 	for stop := false; !stop; {
 		p.pass(scanner.Separator)
 		switch p.sym.Code {
@@ -194,7 +254,7 @@ func (p *pr) product(b *exprBuilder) {
 			op := p.sym.Code
 			p.next()
 			p.pass(scanner.Separator)
-			p.factor(b)
+			p.power(b)
 			b.product(&ir.Dyadic{Op: operation.Map(op)})
 		default:
 			stop = true
@@ -251,7 +311,7 @@ func (p *pr) constDecl() {
 		if p.await(scanner.Ident, scanner.Delimiter, scanner.Separator) {
 			id := p.ident()
 			if p.root.ConstDecl[id] != nil {
-				p.sc.Mark("identifier already exists")
+				p.mark("identifier already exists")
 			}
 			p.next()
 			obj := &ir.Const{Name: id}
@@ -264,7 +324,7 @@ func (p *pr) constDecl() {
 				obj.Expr = &ir.AtomExpr{Value: id}
 				p.next()
 			} else {
-				p.sc.Mark("delimiter or expression expected")
+				p.mark("delimiter or expression expected")
 			}
 			p.root.ConstDecl[id] = obj
 		} else {
@@ -273,19 +333,22 @@ func (p *pr) constDecl() {
 	}
 }
 
-func (p *pr) typ(cons func(t types.Type)) {
+func (p *pr) typ(consume func(t types.Type)) {
 	assert.For(p.sym.Code == scanner.Ident, 20, "type identifier expected here")
 	id := p.ident()
 	if t, ok := entries[p.sym.User].(Type); ok {
 		switch t.typ {
 		case types.INTEGER, types.BOOLEAN, types.TRILEAN:
 			p.next()
-			cons(t.typ)
+			consume(t.typ)
+		case types.CHAR, types.STRING:
+			p.next()
+			consume(t.typ)
 		default:
-			p.sc.Mark("unexpected type ", id)
+			p.mark("unexpected type ", id)
 		}
 	} else {
-		p.sc.Mark("unknown type ", id)
+		p.mark("unknown type ", id)
 	}
 }
 
@@ -300,7 +363,7 @@ func (p *pr) varDecl() {
 				obj := &ir.Variable{}
 				id := p.ident()
 				if p.root.ConstDecl[id] != nil {
-					p.sc.Mark("identifier already exists")
+					p.mark("identifier already exists")
 				}
 				obj.Name = id
 				vl = append(vl, obj)
@@ -346,7 +409,7 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 				b.put(stmt)
 				p.expect(scanner.Delimiter, "delimiter expected", scanner.Separator)
 			} else {
-				p.sc.Mark("illegal statement")
+				p.mark("illegal statement")
 			}
 		default:
 			stop = true
@@ -386,7 +449,7 @@ func (p *pr) Module() (ret *ir.Module, err error) {
 	p.next()
 	p.expect(scanner.Ident, "module name expected", scanner.Separator)
 	if p.ident() != p.root.Name {
-		p.sc.Mark("module name does not match")
+		p.mark("module name does not match")
 	}
 	p.next()
 	p.expect(scanner.Period, "end of module expected")

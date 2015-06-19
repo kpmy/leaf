@@ -1,3 +1,4 @@
+(* logic *)
 MODULE Test4
 	VAR a, b, c BOOLEAN
 	VAR p, q, r TRILEAN
@@ -9,4 +10,5 @@ CLOSE
 	p:=TRUE
 	q:=FALSE
 	r:=NIL
+	r:=p & ~q | r | TRUE
 END Test4.

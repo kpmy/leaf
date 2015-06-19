@@ -27,6 +27,7 @@ const (
 	low level = iota
 	normal
 	high
+	higher
 	highest
 )
 
@@ -144,8 +145,12 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 		}
 		return
 	}
+	ok := false
 	root, tail := first(stack)
-	trav(root, tail)
+	root, ok = bypass(root)
+	if !ok {
+		trav(root, tail)
+	}
 	ret = root.e
 	return
 }
@@ -154,12 +159,16 @@ func (e *exprBuilder) factor(expr ir.Expression) {
 	e.stack = append(e.stack, &exprItem{e: expr, priority: highest})
 }
 
-func (e *exprBuilder) quantum(expr ir.Expression) {
-	e.stack = append(e.stack, &exprItem{e: expr, priority: normal})
+func (e *exprBuilder) power(expr ir.Expression) {
+	e.stack = append(e.stack, &exprItem{e: expr, priority: higher})
 }
 
 func (e *exprBuilder) product(expr ir.Expression) {
 	e.stack = append(e.stack, &exprItem{e: expr, priority: high})
+}
+
+func (e *exprBuilder) quantum(expr ir.Expression) {
+	e.stack = append(e.stack, &exprItem{e: expr, priority: normal})
 }
 
 func (e *exprBuilder) expr(expr ir.Expression) {

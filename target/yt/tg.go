@@ -89,6 +89,15 @@ func (m *Module) that(id string, i ...interface{}) (ret interface{}) {
 	return
 }
 
+func typeFix(e *ir.ConstExpr) {
+	switch e.Type {
+	case types.INTEGER, types.BOOLEAN, types.TRILEAN, types.CHAR, types.STRING:
+		//TODO later
+	default:
+		halt.As(100, "unknown constant type ", e.Type)
+	}
+}
+
 func internalize(m *Module) (ret *ir.Module) {
 	ret = &ir.Module{}
 	ret.Init()
@@ -100,6 +109,8 @@ func internalize(m *Module) (ret *ir.Module) {
 		case Constant:
 			this := &ir.ConstExpr{}
 			this.Value = e.Leaf["value"]
+			this.Type = types.TypMap[e.Leaf["type"].(string)]
+			typeFix(this)
 			d.e = this
 		case NamedConstant:
 			this := &ir.NamedConstExpr{}
@@ -130,13 +141,13 @@ func internalize(m *Module) (ret *ir.Module) {
 		case Monadic:
 			this := &ir.Monadic{}
 			this.Operand = expr(treatExpr(e.Leaf["operand"]))
-			this.Op = operation.Operation(e.Leaf["operation"].(int))
+			this.Op = operation.OpMap[e.Leaf["operation"].(string)]
 			d.e = this
 		case Dyadic:
 			this := &ir.Dyadic{}
 			this.Left = expr(treatExpr(e.Leaf["left"]))
 			this.Right = expr(treatExpr(e.Leaf["right"]))
-			this.Op = operation.Operation(e.Leaf["operation"].(int))
+			this.Op = operation.OpMap[e.Leaf["operation"].(string)]
 			d.e = this
 		default:
 			halt.As(100, "unknown type ", e.Type)
@@ -200,6 +211,7 @@ func externalize(mod *ir.Module) (ret *Module) {
 		case *ir.ConstExpr:
 			ex.Type = Constant
 			ex.Leaf["value"] = e.Value
+			ex.Leaf["type"] = e.Type.String()
 		case *ir.NamedConstExpr:
 			ex.Type = NamedConstant
 			ex.Leaf["object"] = ret.this(e.Named)
@@ -209,12 +221,12 @@ func externalize(mod *ir.Module) (ret *Module) {
 		case *ir.Monadic:
 			ex.Type = Monadic
 			ex.Leaf["operand"] = expr(e.Operand)
-			ex.Leaf["operation"] = int(e.Op)
+			ex.Leaf["operation"] = e.Op.String()
 		case *ir.Dyadic:
 			ex.Type = Dyadic
 			ex.Leaf["left"] = expr(e.Left)
 			ex.Leaf["right"] = expr(e.Right)
-			ex.Leaf["operation"] = int(e.Op)
+			ex.Leaf["operation"] = e.Op.String()
 		case *dumbExpr:
 			return expr(e.Eval())
 		default:

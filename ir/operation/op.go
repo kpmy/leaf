@@ -17,6 +17,7 @@ const (
 	Quot
 	Div
 	Mod
+	Pow
 
 	And
 	Or
@@ -28,9 +29,12 @@ const (
 	Geq
 	Lss
 	Leq
+	//leave this last
+	None
 )
 
 var ops map[scanner.Symbol]Operation
+var OpMap map[string]Operation
 
 func (o Operation) String() string {
 	switch o {
@@ -66,6 +70,10 @@ func (o Operation) String() string {
 		return "<"
 	case Leq:
 		return "<="
+	case Pow:
+		return "^"
+	case None:
+		return "nop"
 	default:
 		return strconv.Itoa(int(o))
 	}
@@ -85,7 +93,13 @@ func init() {
 		scanner.Gtr:    Gtr,
 		scanner.Nequal: Neq,
 		scanner.Lss:    Lss,
-		scanner.Leq:    Leq}
+		scanner.Leq:    Leq,
+		scanner.Arrow:  Pow}
+
+	OpMap = make(map[string]Operation)
+	for i := int(Undef); i < int(None); i++ {
+		OpMap[Operation(i).String()] = Operation(i)
+	}
 }
 
 func Map(sym scanner.Symbol) (ret Operation) {

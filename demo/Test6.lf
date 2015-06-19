@@ -1,9 +1,10 @@
+(* forwarding expr in CONST *)
 MODULE Test6
 	CONST
 		num = count -1
 		len = 5
 		count  = len // 2
-	VAR i INTEGER	
+	VAR i INTEGER
 BEGIN
 	i:= count - num
 END Test6.
