@@ -91,7 +91,7 @@ func (m *Module) that(id string, i ...interface{}) (ret interface{}) {
 
 func typeFix(e *ir.ConstExpr) {
 	switch e.Type {
-	case types.INTEGER, types.BOOLEAN, types.TRILEAN, types.CHAR, types.STRING:
+	case types.INTEGER, types.BOOLEAN, types.TRILEAN, types.CHAR, types.STRING, types.REAL:
 		//TODO later
 	default:
 		halt.As(100, "unknown constant type ", e.Type)
@@ -106,6 +106,10 @@ func internalize(m *Module) (ret *ir.Module) {
 	expr = func(e *Expression) ir.Expression {
 		d := &dumbExpr{}
 		switch e.Type {
+		case Atom:
+			this := &ir.AtomExpr{}
+			this.Value = e.Leaf["name"].(string)
+			d.later = func() ir.Expression { return this }
 		case Constant:
 			this := &ir.ConstExpr{}
 			this.Value = e.Leaf["value"]
@@ -208,6 +212,9 @@ func externalize(mod *ir.Module) (ret *Module) {
 		ex = &Expression{}
 		ex.Leaf = make(map[string]interface{})
 		switch e := _e.(type) {
+		case *ir.AtomExpr:
+			ex.Type = Atom
+			ex.Leaf["name"] = e.Value
 		case *ir.ConstExpr:
 			ex.Type = Constant
 			ex.Leaf["value"] = e.Value
@@ -236,12 +243,21 @@ func externalize(mod *ir.Module) (ret *Module) {
 	}
 
 	{
-		for _, v := range mod.ConstDecl {
+		for _, _v := range mod.ConstDecl {
 			c := &Const{}
-			c.Guid = ret.this(v)
-			e := v.Expr.(ir.EvaluatedExpression).Eval()
+			c.Guid = ret.this(_v)
+			var e ir.Expression
+			switch v := _v.Expr.(type) {
+			case ir.EvaluatedExpression:
+				e = v.Eval()
+			case *ir.AtomExpr:
+				e = v
+			default:
+				halt.As(100, "unknown expression ", reflect.TypeOf(v))
+			}
+			assert.For(e != nil, 40)
 			c.Expr = expr(e)
-			ret.ConstDecl[v.Name] = c
+			ret.ConstDecl[_v.Name] = c
 		}
 	}
 	{

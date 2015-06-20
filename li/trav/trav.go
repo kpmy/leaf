@@ -14,6 +14,8 @@ import (
 	"reflect"
 )
 
+type Atom string
+
 type Int struct {
 	big.Int
 }
@@ -33,6 +35,22 @@ func ThisInt(x *big.Int) (ret *Int) {
 func (i *Int) String() string {
 	x, _ := i.Int.MarshalText()
 	return string(x)
+}
+
+type Rat struct {
+	big.Rat
+}
+
+func NewRat(x float64) (ret *Rat) {
+	ret = &Rat{}
+	ret.Rat = *big.NewRat(0, 1)
+	return
+}
+
+func ThisRat(x *big.Rat) (ret *Rat) {
+	ret = &Rat{}
+	ret.Rat = *x
+	return
 }
 
 type storage struct {
@@ -65,6 +83,18 @@ func (v *value) toInt() (ret *big.Int) {
 		ret.Add(ret, &x.Int)
 	default:
 		halt.As(100, "wrong integer ", reflect.TypeOf(x))
+	}
+	return
+}
+
+func (v *value) toReal() (ret *big.Rat) {
+	assert.For(v.typ == types.REAL, 20)
+	switch x := v.val.(type) {
+	case *Rat:
+		ret = big.NewRat(0, 1)
+		ret.Add(ret, &x.Rat)
+	default:
+		halt.As(100, "wrong real ", reflect.TypeOf(x))
 	}
 	return
 }
@@ -113,12 +143,28 @@ func (v *value) toTril() (ret tri.Trit) {
 	return
 }
 
+func (v *value) toAtom() (ret *Atom) {
+	assert.For(v.typ == types.ATOM, 20)
+	switch x := v.val.(type) {
+	case Atom:
+		ret = &x
+	case nil: //do nothing
+	default:
+		halt.As(100, "wrong atom ", reflect.TypeOf(x))
+	}
+	return
+}
 func cval(e *ir.ConstExpr) (ret *value) {
 	t := e.Type
 	switch t {
 	case types.INTEGER:
-		v := NewInt(int64(e.Value.(int)))
-		ret = &value{typ: t, val: v}
+		b := big.NewInt(0)
+		if err := b.UnmarshalText([]byte(e.Value.(string))); err == nil {
+			v := ThisInt(b)
+			ret = &value{typ: t, val: v}
+		} else {
+			halt.As(100, "wrong integer")
+		}
 	case types.BOOLEAN:
 		v := e.Value.(bool)
 		ret = &value{typ: t, val: v}
@@ -128,6 +174,22 @@ func cval(e *ir.ConstExpr) (ret *value) {
 	case types.STRING:
 		v := e.Value.(string)
 		ret = &value{typ: t, val: v}
+	case types.TRILEAN:
+		if e.Value == nil {
+			ret = &value{typ: t, val: tri.NIL}
+		} else if tv := e.Value.(bool); tv {
+			ret = &value{typ: t, val: tri.TRUE}
+		} else {
+			ret = &value{typ: t, val: tri.FALSE}
+		}
+	case types.REAL:
+		r := big.NewRat(0, 1)
+		if err := r.UnmarshalText([]byte(e.Value.(string))); err == nil {
+			v := ThisRat(r)
+			ret = &value{typ: t, val: v}
+		} else {
+			halt.As(100, "wrong real")
+		}
 	default:
 		halt.As(100, "unknown type ", t, " for ", e)
 	}
@@ -155,6 +217,10 @@ func (s *storage) alloc(vl map[string]*ir.Variable) {
 			s.data[v.Name] = rune(0)
 		case types.STRING:
 			s.data[v.Name] = ""
+		case types.ATOM:
+			s.data[v.Name] = nil
+		case types.REAL:
+			s.data[v.Name] = NewRat(0.0)
 		default:
 			halt.As(100, "unknown type ", v.Type)
 		}
@@ -205,9 +271,11 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 			eval(this.Eval())
 		case *ir.NamedConstExpr:
 			eval(this.Named.Expr)
+		case *ir.AtomExpr:
+			c.push(&value{typ: types.ATOM, val: Atom(this.Value)})
 		case *ir.ConstExpr:
 			switch typ {
-			case types.INTEGER, types.BOOLEAN, types.CHAR, types.STRING:
+			case types.INTEGER, types.BOOLEAN, types.CHAR, types.STRING, types.REAL:
 				c.push(cval(this))
 			case types.TRILEAN:
 				c.push(&value{typ: typ, val: tri.This(this.Value)})
@@ -270,6 +338,16 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 					default:
 						halt.As(101, "unknown type on right ", r.typ)
 					}
+				case types.REAL:
+					switch r.typ {
+					case types.REAL:
+						lr := l.toReal()
+						rr := r.toReal()
+						x := lr.Add(lr, rr)
+						c.push(&value{typ: l.typ, val: ThisRat(x)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
 				case types.STRING:
 					switch r.typ {
 					case types.STRING:
@@ -297,6 +375,11 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 						buf = append(buf, buf2...)
 						rs = string(buf)
 						c.push(&value{typ: r.typ, val: rs})
+					case types.CHAR:
+						lc := l.toRune()
+						rc := r.toRune()
+						buf := []rune{lc, rc}
+						c.push(&value{typ: types.STRING, val: string(buf)})
 					default:
 						halt.As(100, "unknown type on right ", r.typ)
 					}
@@ -357,6 +440,21 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 						ri := r.toInt()
 						x := li.Div(li, ri)
 						c.push(&value{typ: l.typ, val: ThisInt(x)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				default:
+					halt.As(100, "unknown type on left ", l.typ)
+				}
+			case operation.Quot:
+				switch l.typ {
+				case types.REAL:
+					switch r.typ {
+					case types.REAL:
+						lr := l.toReal()
+						rr := r.toReal()
+						x := lr.Quo(lr, rr)
+						c.push(&value{typ: l.typ, val: ThisRat(x)})
 					default:
 						halt.As(101, "unknown type on right ", r.typ)
 					}
@@ -583,6 +681,19 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 						lb := l.toBool()
 						rb := r.toBool()
 						c.push(&value{typ: types.BOOLEAN, val: (lb == rb)})
+					case types.TRILEAN:
+						lb := l.toBool()
+						rt := r.toTril()
+						if !tri.Nil(rt) {
+							if tri.True(rt) {
+								lb = (lb == true)
+							} else {
+								lb = (lb == false)
+							}
+						} else {
+							lb = false
+						}
+						c.push(&value{typ: types.BOOLEAN, val: lb})
 					default:
 						halt.As(101, "unknown type on right ", r.typ)
 					}
@@ -592,6 +703,24 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 						lt := l.toTril()
 						rt := r.toTril()
 						c.push(&value{typ: types.BOOLEAN, val: (tri.Ord(lt) == tri.Ord(rt))})
+					case types.BOOLEAN:
+						lt := l.toTril()
+						rb := r.toBool()
+						if !tri.Nil(lt) {
+							if tri.True(lt) {
+								rb = (rb == true)
+							} else {
+								rb = (rb == false)
+							}
+						} else {
+							rb = false
+						}
+						c.push(&value{typ: types.BOOLEAN, val: rb})
+					case types.ATOM:
+						ra := r.toAtom()
+						lt := l.toTril()
+						assert.For(tri.Nil(lt), 40, "NIL comparision only")
+						c.push(&value{typ: types.BOOLEAN, val: (ra == nil)})
 					default:
 						halt.As(101, "unknown type on right ", r.typ)
 					}
@@ -601,6 +730,26 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 						ls := l.toStr()
 						rs := r.toStr()
 						c.push(&value{typ: types.BOOLEAN, val: (ls == rs)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.ATOM:
+					switch r.typ {
+					case types.ATOM:
+						la := l.toAtom()
+						ra := l.toAtom()
+						eq := false
+						if la == nil && ra == nil {
+							eq = true
+						} else if la != nil && ra != nil {
+							eq = *la == *ra
+						}
+						c.push(&value{typ: types.BOOLEAN, val: eq})
+					case types.TRILEAN:
+						la := l.toAtom()
+						rt := r.toTril()
+						assert.For(tri.Nil(rt), 40, "NIL comparision only")
+						c.push(&value{typ: types.BOOLEAN, val: (la == nil)})
 					default:
 						halt.As(101, "unknown type on right ", r.typ)
 					}
@@ -634,6 +783,19 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 						lb := l.toBool()
 						rb := r.toBool()
 						c.push(&value{typ: types.BOOLEAN, val: (lb != rb)})
+					case types.TRILEAN:
+						lb := l.toBool()
+						rt := r.toTril()
+						if !tri.Nil(rt) {
+							if tri.True(rt) {
+								lb = (lb != true)
+							} else {
+								lb = (lb != false)
+							}
+						} else {
+							lb = true
+						}
+						c.push(&value{typ: types.BOOLEAN, val: lb})
 					default:
 						halt.As(101, "unknown type on right ", r.typ)
 					}
@@ -652,6 +814,44 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 						lt := l.toTril()
 						rt := r.toTril()
 						c.push(&value{typ: types.BOOLEAN, val: (tri.Ord(lt) != tri.Ord(rt))})
+					case types.BOOLEAN:
+						lt := l.toTril()
+						rb := r.toBool()
+						if !tri.Nil(lt) {
+							if tri.True(lt) {
+								rb = (rb != true)
+							} else {
+								rb = (rb != false)
+							}
+						} else {
+							rb = true
+						}
+						c.push(&value{typ: types.BOOLEAN, val: rb})
+					case types.ATOM:
+						ra := r.toAtom()
+						lt := l.toTril()
+						assert.For(tri.Nil(lt), 40, "NIL comparision only")
+						c.push(&value{typ: types.BOOLEAN, val: (ra != nil)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.ATOM:
+					switch r.typ {
+					case types.ATOM:
+						la := l.toAtom()
+						ra := l.toAtom()
+						neq := true
+						if la == nil && ra == nil {
+							neq = false
+						} else if la != nil && ra != nil {
+							neq = *la != *ra
+						}
+						c.push(&value{typ: types.BOOLEAN, val: neq})
+					case types.TRILEAN:
+						la := l.toAtom()
+						rt := r.toTril()
+						assert.For(tri.Nil(rt), 40, "NIL comparision only")
+						c.push(&value{typ: types.BOOLEAN, val: (la != nil)})
 					default:
 						halt.As(101, "unknown type on right ", r.typ)
 					}

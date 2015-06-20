@@ -112,6 +112,14 @@ func TestCollection(t *testing.T) {
 					p := parser.ConnectTo(scanner.ConnectTo(rd))
 					var ast *ir.Module
 					if ast, err = p.Module(); err == nil {
+						if t, err := os.Create(ast.Name + ".li"); err == nil {
+							target.New(ast, t)
+							t.Close()
+						}
+						if t, err := os.Open(ast.Name + ".li"); err == nil {
+							defer t.Close()
+							target.Old(t)
+						}
 						li.Do(ast)
 					}
 				}

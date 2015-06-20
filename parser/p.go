@@ -24,6 +24,8 @@ const (
 	trilean
 	char
 	str
+	atom
+	flo //for real, real is builtin go function O_o
 )
 
 func init() {
@@ -31,13 +33,17 @@ func init() {
 		"BOOLEAN": boolean,
 		"TRILEAN": trilean,
 		"CHAR":    char,
-		"STRING":  str}
+		"STRING":  str,
+		"ATOM":    atom,
+		"REAL":    flo}
 
 	entries = map[scanner.Foreign]interface{}{integer: Type{typ: types.INTEGER},
 		boolean: Type{typ: types.BOOLEAN},
 		trilean: Type{typ: types.TRILEAN},
 		char:    Type{typ: types.CHAR},
-		str:     Type{typ: types.STRING}}
+		str:     Type{typ: types.STRING},
+		atom:    Type{typ: types.ATOM},
+		flo:     Type{typ: types.REAL}}
 }
 
 type Parser interface {
@@ -155,10 +161,13 @@ func (p *pr) number() (t types.Type, v interface{}) {
 	assert.For(p.is(scanner.Number), 20, "number expected here")
 	switch p.sym.NumberOpts.Modifier {
 	case "":
-		assert.For(!p.sym.NumberOpts.Period, 21)
-		x, err := strconv.Atoi(p.sym.Str)
-		assert.For(err == nil, 40)
-		t, v = types.INTEGER, x
+		if p.sym.NumberOpts.Period {
+			t, v = types.REAL, p.sym.Str
+		} else {
+			//x, err := strconv.Atoi(p.sym.Str)
+			//assert.For(err == nil, 40)
+			t, v = types.INTEGER, p.sym.Str
+		}
 	case "U":
 		if p.sym.NumberOpts.Period {
 			p.mark("hex integer value expected")
@@ -250,7 +259,7 @@ func (p *pr) product(b *exprBuilder) {
 	for stop := false; !stop; {
 		p.pass(scanner.Separator)
 		switch p.sym.Code {
-		case scanner.Times, scanner.Div, scanner.Mod, scanner.And:
+		case scanner.Times, scanner.Div, scanner.Mod, scanner.Divide, scanner.And:
 			op := p.sym.Code
 			p.next()
 			p.pass(scanner.Separator)
@@ -338,10 +347,13 @@ func (p *pr) typ(consume func(t types.Type)) {
 	id := p.ident()
 	if t, ok := entries[p.sym.User].(Type); ok {
 		switch t.typ {
-		case types.INTEGER, types.BOOLEAN, types.TRILEAN:
+		case types.INTEGER, types.REAL, types.BOOLEAN, types.TRILEAN:
 			p.next()
 			consume(t.typ)
 		case types.CHAR, types.STRING:
+			p.next()
+			consume(t.typ)
+		case types.ATOM:
 			p.next()
 			consume(t.typ)
 		default:

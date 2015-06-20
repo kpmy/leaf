@@ -9,7 +9,8 @@ const (
 	TRILEAN
 	CHAR
 	STRING
-
+	ATOM
+	REAL
 	// leave this last
 	NONE
 )
@@ -28,6 +29,10 @@ func (t Type) String() (ret string) {
 		return "CHAR"
 	case STRING:
 		return "STRING"
+	case ATOM:
+		return "ATOM"
+	case REAL:
+		return "REAL"
 	default:
 		return ""
 	}

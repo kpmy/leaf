@@ -12,9 +12,9 @@ MODULE TestAssign
 CONST I = 4
 VAR i INTEGER
 BEGIN
-	i:=1
+	i := 1
 CLOSE
-	i:=I
+	i := I
 END TestAssign.
 
 (* arithmetics *)
@@ -39,14 +39,14 @@ MODULE TestLogic
 	VAR a, b, c BOOLEAN
 	VAR p, q, r TRILEAN
 BEGIN
-	a:=TRUE
-	b:=FALSE
-	c:=~a & b | c | TRUE
+	a := TRUE
+	b := FALSE
+	c := ~a & b | c | TRUE
 CLOSE
-	p:=TRUE
-	q:=FALSE
-	r:=NIL
-	r:=p & ~q | r | TRUE
+	p := TRUE
+	q := FALSE
+	r := NIL
+	r:= p & ~q | r | TRUE
 END TestLogic.
 
 (* comparisions, braces *)
@@ -59,9 +59,9 @@ BEGIN
 	i := 4
 	j := (i + 9) % 2
 	ok := i < 4
-	ok:= i > 4
-	ok := ((i + 4) >= (j+49)) & (i <= 144)
-	ok := ok & (i#j) | (i = j)
+	ok := i > 4
+	ok := ((i + 4) >= (j+ 49)) & (i <= 144)
+	ok := ok & (i # j) | (i = j)
 END TestComp.
 
 (* forwarding expr in CONST *)
@@ -91,7 +91,6 @@ MODULE TestChars
 		lf = 0AU
 		space = ' '
 		tab = 09U
-
 	VAR
 		x CHAR
 		y CHAR
@@ -109,6 +108,11 @@ CLOSE
 	ok := (x # space) = (y # cr)
 	ok := (y > cr) | (y >= cr) & (x < lf) | (x <=lf)
 	ok := (p = q) & (p # q)
+	ok := (TRUE = FALSE)
+	ok := (NIL = FALSE)
+	ok := (NIL # TRUE)
+	ok := (TRUE # NIL)
+	ok := (TRUE = NIL)
 END TestChars.
 
 (* strings and string comparision *)
@@ -130,5 +134,43 @@ BEGIN
 	s := "abba"
 	t := "baab"
 	ok := (s > t) | (s >= t) & (t < s) | (t <= s)
+	s := '1' + '4' + hello
 END TestStrings.
 
+(* integers without visible limit *)
+MODULE TestBig
+	CONST max = 232351311000000000000013132342342354235235234234234234234111111324235235234234
+	VAR i INTEGER
+BEGIN
+	i := max + max + max
+END TestBig.
+
+MODULE TestAtom
+	CONST A; B; C
+	VAR a, b, c ATOM
+	VAR ok BOOLEAN
+BEGIN
+	a := A
+	b := B
+	ok := (a = b) & (a # b) & (a # C)
+	ok := c = NIL
+	ok := NIL = c
+	ok := NIL # c
+	ok := c # NIL
+	a := b
+	ok := (a = b)
+END TestAtom.
+
+MODULE TestReal
+	CONST
+		Pi = 3.14
+		E = 2.71
+	VAR
+		r, s, t REAL
+		i, j INTEGER
+BEGIN
+	r := 0.1
+	r := Pi
+	s := E
+	t := Pi / (E + 1.0)
+END TestReal.
