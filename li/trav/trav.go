@@ -297,6 +297,10 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 					i := v.toInt()
 					i = i.Neg(i)
 					c.push(&value{typ: v.typ, val: ThisInt(i)})
+				case types.REAL:
+					i := v.toReal()
+					i = i.Neg(i)
+					c.push(&value{typ: v.typ, val: ThisRat(i)})
 				default:
 					halt.As(100, "unknown type of operand ", v.typ)
 				}
@@ -335,6 +339,12 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 						ri := r.toInt()
 						x := li.Add(li, ri)
 						c.push(&value{typ: l.typ, val: ThisInt(x)})
+					case types.REAL:
+						li := l.toInt()
+						rr := r.toReal()
+						x := big.NewRat(0, 1)
+						x.SetInt(li).Add(x, rr)
+						c.push(&value{typ: types.REAL, val: ThisRat(x)})
 					default:
 						halt.As(101, "unknown type on right ", r.typ)
 					}
@@ -395,6 +405,24 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 						ri := r.toInt()
 						x := li.Sub(li, ri)
 						c.push(&value{typ: l.typ, val: ThisInt(x)})
+					case types.REAL:
+						li := l.toInt()
+						rr := r.toReal()
+						x := big.NewRat(0, 1)
+						x.SetInt(li).Sub(x, rr)
+						c.push(&value{typ: types.REAL, val: ThisRat(x)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.REAL:
+					switch r.typ {
+					case types.INTEGER:
+						ri := r.toInt()
+						lr := l.toReal()
+						x := big.NewRat(0, 1)
+						x.SetInt(ri)
+						x = x.Sub(lr, x)
+						c.push(&value{typ: types.REAL, val: ThisRat(x)})
 					default:
 						halt.As(101, "unknown type on right ", r.typ)
 					}
@@ -410,6 +438,18 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 						ri := r.toInt()
 						x := li.Mul(li, ri)
 						c.push(&value{typ: l.typ, val: ThisInt(x)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.REAL:
+					switch r.typ {
+					case types.INTEGER:
+						lr := l.toReal()
+						ri := r.toInt()
+						x := big.NewRat(0, 1)
+						x.SetInt(ri)
+						x = x.Mul(lr, x)
+						c.push(&value{typ: types.REAL, val: ThisRat(x)})
 					default:
 						halt.As(101, "unknown type on right ", r.typ)
 					}
@@ -455,9 +495,35 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 						rr := r.toReal()
 						x := lr.Quo(lr, rr)
 						c.push(&value{typ: l.typ, val: ThisRat(x)})
+					case types.INTEGER:
+						lr := l.toReal()
+						ri := r.toInt()
+						y := big.NewRat(0, 1)
+						y = y.SetInt(ri)
+						c.push(&value{typ: types.REAL, val: ThisRat(y.Quo(lr, y))})
 					default:
 						halt.As(101, "unknown type on right ", r.typ)
 					}
+				case types.INTEGER:
+					switch r.typ {
+					case types.INTEGER:
+						li := l.toInt()
+						ri := r.toInt()
+						x := big.NewRat(0, 1)
+						x = x.SetInt(li)
+						y := big.NewRat(0, 1)
+						y = y.SetInt(ri)
+						c.push(&value{typ: types.REAL, val: ThisRat(x.Quo(x, y))})
+					case types.REAL:
+						li := l.toInt()
+						rr := r.toReal()
+						x := big.NewRat(0, 1)
+						x = x.SetInt(li)
+						c.push(&value{typ: types.REAL, val: ThisRat(x.Quo(x, rr))})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+
 				default:
 					halt.As(100, "unknown type on left ", l.typ)
 				}
@@ -470,6 +536,16 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 						ri := r.toInt()
 						x := li.Exp(li, ri, big.NewInt(0))
 						c.push(&value{typ: l.typ, val: ThisInt(x)})
+					default:
+						halt.As(101, "unknown type on right ", r.typ)
+					}
+				case types.REAL:
+					switch r.typ {
+					case types.INTEGER:
+						lr := l.toReal()
+						//ri := r.toInt()
+						fmt.Println("real power not implemented")
+						c.push(&value{typ: l.typ, val: ThisRat(lr)})
 					default:
 						halt.As(101, "unknown type on right ", r.typ)
 					}

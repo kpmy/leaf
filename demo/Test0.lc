@@ -79,9 +79,11 @@ END TestExpr.
 MODULE TestExpr2
 	VAR i INTEGER
 	VAR j INTEGER
+	VAR s, t INTEGER
 BEGIN
 	i := 2 ^ 2 * 2
 	j := i ^ (i - 3) // 2 // 3 // 4 // 5 // 6 // 7
+	s := s*s + t*t - s + t^i - s^j (* + s*i *)
 END TestExpr2.
 
 (* chars and complex comparisions *)
@@ -171,6 +173,14 @@ MODULE TestReal
 BEGIN
 	r := 0.1
 	r := Pi
+	r := -r
 	s := E
 	t := Pi / (E + 1.0)
+	i := 45
+	j := 443
+	s := i/j
+	t:=i/s
+	s:=j/t
+	s := s*s + t*t - s + t^i - s^j + s*i + s + i + s / i + s - i
+	s := s / i + s * i
 END TestReal.
