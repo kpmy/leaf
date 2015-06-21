@@ -96,6 +96,7 @@ func TestInterp(t *testing.T) {
 				li.Do(ir)
 			}
 		}
+		fmt.Println()
 	}
 }
 
@@ -122,6 +123,7 @@ func TestCollection(t *testing.T) {
 						}
 						li.Do(ast)
 					}
+					fmt.Println()
 				}
 			}
 		}

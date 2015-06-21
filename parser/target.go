@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
@@ -84,16 +85,18 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 		stack = append(stack, tmp...)
 	}
 	/*
-		fmt.Print("(")
-		for _, v := range stack {
-			if _, ok := v.e.(*exprBuilder); ok {
-				fmt.Print(v.priority, " ")
-				v.e.(ir.EvaluatedExpression).Eval()
-			} else {
-				fmt.Print(v.priority, reflect.TypeOf(v.e), " ")
+		{
+			fmt.Print("(")
+			for _, v := range stack {
+				if _, ok := v.e.(*exprBuilder); ok {
+					fmt.Print(v.priority, " ")
+					v.e.(ir.EvaluatedExpression).Eval()
+				} else {
+					fmt.Print(v.priority, reflect.TypeOf(v.e), " ")
+				}
 			}
+			fmt.Println(")")
 		}
-		fmt.Print(")")
 	*/
 	var trav func(*exprItem, []*exprItem) []*exprItem
 	bypass := func(expr *exprItem) (ret *exprItem, skip bool) {
@@ -108,6 +111,7 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 		return
 	}
 	trav = func(r *exprItem, stack []*exprItem) (ret []*exprItem) {
+		//fmt.Println(reflect.TypeOf(r.e))
 		switch root := r.e.(type) {
 		case *ir.ConstExpr, *ir.NamedConstExpr, *ir.VariableExpr: //do nothing
 			ret = stack
@@ -117,6 +121,7 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 			ok := false
 			expr, ok = bypass(expr)
 			if !ok {
+				//fmt.Println("mop trav")
 				ret = trav(expr, tail)
 			}
 			root.Operand = expr.e
@@ -124,24 +129,26 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 			ret = stack
 			ok := false
 
-			right, ret := first(ret)
+			right, tail := first(ret)
 			assert.For(right != nil, 40)
 			right, ok = bypass(right)
 			if !ok {
-				ret = trav(right, ret)
+				//fmt.Println("dop right trav")
+				ret = trav(right, tail)
 			}
 			root.Right = right.e
 
-			left, ret := first(ret)
+			left, tail := first(ret)
 			assert.For(left != nil, 40)
 			left, ok = bypass(left)
 			if !ok {
-				ret = trav(left, ret)
+				//fmt.Println("dop left trav")
+				ret = trav(left, tail)
 			}
 			root.Left = left.e
 		case nil: //do nothing
 		default:
-			halt.As(100, "unsupported type ", reflect.TypeOf(root))
+			halt.As(100, "unsupported type ", fmt.Sprint(reflect.TypeOf(root)))
 		}
 		return
 	}
@@ -149,29 +156,63 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 	root, tail := first(stack)
 	root, ok = bypass(root)
 	if !ok {
+		//fmt.Println("root trav")
 		trav(root, tail)
 	}
 	ret = root.e
+	{
+		var eprint func(ir.Expression)
+		eprint = func(_e ir.Expression) {
+			switch e := _e.(type) {
+			case *ir.ConstExpr:
+				fmt.Println(e.Value)
+			case *ir.NamedConstExpr:
+				fmt.Println(e.Named)
+			case *ir.VariableExpr:
+				fmt.Print("$", e.Obj.Name)
+				fmt.Println()
+			case *ir.Monadic:
+				fmt.Println("mop")
+				eprint(e.Operand)
+				fmt.Println(e.Op)
+			case *ir.Dyadic:
+				fmt.Println("dop left")
+				eprint(e.Left)
+				fmt.Println("dop right")
+				eprint(e.Right)
+				fmt.Println(e.Op)
+			default:
+				halt.As(100, reflect.TypeOf(e))
+			}
+		}
+		//fmt.Println("evaluated")
+		//eprint(ret)
+	}
 	return
 }
 
 func (e *exprBuilder) factor(expr ir.Expression) {
+	//fmt.Println("factor ", reflect.TypeOf(expr), expr)
 	e.stack = append(e.stack, &exprItem{e: expr, priority: highest})
 }
 
 func (e *exprBuilder) power(expr ir.Expression) {
+	//fmt.Println("power ", reflect.TypeOf(expr), expr)
 	e.stack = append(e.stack, &exprItem{e: expr, priority: higher})
 }
 
 func (e *exprBuilder) product(expr ir.Expression) {
+	//fmt.Println("product ", reflect.TypeOf(expr), expr)
 	e.stack = append(e.stack, &exprItem{e: expr, priority: high})
 }
 
 func (e *exprBuilder) quantum(expr ir.Expression) {
+	//fmt.Println("quantum ", reflect.TypeOf(expr), expr)
 	e.stack = append(e.stack, &exprItem{e: expr, priority: normal})
 }
 
 func (e *exprBuilder) expr(expr ir.Expression) {
+	//fmt.Println("expr ", reflect.TypeOf(expr), expr)
 	e.stack = append(e.stack, &exprItem{e: expr, priority: low})
 }
 
