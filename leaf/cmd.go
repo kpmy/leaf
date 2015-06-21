@@ -31,10 +31,13 @@ func main() {
 		p := parser.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)))
 		ir, _ := p.Module()
 		if t, err := os.Create(name + ".li"); err == nil {
-			defer t.Close()
 			target.New(ir, t)
+			t.Close()
 		}
-		li.Do(ir)
+		if z, err := os.Open(name + ".li"); err == nil {
+			ir := target.Old(z)
+			li.Do(ir)
+		}
 	} else {
 		log.Fatal(err)
 	}

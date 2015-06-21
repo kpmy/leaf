@@ -1,7 +1,6 @@
 package trav
 
 import (
-	"fmt"
 	"github.com/kpmy/trigo"
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
@@ -310,8 +309,13 @@ func b_s_s_(fn func(string, string) bool) func(string, *value) bool {
 	}
 }
 
-func init() {
-	dyadic = make(tm)
+const (
+	lss = -1
+	eq  = 0
+	gtr = 1
+)
+
+func dyINTEGER() {
 	putDyadic(types.INTEGER, types.INTEGER, operation.Sum,
 		i_(i_i_(i_i_i_(func(l *big.Int, r *big.Int) *big.Int {
 			return l.Add(l, r)
@@ -336,63 +340,6 @@ func init() {
 		i_(i_i_(i_i_i_(func(l *big.Int, r *big.Int) *big.Int {
 			return l.Exp(l, r, big.NewInt(0))
 		}))))
-	putDyadic(types.INTEGER, types.INTEGER, operation.Quot,
-		r_(r_ir_(r_ir_ir_(func(l *big.Rat, r *big.Rat) *big.Rat {
-			return l.Quo(l, r)
-		}))))
-
-	putDyadic(types.REAL, types.INTEGER, operation.Quot,
-		r_(r_ir_(r_ir_ir_(func(l *big.Rat, r *big.Rat) *big.Rat {
-			return l.Quo(l, r)
-		}))))
-	putDyadic(types.INTEGER, types.REAL, operation.Quot,
-		r_(r_ir_(r_ir_ir_(func(l *big.Rat, r *big.Rat) *big.Rat {
-			return l.Quo(l, r)
-		}))))
-	putDyadic(types.REAL, types.INTEGER, operation.Pow,
-		r_(r_ir_(r_ir_ir_(func(l *big.Rat, r *big.Rat) *big.Rat {
-			fmt.Println("real pow not implemented")
-			return l
-		}))))
-	putDyadic(types.INTEGER, types.REAL, operation.Prod,
-		r_(r_ir_(r_ir_ir_(func(l *big.Rat, r *big.Rat) *big.Rat {
-			return l.Mul(l, r)
-		}))))
-	putDyadic(types.REAL, types.INTEGER, operation.Prod,
-		r_(r_ir_(r_ir_ir_(func(l *big.Rat, r *big.Rat) *big.Rat {
-			return l.Mul(l, r)
-		}))))
-	putDyadic(types.REAL, types.INTEGER, operation.Sum,
-		r_(r_ir_(r_ir_ir_(func(l *big.Rat, r *big.Rat) *big.Rat {
-			return l.Add(l, r)
-		}))))
-	putDyadic(types.REAL, types.INTEGER, operation.Diff,
-		r_(r_ir_(r_ir_ir_(func(l *big.Rat, r *big.Rat) *big.Rat {
-			return l.Sub(l, r)
-		}))))
-
-	putDyadic(types.REAL, types.REAL, operation.Sum,
-		r_(r_r_(r_r_r_(func(l *big.Rat, r *big.Rat) *big.Rat {
-			return l.Add(l, r)
-		}))))
-	putDyadic(types.REAL, types.REAL, operation.Diff,
-		r_(r_r_(r_r_r_(func(l *big.Rat, r *big.Rat) *big.Rat {
-			return l.Sub(l, r)
-		}))))
-	putDyadic(types.REAL, types.REAL, operation.Prod,
-		r_(r_r_(r_r_r_(func(l *big.Rat, r *big.Rat) *big.Rat {
-			return l.Mul(l, r)
-		}))))
-	putDyadic(types.REAL, types.REAL, operation.Quot,
-		r_(r_r_(r_r_r_(func(l *big.Rat, r *big.Rat) *big.Rat {
-			return l.Quo(l, r)
-		}))))
-
-	const (
-		lss = -1
-		eq  = 0
-		gtr = 1
-	)
 
 	putDyadic(types.INTEGER, types.INTEGER, operation.Lss,
 		b_(b_i_(b_i_i_(func(l *big.Int, r *big.Int) bool {
@@ -423,6 +370,25 @@ func init() {
 		b_(b_i_(b_i_i_(func(l *big.Int, r *big.Int) bool {
 			res := l.Cmp(r)
 			return res != eq
+		}))))
+}
+
+func dyREAL() {
+	putDyadic(types.REAL, types.REAL, operation.Sum,
+		r_(r_r_(r_r_r_(func(l *big.Rat, r *big.Rat) *big.Rat {
+			return l.Add(l, r)
+		}))))
+	putDyadic(types.REAL, types.REAL, operation.Diff,
+		r_(r_r_(r_r_r_(func(l *big.Rat, r *big.Rat) *big.Rat {
+			return l.Sub(l, r)
+		}))))
+	putDyadic(types.REAL, types.REAL, operation.Prod,
+		r_(r_r_(r_r_r_(func(l *big.Rat, r *big.Rat) *big.Rat {
+			return l.Mul(l, r)
+		}))))
+	putDyadic(types.REAL, types.REAL, operation.Quot,
+		r_(r_r_(r_r_r_(func(l *big.Rat, r *big.Rat) *big.Rat {
+			return l.Quo(l, r)
 		}))))
 
 	putDyadic(types.REAL, types.REAL, operation.Lss,
@@ -455,14 +421,93 @@ func init() {
 			res := l.Cmp(r)
 			return res != eq
 		}))))
+}
 
+func dyCHAR() {
 	putDyadic(types.CHAR, types.CHAR, operation.Eq, b_(b_c_(b_c_c_(func(lc rune, rc rune) bool { return lc == rc }))))
 	putDyadic(types.CHAR, types.CHAR, operation.Neq, b_(b_c_(b_c_c_(func(lc rune, rc rune) bool { return lc != rc }))))
 	putDyadic(types.CHAR, types.CHAR, operation.Leq, b_(b_c_(b_c_c_(func(lc rune, rc rune) bool { return lc <= rc }))))
 	putDyadic(types.CHAR, types.CHAR, operation.Geq, b_(b_c_(b_c_c_(func(lc rune, rc rune) bool { return lc >= rc }))))
 	putDyadic(types.CHAR, types.CHAR, operation.Lss, b_(b_c_(b_c_c_(func(lc rune, rc rune) bool { return lc < rc }))))
 	putDyadic(types.CHAR, types.CHAR, operation.Gtr, b_(b_c_(b_c_c_(func(lc rune, rc rune) bool { return lc > rc }))))
+}
 
+func dySTRING() {
+	putDyadic(types.STRING, types.STRING, operation.Sum, s_(s_s_(s_s_s_(func(ls string, rs string) string { return ls + rs }))))
+
+	putDyadic(types.STRING, types.STRING, operation.Eq, b_(b_s_(b_s_s_(func(ls string, rs string) bool { return ls == rs }))))
+	putDyadic(types.STRING, types.STRING, operation.Leq, b_(b_s_(b_s_s_(func(ls string, rs string) bool { return ls <= rs }))))
+	putDyadic(types.STRING, types.STRING, operation.Lss, b_(b_s_(b_s_s_(func(ls string, rs string) bool { return ls < rs }))))
+	putDyadic(types.STRING, types.STRING, operation.Geq, b_(b_s_(b_s_s_(func(ls string, rs string) bool { return ls >= rs }))))
+	putDyadic(types.STRING, types.STRING, operation.Gtr, b_(b_s_(b_s_s_(func(ls string, rs string) bool { return ls > rs }))))
+	putDyadic(types.STRING, types.STRING, operation.Neq, b_(b_s_(b_s_s_(func(ls string, rs string) bool { return ls != rs }))))
+}
+
+func dyINT2REAL() {
+	putDyadic(types.REAL, types.INTEGER, operation.Quot,
+		r_(r_ir_(r_ir_ir_(func(l *big.Rat, r *big.Rat) *big.Rat {
+			return l.Quo(l, r)
+		}))))
+	putDyadic(types.INTEGER, types.REAL, operation.Quot,
+		r_(r_ir_(r_ir_ir_(func(l *big.Rat, r *big.Rat) *big.Rat {
+			return l.Quo(l, r)
+		}))))
+	putDyadic(types.REAL, types.INTEGER, operation.Pow,
+		r_(r_ir_(r_ir_ir_(func(l *big.Rat, r *big.Rat) *big.Rat {
+			n := l.Num()
+			d := l.Denom()
+			assert.For(r.IsInt(), 40)
+			p := r.Num()
+			n = n.Exp(n, p, big.NewInt(0))
+			d = d.Exp(d, p, big.NewInt(0))
+			ret := big.NewRat(0, 1)
+			ret = ret.SetFrac(n, d)
+			return ret
+		}))))
+	putDyadic(types.INTEGER, types.REAL, operation.Prod,
+		r_(r_ir_(r_ir_ir_(func(l *big.Rat, r *big.Rat) *big.Rat {
+			return l.Mul(l, r)
+		}))))
+	putDyadic(types.REAL, types.INTEGER, operation.Prod,
+		r_(r_ir_(r_ir_ir_(func(l *big.Rat, r *big.Rat) *big.Rat {
+			return l.Mul(l, r)
+		}))))
+	putDyadic(types.REAL, types.INTEGER, operation.Sum,
+		r_(r_ir_(r_ir_ir_(func(l *big.Rat, r *big.Rat) *big.Rat {
+			return l.Add(l, r)
+		}))))
+	putDyadic(types.REAL, types.INTEGER, operation.Diff,
+		r_(r_ir_(r_ir_ir_(func(l *big.Rat, r *big.Rat) *big.Rat {
+			return l.Sub(l, r)
+		}))))
+	putDyadic(types.INTEGER, types.INTEGER, operation.Quot,
+		r_(r_ir_(r_ir_ir_(func(l *big.Rat, r *big.Rat) *big.Rat {
+			return l.Quo(l, r)
+		}))))
+}
+
+func dyCHAR2STRING() {
+	putDyadic(types.STRING, types.CHAR, operation.Sum, s_(s_s_(s_s_c_(func(ls string, rc rune) string {
+		buf := []rune(ls)
+		buf = append(buf, rc)
+		return string(buf)
+	}))))
+
+	putDyadic(types.CHAR, types.STRING, operation.Sum, s_(s_c_(s_c_s_(func(lc rune, rs string) string {
+		var buf []rune
+		buf = append(buf, lc)
+		buf2 := []rune(rs)
+		buf = append(buf, buf2...)
+		return string(buf)
+	}))))
+
+	putDyadic(types.CHAR, types.CHAR, operation.Sum, s_(s_c_(s_c_c_(func(lc rune, rc rune) string {
+		buf := []rune{lc, rc}
+		return string(buf)
+	}))))
+}
+
+func dyABT() {
 	putDyadic(types.BOOLEAN, types.BOOLEAN, operation.Neq, b_(b_b_(b_b_b_(func(lb bool, rb bool) bool { return lb != rb }))))
 	putDyadic(types.BOOLEAN, types.BOOLEAN, operation.Eq, b_(b_b_(b_b_b_(func(lb bool, rb bool) bool { return lb == rb }))))
 
@@ -560,32 +605,15 @@ func init() {
 		assert.For(tri.Nil(lt), 40, "NIL comparision only")
 		return ra != nil
 	}))))
+}
 
-	putDyadic(types.STRING, types.STRING, operation.Sum, s_(s_s_(s_s_s_(func(ls string, rs string) string { return ls + rs }))))
-
-	putDyadic(types.STRING, types.STRING, operation.Eq, b_(b_s_(b_s_s_(func(ls string, rs string) bool { return ls == rs }))))
-	putDyadic(types.STRING, types.STRING, operation.Leq, b_(b_s_(b_s_s_(func(ls string, rs string) bool { return ls <= rs }))))
-	putDyadic(types.STRING, types.STRING, operation.Lss, b_(b_s_(b_s_s_(func(ls string, rs string) bool { return ls < rs }))))
-	putDyadic(types.STRING, types.STRING, operation.Geq, b_(b_s_(b_s_s_(func(ls string, rs string) bool { return ls >= rs }))))
-	putDyadic(types.STRING, types.STRING, operation.Gtr, b_(b_s_(b_s_s_(func(ls string, rs string) bool { return ls > rs }))))
-	putDyadic(types.STRING, types.STRING, operation.Neq, b_(b_s_(b_s_s_(func(ls string, rs string) bool { return ls != rs }))))
-
-	putDyadic(types.STRING, types.CHAR, operation.Sum, s_(s_s_(s_s_c_(func(ls string, rc rune) string {
-		buf := []rune(ls)
-		buf = append(buf, rc)
-		return string(buf)
-	}))))
-
-	putDyadic(types.CHAR, types.STRING, operation.Sum, s_(s_c_(s_c_s_(func(lc rune, rs string) string {
-		var buf []rune
-		buf = append(buf, lc)
-		buf2 := []rune(rs)
-		buf = append(buf, buf2...)
-		return string(buf)
-	}))))
-
-	putDyadic(types.CHAR, types.CHAR, operation.Sum, s_(s_c_(s_c_c_(func(lc rune, rc rune) string {
-		buf := []rune{lc, rc}
-		return string(buf)
-	}))))
+func init() {
+	dyadic = make(tm)
+	dyINTEGER()
+	dyREAL()
+	dyCHAR()
+	dySTRING()
+	dyINT2REAL()
+	dyCHAR2STRING()
+	dyABT()
 }

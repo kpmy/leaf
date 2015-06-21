@@ -174,7 +174,7 @@ func internalize(m *Module) (ret *ir.Module) {
 		for k, v := range m.VarDecl {
 			i := &ir.Variable{}
 			i.Name = k
-			i.Type = typeName[v.Type]
+			i.Type = types.TypMap[v.Type]
 			m.that(v.Guid, i)
 			ret.VarDecl[k] = i
 		}
@@ -318,13 +318,7 @@ func load(sc io.Reader) (ret *ir.Module) {
 	return
 }
 
-var typeName map[string]types.Type
-
 func init() {
 	target.Ext = store
 	target.Int = load
-
-	typeName = map[string]types.Type{types.INTEGER.String(): types.INTEGER,
-		types.BOOLEAN.String(): types.BOOLEAN,
-		types.TRILEAN.String(): types.TRILEAN}
 }

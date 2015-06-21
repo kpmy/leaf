@@ -39,7 +39,7 @@ var OpMap map[string]Operation
 func (o Operation) String() string {
 	switch o {
 	case Neg:
-		return "-"
+		return "--"
 	case Sum:
 		return "+"
 	case Diff:

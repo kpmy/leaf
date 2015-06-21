@@ -169,7 +169,15 @@ func cval(e *ir.ConstExpr) (ret *value) {
 		v := e.Value.(bool)
 		ret = &value{typ: t, val: v}
 	case types.CHAR:
-		v := rune(e.Value.(int32))
+		var v rune
+		switch x := e.Value.(type) {
+		case int32:
+			v = rune(x)
+		case int:
+			v = rune(x)
+		default:
+			halt.As(100, "unsupported rune coding")
+		}
 		ret = &value{typ: t, val: v}
 	case types.STRING:
 		v := e.Value.(string)
@@ -222,7 +230,7 @@ func (s *storage) alloc(vl map[string]*ir.Variable) {
 		case types.REAL:
 			s.data[v.Name] = NewRat(0.0)
 		default:
-			halt.As(100, "unknown type ", v.Type)
+			halt.As(100, "unknown type ", v.Name, ": ", v.Type)
 		}
 	}
 }

@@ -119,9 +119,9 @@ func TestCollection(t *testing.T) {
 						}
 						if t, err := os.Open(ast.Name + ".li"); err == nil {
 							defer t.Close()
-							target.Old(t)
+							ast := target.Old(t)
+							li.Do(ast)
 						}
-						li.Do(ast)
 					}
 					fmt.Println()
 				}
