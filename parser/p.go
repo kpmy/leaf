@@ -80,8 +80,8 @@ func (p *pr) next() scanner.Sym {
 		//		fmt.Print("`" + fmt.Sprint(p.sym) + "`")
 	}
 	p.sym = p.sc.Get()
-	//	fmt.Print(" next ")
-	//	fmt.Println("`" + fmt.Sprint(p.sym) + "`")
+	fmt.Print(" next ")
+	fmt.Println("`" + fmt.Sprint(p.sym) + "`")
 	return p.sym
 }
 
@@ -185,6 +185,12 @@ func (p *pr) number() (t types.Type, v interface{}) {
 	return
 }
 
+func (p *pr) selector() {
+	if p.await(scanner.Lbrak, scanner.Separator) {
+		p.mark("selectors not implemented")
+	}
+}
+
 func (p *pr) factor(b *exprBuilder) {
 	switch p.sym.Code {
 	case scanner.String:
@@ -223,8 +229,9 @@ func (p *pr) factor(b *exprBuilder) {
 		b.factor(&ir.Monadic{Op: operation.Not})
 	case scanner.Ident:
 		e := b.as(p.ident())
-		b.factor(e)
 		p.next()
+		p.selector()
+		b.factor(e)
 	case scanner.Lparen:
 		p.next()
 		expr := &exprBuilder{scope: b.scope}
@@ -409,6 +416,7 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 			obj := b.obj(p.ident())
 			p.next()
 			p.pass(scanner.Separator)
+			p.selector()
 			if p.is(scanner.Becomes) {
 				stmt := &ir.AssignStmt{}
 				p.next()
