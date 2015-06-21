@@ -260,6 +260,11 @@ type sc struct {
 	ch         rune
 	evil       *bool //evil mode without capitalized keywords, true if "module" found first
 	foreignTab map[string]Foreign
+	lines      struct {
+		count int
+		last  int
+		crlf  bool
+	}
 }
 
 func (s *sc) Register(f Foreign, name string) {
@@ -271,12 +276,12 @@ func (s *sc) Register(f Foreign, name string) {
 func (s *sc) Error() error { return s.err }
 
 func (s *sc) Pos() (int, int) {
-	return s.pos, 0
+	return s.lines.count, s.pos - s.lines.last
 }
 
 func (s *sc) mark(msg ...interface{}) {
 	//log.Println("at pos ", s.pos, " ", fmt.Sprintln(msg...))
-	panic(fmt.Sprint("scanner: ", "at pos ", s.pos, " ", fmt.Sprint(msg...)))
+	panic(fmt.Sprint("scanner: ", "at pos ", fmt.Sprint(s.Pos()), " ", fmt.Sprint(msg...)))
 }
 
 func (s *sc) next() rune {
@@ -287,6 +292,20 @@ func (s *sc) next() rune {
 		s.pos += read
 	}
 	return s.ch
+}
+
+func (s *sc) line() {
+	if s.ch == '\r' {
+		s.lines.crlf = true
+	}
+	if (s.lines.crlf && s.ch == '\r') || !s.lines.crlf {
+		s.lines.count++
+		if s.lines.crlf {
+			s.lines.last = s.pos + 2
+		} else {
+			s.lines.last = s.pos + 1
+		}
+	}
 }
 
 func (s *sc) ident() (sym Sym) {
@@ -451,6 +470,9 @@ func (s *sc) Get() (sym Sym) {
 			sym.Code = Rparen
 		case '\r', '\n', ';':
 			for ; s.ch == '\n' || s.ch == '\r' || s.ch == ';'; s.next() {
+				if s.ch == '\r' || s.ch == '\n' {
+					s.line()
+				}
 			}
 			sym.Code = Delimiter
 		case ' ', '\t':

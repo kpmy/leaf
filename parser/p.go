@@ -80,8 +80,8 @@ func (p *pr) next() scanner.Sym {
 		//		fmt.Print("`" + fmt.Sprint(p.sym) + "`")
 	}
 	p.sym = p.sc.Get()
-	fmt.Print(" next ")
-	fmt.Println("`" + fmt.Sprint(p.sym) + "`")
+	//fmt.Print(" next ")
+	//fmt.Println("`" + fmt.Sprint(p.sym) + "`")
 	return p.sym
 }
 
