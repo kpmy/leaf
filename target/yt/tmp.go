@@ -83,3 +83,53 @@ func treatExpr(_m interface{}) (ret *Expression) {
 	}
 	return
 }
+
+func treatStmt(_m interface{}) (ret *Statement) {
+	ret = &Statement{}
+	m := _m.(map[interface{}]interface{})
+	ret.Type = StmtType(m["statement"].(string))
+	ret.Leaf = make(map[string]interface{})
+	leaf := m["leaf"].(map[interface{}]interface{})
+	switch ret.Type {
+	case Assign:
+		ret.Leaf["selector"] = leaf["selector"]
+		ret.Leaf["expression"] = leaf["expression"]
+	case If:
+		ret.Leaf["if"] = leaf["if"]
+		ret.Leaf["else"] = leaf["else"]
+	default:
+		halt.As(100, "unexpected ", ret.Type, " ", _m)
+	}
+	return
+}
+
+func treatBlock(_l interface{}) (ret []*Statement) {
+	if _l != nil {
+		l := _l.([]interface{})
+		for _, s := range l {
+			ret = append(ret, treatStmt(s))
+		}
+	}
+	return
+}
+
+func treatIf(_m interface{}) (ret *Condition) {
+	ret = &Condition{}
+	m := _m.(map[interface{}]interface{})
+	ret.Expr = treatExpr(m["expression"])
+	ret.Seq = treatBlock(m["block"])
+	return
+}
+
+func treatIfList(_l interface{}) (ret []*Condition) {
+	l := _l.([]interface{})
+	for _, c := range l {
+		ret = append(ret, treatIf(c))
+	}
+	return
+}
+
+func treatElse(_l interface{}) (ret []*Statement) {
+	ret = treatBlock(_l)
+	return
+}

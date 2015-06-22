@@ -487,6 +487,24 @@ func (c *context) stmt(_s ir.Statement) {
 			val := c.pop()
 			return val
 		})
+	case *ir.IfStmt:
+		done := false
+		for _, i := range this.Cond {
+			c.expr(i.Expr, types.BOOLEAN)
+			val := c.pop()
+			if val.toBool() {
+				done = true
+				for _, s := range i.Seq {
+					c.stmt(s)
+				}
+				break
+			}
+		}
+		if !done && this.Else != nil {
+			for _, s := range this.Else.Seq {
+				c.stmt(s)
+			}
+		}
 	default:
 		halt.As(100, "unknown statement ", reflect.TypeOf(this))
 	}

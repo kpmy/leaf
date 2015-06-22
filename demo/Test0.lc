@@ -201,3 +201,28 @@ BEGIN
 	ok := s[0] # 043U
 	t:=s[0]+s[1]+s[2]+s[3]+s[4]
 END TestSelector.
+
+MODULE TestIF
+	VAR x BOOLEAN
+	VAR i, j INTEGER
+BEGIN
+	x := TRUE
+	IF x THEN
+		i := 1
+		j := 0
+	END
+	x := FALSE
+	IF x THEN
+		i := 1
+		j := i
+	ELSIF i # 1 THEN
+		j:=123
+		IF j > 100 THEN
+			i := 1
+			j := 0
+		END
+	ELSE
+		i := 2
+		j := j + i
+	END
+END TestIF.

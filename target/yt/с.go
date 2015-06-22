@@ -16,6 +16,7 @@ type StmtType string
 
 const (
 	Assign StmtType = "assign"
+	If     StmtType = "if"
 )
 
 type SelType string

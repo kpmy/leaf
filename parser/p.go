@@ -81,7 +81,7 @@ func (p *pr) next() scanner.Sym {
 	}
 	p.sym = p.sc.Get()
 	//fmt.Print(" next ")
-	//fmt.Println("`" + fmt.Sprint(p.sym) + "`")
+	//	fmt.Println("`" + fmt.Sprint(p.sym) + "`")
 	return p.sym
 }
 
@@ -385,7 +385,6 @@ func (p *pr) typ(consume func(t types.Type)) {
 	}
 }
 
-// VarDecl := "VAR" [ident{","ident}_Type";"]
 func (p *pr) varDecl() {
 	assert.For(p.sym.Code == scanner.Var, 20, "VAR block expected")
 	p.next()
@@ -447,6 +446,40 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 			} else {
 				p.mark("illegal statement")
 			}
+		case scanner.If:
+			stmt := &ir.IfStmt{}
+			for stop := false; !stop; {
+				switch p.sym.Code {
+				case scanner.If, scanner.Elsif:
+					p.next()
+					p.pass(scanner.Separator)
+					expr := &exprBuilder{scope: b.scope}
+					p.expression(expr)
+					p.expect(scanner.Then, "THEN not found", scanner.Separator)
+					p.next()
+					st := &blockBuilder{scope: b.scope}
+					p.stmtSeq(st)
+					p.pass(scanner.Separator, scanner.Delimiter)
+					br := &ir.IfBranch{}
+					br.Expr = expr
+					br.Seq = st.seq
+					stmt.Cond = append(stmt.Cond, br)
+				case scanner.Else:
+					p.next()
+					st := &blockBuilder{scope: b.scope}
+					p.stmtSeq(st)
+					p.pass(scanner.Separator, scanner.Delimiter)
+					br := &ir.ElseBranch{}
+					br.Seq = st.seq
+					stmt.Else = br
+				case scanner.End:
+					p.next()
+					stop = true
+				default:
+					p.mark("END or ELSIF expected, but ", p.sym)
+				}
+			}
+			b.put(stmt)
 		default:
 			stop = true
 		}

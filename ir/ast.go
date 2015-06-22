@@ -114,3 +114,19 @@ type SelectIndex struct {
 }
 
 func (s *SelectIndex) Select() {}
+
+type IfStmt struct {
+	Cond []*IfBranch
+	Else *ElseBranch
+}
+
+func (i *IfStmt) Do() {}
+
+type IfBranch struct {
+	Expr Expression
+	Seq  []Statement
+}
+
+type ElseBranch struct {
+	Seq []Statement
+}

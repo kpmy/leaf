@@ -36,6 +36,11 @@ type Statement struct {
 	Leaf map[string]interface{} `yaml:"leaf,omitempty"`
 }
 
+type Condition struct {
+	Expr *Expression  `yaml:"expression"`
+	Seq  []*Statement `yaml:"block,omitempty"`
+}
+
 type Module struct {
 	Name      string
 	ConstDecl map[string]*Const `yaml:"const,omitempty"`

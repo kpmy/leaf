@@ -14,6 +14,8 @@ func externalize(mod *ir.Module) (ret *Module) {
 
 	var expr func(ir.Expression) *Expression
 	var sel func(s ir.Selector) []*Selector
+	var stmt func(_s ir.Statement) (st *Statement)
+
 	expr = func(_e ir.Expression) (ex *Expression) {
 		ex = &Expression{}
 		ex.Leaf = make(map[string]interface{})
@@ -99,7 +101,7 @@ func externalize(mod *ir.Module) (ret *Module) {
 			ret.VarDecl[v.Name] = i
 		}
 	}
-	stmt := func(_s ir.Statement) (st *Statement) {
+	stmt = func(_s ir.Statement) (st *Statement) {
 		st = &Statement{}
 		st.Leaf = make(map[string]interface{})
 		switch s := _s.(type) {
@@ -108,6 +110,25 @@ func externalize(mod *ir.Module) (ret *Module) {
 			st.Leaf["selector"] = sel(s.Sel)
 			e := s.Expr.(ir.EvaluatedExpression).Eval()
 			st.Leaf["expression"] = expr(e)
+		case *ir.IfStmt:
+			st.Type = If
+			var ifs []*Condition
+			for _, v := range s.Cond {
+				c := &Condition{}
+				c.Expr = expr(v.Expr.(ir.EvaluatedExpression).Eval())
+				for _, x := range v.Seq {
+					c.Seq = append(c.Seq, stmt(x))
+				}
+				ifs = append(ifs, c)
+			}
+			st.Leaf["if"] = ifs
+			if s.Else != nil {
+				var ss []*Statement
+				for _, x := range s.Else.Seq {
+					ss = append(ss, stmt(x))
+				}
+				st.Leaf["else"] = ss
+			}
 		default:
 			halt.As(100, "unexpected ", reflect.TypeOf(s))
 		}

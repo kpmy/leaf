@@ -14,6 +14,8 @@ func internalize(m *Module) (ret *ir.Module) {
 	ret.Name = m.Name
 	var expr func(e *Expression) ir.Expression
 	var sel func(ls []*Selector) ir.Selector
+	var stmt func(s *Statement) (ret ir.Statement)
+
 	expr = func(e *Expression) ir.Expression {
 		d := &dumbExpr{}
 		switch e.Type {
@@ -114,12 +116,32 @@ func internalize(m *Module) (ret *ir.Module) {
 			ret.VarDecl[k] = i
 		}
 	}
-	stmt := func(s *Statement) (ret ir.Statement) {
+	stmt = func(s *Statement) (ret ir.Statement) {
 		switch s.Type {
 		case Assign:
 			this := &ir.AssignStmt{}
 			this.Sel = sel(treatSelList(s.Leaf["selector"]))
 			this.Expr = expr(treatExpr(s.Leaf["expression"]))
+			ret = this
+		case If:
+			this := &ir.IfStmt{}
+			cl := treatIfList(s.Leaf["if"])
+			sl := treatElse(s.Leaf["else"])
+			for _, c := range cl {
+				i := &ir.IfBranch{}
+				i.Expr = expr(c.Expr)
+				for _, s := range c.Seq {
+					i.Seq = append(i.Seq, stmt(s))
+				}
+				this.Cond = append(this.Cond, i)
+			}
+			if sl != nil {
+				e := &ir.ElseBranch{}
+				for _, s := range sl {
+					e.Seq = append(e.Seq, stmt(s))
+				}
+				this.Else = e
+			}
 			ret = this
 		default:
 			halt.As(100, "unexpected ", s.Type)
