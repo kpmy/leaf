@@ -290,6 +290,13 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 				c.push(v)
 				return nil
 			})
+		case *ir.SelectExpr:
+			eval(this.Base)
+			e := c.pop()
+			c.sel(this.Sel, e, nil, func(v *value) *value {
+				c.push(v)
+				return nil
+			})
 		case *ir.Monadic:
 			eval(this.Operand)
 			v := c.pop()
@@ -391,14 +398,95 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 	eval(_e)
 }
 
+func (c *context) sel(_s ir.Selector, in, out *value, end func(*value) *value) {
+	type hs func(*value, *value, ...hs) *value
+
+	tail := func(l ...hs) (ret []hs) {
+		if len(l) > 1 {
+			ret = l[1:]
+		}
+		return
+	}
+	first := func(in, out *value, l ...hs) *value {
+		if len(l) > 0 {
+			fn := l[0]
+			return fn(in, out, tail(l...)...)
+		} else {
+			return nil
+		}
+	}
+
+	var ssel func(ir.Selector) []hs
+	ssel = func(_s ir.Selector) (chain []hs) {
+		switch s := _s.(type) {
+		case ir.ChainSelector:
+			for _, v := range s.Chain() {
+				chain = append(chain, ssel(v)...)
+			}
+		case *ir.SelectVar:
+			chain = append(chain, func(in, out *value, l ...hs) (ret *value) {
+				//fmt.Println("select var ", s.Var, in, out)
+				c.findObj(s.Var, func(val *value) *value {
+					ret = first(in, val, l...)
+					return ret
+				})
+				return
+			})
+		case *ir.SelectIndex:
+			chain = append(chain, func(in, out *value, l ...hs) *value {
+				//fmt.Println("select index ", in, out)
+				c.expr(s.Expr, types.INTEGER)
+				iv := c.pop()
+				i := iv.toInt().Int64()
+				if in != nil { //get
+					switch in.typ {
+					case types.STRING:
+						buf := []rune(in.toStr())
+						//fmt.Println(buf, i, buf[i])
+						out = &value{typ: types.CHAR, val: buf[i]}
+					default:
+						halt.As(100, "unknown base type ", in.typ)
+					}
+					return first(in, out, l...)
+				} else if out != nil { //set
+					data := first(in, out, l...)
+					//fmt.Println(data)
+					switch out.typ {
+					case types.STRING:
+						buf := []rune(out.toStr())
+						buf[i] = data.toRune()
+						//fmt.Println(buf, i, buf[i])
+						in = &value{typ: types.STRING, val: string(buf)}
+					default:
+						halt.As(100, "unknown base type ", out.typ)
+					}
+					return in
+				} else {
+					halt.As(100, "unexpected in/out state ", in, " ", out)
+				}
+				panic(0)
+			})
+		default:
+			halt.As(100, " unknown selector ", reflect.TypeOf(s))
+		}
+		return
+	}
+
+	lh := ssel(_s)
+	lh = append(lh, func(in, out *value, l ...hs) *value {
+		return end(out)
+	})
+	first(in, out, lh...)
+}
+
 func (c *context) stmt(_s ir.Statement) {
 	switch this := _s.(type) {
 	case *ir.AssignStmt:
-		//c.expr(this.Expr, this.Object.Type)
-		//val := c.pop()
-		//c.findObj(this.Object, func(*value) *value {
-		//	return val
-		//})
+		c.sel(this.Sel, nil, nil, func(in *value) *value {
+			c.expr(this.Expr, in.typ)
+			val := c.pop()
+			return val
+		})
 	default:
 		halt.As(100, "unknown statement ", reflect.TypeOf(this))
 	}
