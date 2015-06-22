@@ -113,7 +113,7 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 	trav = func(r *exprItem, stack []*exprItem) (ret []*exprItem) {
 		//fmt.Println(reflect.TypeOf(r.e))
 		switch root := r.e.(type) {
-		case *ir.ConstExpr, *ir.NamedConstExpr, *ir.VariableExpr: //do nothing
+		case *ir.ConstExpr, *ir.NamedConstExpr, *ir.VariableExpr, *ir.SelectExpr: //do nothing
 			ret = stack
 		case *ir.Monadic:
 			expr, tail := first(stack)
@@ -233,15 +233,55 @@ func (e *exprBuilder) as(id string) ir.Expression {
 	panic(0)
 }
 
+func (b *exprBuilder) selector(sel ir.Selector) ir.Expression {
+	return &ir.SelectExpr{Sel: sel}
+}
+
 type blockBuilder struct {
 	scope scopeLevel
 	seq   []ir.Statement
 }
 
-func (b *blockBuilder) obj(id string) *ir.Variable {
-	return b.scope.varScope[id]
+func (b *blockBuilder) obj(id string) ir.Selector {
+	v := b.scope.varScope[id]
+	assert.For(v != nil, 30)
+	return &ir.SelectVar{Var: v}
 }
 
 func (b *blockBuilder) put(s ir.Statement) {
 	b.seq = append(b.seq, s)
+}
+
+type selBuilder struct {
+	scope scopeLevel
+	chain []ir.Selector
+}
+
+func (s *selBuilder) Select() {}
+
+func (s *selBuilder) head(obj ir.Selector) {
+	tmp := s.chain
+	s.chain = nil
+	s.chain = append(s.chain, obj)
+	s.chain = append(s.chain, tmp...)
+}
+
+func (s *selBuilder) join(obj ir.Selector) {
+	s.chain = append(s.chain, obj)
+}
+
+func (s *selBuilder) appy(expr ir.Expression) ir.Expression {
+	if len(s.chain) > 0 {
+		ret := &ir.SelectExpr{}
+		ret.Base = expr
+		ret.Sel = s
+		return ret
+	} else {
+		return expr
+	}
+}
+
+func (s *selBuilder) Chain() []ir.Selector {
+	assert.For(len(s.chain) > 0, 20)
+	return s.chain
 }

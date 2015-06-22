@@ -28,6 +28,21 @@ type Variable struct {
 	Type types.Type
 }
 
+type Selector interface {
+	Select()
+}
+
+type ChainSelector interface {
+	Selector
+	Chain() []Selector
+}
+
+type SelectVar struct {
+	Var *Variable
+}
+
+func (s *SelectVar) Select() {}
+
 type Expression interface {
 	Self()
 }
@@ -55,8 +70,8 @@ type ConstExpr struct {
 func (c *ConstExpr) Self() {}
 
 type AssignStmt struct {
-	Object *Variable
-	Expr   Expression
+	Sel  Selector
+	Expr Expression
 }
 
 func (a *AssignStmt) Do() {}
@@ -86,3 +101,16 @@ type Dyadic struct {
 }
 
 func (d *Dyadic) Self() {}
+
+type SelectExpr struct {
+	Base Expression
+	Sel  Selector
+}
+
+func (s *SelectExpr) Self() {}
+
+type SelectIndex struct {
+	Expr Expression
+}
+
+func (s *SelectIndex) Select() {}

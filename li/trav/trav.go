@@ -394,11 +394,11 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 func (c *context) stmt(_s ir.Statement) {
 	switch this := _s.(type) {
 	case *ir.AssignStmt:
-		c.expr(this.Expr, this.Object.Type)
-		val := c.pop()
-		c.findObj(this.Object, func(*value) *value {
-			return val
-		})
+		//c.expr(this.Expr, this.Object.Type)
+		//val := c.pop()
+		//c.findObj(this.Object, func(*value) *value {
+		//	return val
+		//})
 	default:
 		halt.As(100, "unknown statement ", reflect.TypeOf(this))
 	}

@@ -9,10 +9,18 @@ const (
 	Variable      ExprType = "variable"
 	Monadic       ExprType = "monadic"
 	Dyadic        ExprType = "dyadic"
+	SelExpr       ExprType = "selector"
 )
 
 type StmtType string
 
 const (
 	Assign StmtType = "assign"
+)
+
+type SelType string
+
+const (
+	SelVar SelType = "variable"
+	SelIdx SelType = "index"
 )

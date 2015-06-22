@@ -185,9 +185,22 @@ func (p *pr) number() (t types.Type, v interface{}) {
 	return
 }
 
-func (p *pr) selector() {
-	if p.await(scanner.Lbrak, scanner.Separator) {
-		p.mark("selectors not implemented")
+func (p *pr) selector(b *selBuilder) {
+	for stop := false; !stop; {
+		p.pass(scanner.Separator)
+		switch p.sym.Code {
+		case scanner.Lbrak:
+			p.next()
+			this := &ir.SelectIndex{}
+			expr := &exprBuilder{scope: b.scope}
+			p.expression(expr)
+			this.Expr = expr
+			b.join(this)
+			p.expect(scanner.Rbrak, "no ] found", scanner.Separator)
+			p.next()
+		default:
+			stop = true
+		}
 	}
 }
 
@@ -230,8 +243,9 @@ func (p *pr) factor(b *exprBuilder) {
 	case scanner.Ident:
 		e := b.as(p.ident())
 		p.next()
-		p.selector()
-		b.factor(e)
+		sel := &selBuilder{scope: b.scope}
+		p.selector(sel)
+		b.factor(sel.appy(e))
 	case scanner.Lparen:
 		p.next()
 		expr := &exprBuilder{scope: b.scope}
@@ -416,7 +430,9 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 			obj := b.obj(p.ident())
 			p.next()
 			p.pass(scanner.Separator)
-			p.selector()
+			sel := &selBuilder{scope: b.scope}
+			p.selector(sel)
+			sel.head(obj)
 			if p.is(scanner.Becomes) {
 				stmt := &ir.AssignStmt{}
 				p.next()
@@ -424,7 +440,7 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 				expr := &exprBuilder{}
 				expr.scope = b.scope
 				p.expression(expr)
-				stmt.Object = obj
+				stmt.Sel = sel
 				stmt.Expr = expr
 				b.put(stmt)
 				p.expect(scanner.Delimiter, "delimiter expected", scanner.Separator)
