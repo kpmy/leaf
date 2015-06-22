@@ -9,7 +9,7 @@ import (
 	"leaf/parser"
 	"leaf/scanner"
 	"leaf/target"
-	_ "leaf/target/yt"
+	_ "leaf/target/yt/z"
 	"log"
 	"os"
 	"strconv"

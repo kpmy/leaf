@@ -1,7 +1,6 @@
 package target
 
 import (
-	"fmt"
 	"github.com/kpmy/ypk/assert"
 	"io"
 	"leaf/ir"
@@ -11,8 +10,8 @@ var Ext func(*ir.Module, io.Writer)
 var Int func(io.Reader) *ir.Module
 
 func New(mod *ir.Module, tg io.Writer) {
-	fmt.Println("MODULE", mod.Name)
-	/*for k, v := range mod.ConstDecl {
+	/*fmt.Println("MODULE", mod.Name)
+	for k, v := range mod.ConstDecl {
 		fmt.Println("CONST", k, v)
 	}
 	for k, v := range mod.VarDecl {
@@ -25,8 +24,8 @@ func New(mod *ir.Module, tg io.Writer) {
 	fmt.Println("CLOSE")
 	for _, v := range mod.CloseSeq {
 		fmt.Println(v)
-	}*/
-	fmt.Println("END", mod.Name)
+	}
+	fmt.Println("END", mod.Name)*/
 	assert.For(Ext != nil, 20)
 	Ext(mod, tg)
 }

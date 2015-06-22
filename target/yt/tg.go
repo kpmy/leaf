@@ -9,7 +9,6 @@ import (
 	"io"
 	"leaf/ir"
 	"leaf/ir/types"
-	"leaf/target"
 )
 
 type Expression struct {
@@ -100,7 +99,7 @@ func typeFix(e *ir.ConstExpr) {
 	}
 }
 
-func store(mod *ir.Module, tg io.Writer) {
+func Store(mod *ir.Module, tg io.Writer) {
 	m := externalize(mod)
 	if data, err := yaml.Marshal(m); err == nil {
 		wrote, err := tg.Write(data)
@@ -112,7 +111,7 @@ func store(mod *ir.Module, tg io.Writer) {
 	}
 }
 
-func load(sc io.Reader) (ret *ir.Module) {
+func Load(sc io.Reader) (ret *ir.Module) {
 	buf := bytes.NewBuffer(nil)
 	io.Copy(buf, sc)
 	m := &Module{}
@@ -123,9 +122,4 @@ func load(sc io.Reader) (ret *ir.Module) {
 		halt.As(100, err)
 	}
 	return
-}
-
-func init() {
-	target.Ext = store
-	target.Int = load
 }
