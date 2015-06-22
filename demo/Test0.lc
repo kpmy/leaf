@@ -190,12 +190,14 @@ END TestReal.
 
 MODULE TestSelector
 	CONST hw = "Hello, World!"
-	VAR s STRING; i INTEGER; c CHAR; ok BOOLEAN
+	VAR s, t STRING; i INTEGER; c CHAR; ok BOOLEAN
 BEGIN
 	s := hw
 	c := s[0]
 	i := 1
 	c := hw[i+1]
-	ok := (hw[2] = s[i])
-	s[i] := 4
+	ok := (hw[2] = s[i+1])
+	s[0] := 044U
+	ok := s[0] # 043U
+	t:=s[0]+s[1]+s[2]+s[3]+s[4]
 END TestSelector.

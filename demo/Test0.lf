@@ -1,4 +1,0 @@
-(* evil no caps ;) *)
-module Test0
-var i integer
-end Test0.
