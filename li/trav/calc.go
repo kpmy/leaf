@@ -338,6 +338,7 @@ func dyINTEGER() {
 		}))))
 	putDyadic(types.INTEGER, types.INTEGER, operation.Pow,
 		i_(i_i_(i_i_i_(func(l *big.Int, r *big.Int) *big.Int {
+			assert.For(r.Cmp(big.NewInt(0)) >= 0, 40, "nonnegative only")
 			return l.Exp(l, r, big.NewInt(0))
 		}))))
 
@@ -421,6 +422,20 @@ func dyREAL() {
 			res := l.Cmp(r)
 			return res != eq
 		}))))
+	putDyadic(types.REAL, types.REAL, operation.Pow,
+		r_(r_r_(r_r_r_(func(l *big.Rat, r *big.Rat) *big.Rat {
+			n := l.Num()
+			d := l.Denom()
+			p := r.Num()
+			q := r.Denom()
+			assert.For(p.Cmp(big.NewInt(0)) >= 0, 40, "nonnegative only")
+			assert.For(q.Cmp(big.NewInt(1)) == 0, 41, "извлечение корня не поддерживается")
+			n = n.Exp(n, p, nil)
+			d = d.Exp(d, p, nil)
+			ret := big.NewRat(0, 1)
+			ret = ret.SetFrac(n, d)
+			return ret
+		}))))
 }
 
 func dyCHAR() {
@@ -458,10 +473,24 @@ func dyINT2REAL() {
 			d := l.Denom()
 			assert.For(r.IsInt(), 40)
 			p := r.Num()
-			n = n.Exp(n, p, big.NewInt(0))
-			d = d.Exp(d, p, big.NewInt(0))
+			assert.For(p.Cmp(big.NewInt(0)) >= 0, 40, "positive only")
+			n = n.Exp(n, p, nil)
+			d = d.Exp(d, p, nil)
 			ret := big.NewRat(0, 1)
 			ret = ret.SetFrac(n, d)
+			return ret
+		}))))
+	putDyadic(types.INTEGER, types.REAL, operation.Pow,
+		r_(r_ir_(r_ir_ir_(func(l *big.Rat, r *big.Rat) *big.Rat {
+			assert.For(l.IsInt(), 40)
+			n := l.Num()
+			p := r.Num()
+			q := r.Denom()
+			assert.For(p.Cmp(big.NewInt(0)) >= 0, 40, "positive only")
+			assert.For(q.Cmp(big.NewInt(1)) == 0, 41, "извлечение корня не поддерживается")
+			n = n.Exp(n, p, q)
+			ret := big.NewRat(0, 1)
+			ret = ret.SetFrac(n, big.NewInt(1))
 			return ret
 		}))))
 	putDyadic(types.INTEGER, types.REAL, operation.Prod,

@@ -9,8 +9,8 @@ END TestEmpty.
 
 (* assign statement *)
 MODULE TestAssign
-CONST I = 4
-VAR i INTEGER
+	CONST I = 4
+	VAR i INTEGER
 BEGIN
 	i := 1
 CLOSE
@@ -30,7 +30,7 @@ BEGIN
 	i := -i + k
 	j := i + i + k - j
 	k := i * 2
-	j := k // 2 + 1 - 89 * 4 * 4
+	j := k  // 2 + 1 - 89 * 4 * 4
 	i := (i + 5) // (1 + j % 7)
 END TestArithmetics.
 
@@ -80,10 +80,15 @@ MODULE TestExpr2
 	VAR i INTEGER
 	VAR j INTEGER
 	VAR s, t INTEGER
+	VAR p, q REAL
 BEGIN
 	i := 2 ^ 2 * 2
 	j := i ^ (i - 3) // 2 // 3 // 4 // 5 // 6 // 7
 	s := s*s + t*t - s+t^i - s^j + s*i
+	p := 9/27
+	q := 2/1
+	p := p ^ q
+	q := 9 ^ q
 END TestExpr2.
 
 (* chars and complex comparisions *)
@@ -238,6 +243,8 @@ BEGIN
 		i := i + 1
 	ELSIF i<20 DO
 		r := r + 0.2
+		i := i + 1
+	ELSIF i<100 DO
 		i := i + 1
 	END
 	REPEAT
