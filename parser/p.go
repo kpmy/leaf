@@ -81,7 +81,7 @@ func (p *pr) next() scanner.Sym {
 	}
 	p.sym = p.sc.Get()
 	//fmt.Print(" next ")
-	//	fmt.Println("`" + fmt.Sprint(p.sym) + "`")
+	//fmt.Println("`" + fmt.Sprint(p.sym) + "`")
 	return p.sym
 }
 
@@ -442,7 +442,7 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 				stmt.Sel = sel
 				stmt.Expr = expr
 				b.put(stmt)
-				p.expect(scanner.Delimiter, "delimiter expected", scanner.Separator)
+				//p.expect(scanner.Delimiter, "delimiter expected", scanner.Separator)
 			} else {
 				p.mark("illegal statement")
 			}
@@ -460,7 +460,7 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 					st := &blockBuilder{scope: b.scope}
 					p.stmtSeq(st)
 					p.pass(scanner.Separator, scanner.Delimiter)
-					br := &ir.IfBranch{}
+					br := &ir.ConditionBranch{}
 					br.Expr = expr
 					br.Seq = st.seq
 					stmt.Cond = append(stmt.Cond, br)
@@ -476,9 +476,52 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 					p.next()
 					stop = true
 				default:
+					p.mark("END or ELSE/ELSIF expected, but ", p.sym)
+				}
+			}
+			b.put(stmt)
+		case scanner.While:
+			stmt := &ir.WhileStmt{}
+			for stop := false; !stop; {
+				switch p.sym.Code {
+				case scanner.While, scanner.Elsif:
+					p.next()
+					p.pass(scanner.Separator)
+					expr := &exprBuilder{scope: b.scope}
+					p.expression(expr)
+					p.expect(scanner.Do, "DO not found", scanner.Separator)
+					p.next()
+					st := &blockBuilder{scope: b.scope}
+					p.stmtSeq(st)
+					p.pass(scanner.Separator, scanner.Delimiter)
+					br := &ir.ConditionBranch{}
+					br.Expr = expr
+					br.Seq = st.seq
+					stmt.Cond = append(stmt.Cond, br)
+				case scanner.End:
+					p.next()
+					stop = true
+				default:
 					p.mark("END or ELSIF expected, but ", p.sym)
 				}
 			}
+			b.put(stmt)
+		case scanner.Repeat:
+			p.next()
+			stmt := &ir.RepeatStmt{}
+			br := &ir.ConditionBranch{}
+			st := &blockBuilder{scope: b.scope}
+			p.pass(scanner.Separator, scanner.Delimiter)
+			p.stmtSeq(st)
+			p.expect(scanner.Until, "UNTIL expected", scanner.Separator, scanner.Delimiter)
+			p.next()
+			expr := &exprBuilder{scope: b.scope}
+			p.expression(expr)
+			p.expect(scanner.Delimiter, "delimiter expected", scanner.Separator)
+			p.next()
+			br.Expr = expr
+			br.Seq = st.seq
+			stmt.Cond = br
 			b.put(stmt)
 		default:
 			stop = true

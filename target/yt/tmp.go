@@ -95,8 +95,12 @@ func treatStmt(_m interface{}) (ret *Statement) {
 		ret.Leaf["selector"] = leaf["selector"]
 		ret.Leaf["expression"] = leaf["expression"]
 	case If:
-		ret.Leaf["if"] = leaf["if"]
+		ret.Leaf["leaf"] = leaf["leaf"]
 		ret.Leaf["else"] = leaf["else"]
+	case While:
+		ret.Leaf["leaf"] = leaf["leaf"]
+	case Repeat:
+		ret.Leaf["leaf"] = leaf["leaf"]
 	default:
 		halt.As(100, "unexpected ", ret.Type, " ", _m)
 	}

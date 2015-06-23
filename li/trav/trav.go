@@ -505,6 +505,31 @@ func (c *context) stmt(_s ir.Statement) {
 				c.stmt(s)
 			}
 		}
+	case *ir.WhileStmt:
+		for stop := false; !stop; {
+			stop = true
+			for _, i := range this.Cond {
+				c.expr(i.Expr, types.BOOLEAN)
+				val := c.pop()
+				if val.toBool() {
+					stop = false
+					for _, s := range i.Seq {
+						c.stmt(s)
+					}
+					break
+				}
+			}
+		}
+	case *ir.RepeatStmt:
+		for stop := false; !stop; {
+			stop = false
+			for _, s := range this.Cond.Seq {
+				c.stmt(s)
+			}
+			c.expr(this.Cond.Expr, types.BOOLEAN)
+			val := c.pop()
+			stop = val.toBool()
+		}
 	default:
 		halt.As(100, "unknown statement ", reflect.TypeOf(this))
 	}

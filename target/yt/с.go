@@ -17,6 +17,8 @@ type StmtType string
 const (
 	Assign StmtType = "assign"
 	If     StmtType = "if"
+	While  StmtType = "while"
+	Repeat StmtType = "repeat"
 )
 
 type SelType string
