@@ -19,6 +19,7 @@ const (
 	If     StmtType = "if"
 	While  StmtType = "while"
 	Repeat StmtType = "repeat"
+	Call   StmtType = "call"
 )
 
 type SelType string

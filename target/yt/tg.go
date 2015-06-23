@@ -26,6 +26,11 @@ type Const struct {
 	Expr *Expression `yaml:"expression"`
 }
 
+type Proc struct {
+	Guid string
+	Seq  []*Statement `yaml:"seq,omitempty"`
+}
+
 type Selector struct {
 	Type SelType
 	Leaf map[string]interface{} `yaml:"leaf,omitempty"`
@@ -45,6 +50,7 @@ type Module struct {
 	Name      string
 	ConstDecl map[string]*Const `yaml:"const,omitempty"`
 	VarDecl   map[string]*Var   `yaml:"var,omitempty"`
+	ProcDecl  map[string]*Proc  `yaml:"proc,omitempty"`
 	BeginSeq  []*Statement      `yaml:"begin,omitempty"`
 	CloseSeq  []*Statement      `yaml:"close,omitempty"`
 
@@ -55,6 +61,7 @@ func (m *Module) init() {
 	m.id = make(map[interface{}]string)
 	m.ConstDecl = make(map[string]*Const)
 	m.VarDecl = make(map[string]*Var)
+	m.ProcDecl = make(map[string]*Proc)
 }
 
 func (m *Module) this(item interface{}) (ret string) {

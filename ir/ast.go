@@ -9,6 +9,7 @@ type Module struct {
 	Name      string
 	ConstDecl map[string]*Const
 	VarDecl   map[string]*Variable
+	ProcDecl  map[string]*Procedure
 	BeginSeq  []Statement
 	CloseSeq  []Statement
 }
@@ -16,6 +17,12 @@ type Module struct {
 func (m *Module) Init() {
 	m.ConstDecl = make(map[string]*Const)
 	m.VarDecl = make(map[string]*Variable)
+	m.ProcDecl = make(map[string]*Procedure)
+}
+
+type Procedure struct {
+	Name string
+	Seq  []Statement
 }
 
 type Const struct {
@@ -68,6 +75,12 @@ type ConstExpr struct {
 }
 
 func (c *ConstExpr) Self() {}
+
+type CallStmt struct {
+	Proc *Procedure
+}
+
+func (c *CallStmt) Do() {}
 
 type AssignStmt struct {
 	Sel  Selector

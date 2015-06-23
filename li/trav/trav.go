@@ -481,6 +481,8 @@ func (c *context) sel(_s ir.Selector, in, out *value, end func(*value) *value) {
 
 func (c *context) stmt(_s ir.Statement) {
 	switch this := _s.(type) {
+	case *ir.CallStmt:
+		c.do(this.Proc)
 	case *ir.AssignStmt:
 		c.sel(this.Sel, nil, nil, func(in *value) *value {
 			c.expr(this.Expr, in.typ)
@@ -495,14 +497,14 @@ func (c *context) stmt(_s ir.Statement) {
 			if val.toBool() {
 				done = true
 				for _, s := range i.Seq {
-					c.stmt(s)
+					c.do(s)
 				}
 				break
 			}
 		}
 		if !done && this.Else != nil {
 			for _, s := range this.Else.Seq {
-				c.stmt(s)
+				c.do(s)
 			}
 		}
 	case *ir.WhileStmt:
@@ -514,7 +516,7 @@ func (c *context) stmt(_s ir.Statement) {
 				if val.toBool() {
 					stop = false
 					for _, s := range i.Seq {
-						c.stmt(s)
+						c.do(s)
 					}
 					break
 				}
@@ -524,7 +526,7 @@ func (c *context) stmt(_s ir.Statement) {
 		for stop := false; !stop; {
 			stop = false
 			for _, s := range this.Cond.Seq {
-				c.stmt(s)
+				c.do(s)
 			}
 			c.expr(this.Cond.Expr, types.BOOLEAN)
 			val := c.pop()
@@ -539,14 +541,25 @@ func (c *context) do(_t interface{}) {
 	switch this := _t.(type) {
 	case *ir.Module:
 		c.alloc(this.VarDecl)
-		fmt.Println("BEGIN", this.Name, c.data)
-		for _, v := range this.BeginSeq {
+		if len(this.BeginSeq) > 0 {
+			fmt.Println("BEGIN", this.Name, c.data)
+			for _, v := range this.BeginSeq {
+				c.do(v)
+			}
+		}
+		if len(this.CloseSeq) > 0 {
+			fmt.Println("CLOSE", c.data)
+			for _, v := range this.CloseSeq {
+				c.do(v)
+			}
+		}
+		fmt.Println("END", this.Name, c.data)
+	case *ir.Procedure:
+		fmt.Println("BEGIN", this.Name)
+		for _, v := range this.Seq {
 			c.do(v)
 		}
-		for _, v := range this.CloseSeq {
-			c.do(v)
-		}
-		fmt.Println("CLOSE", c.data)
+		fmt.Println("END", this.Name)
 	case ir.Statement:
 		c.stmt(this)
 	default:

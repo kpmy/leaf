@@ -1,6 +1,7 @@
 package yt
 
 import (
+	"fmt"
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
@@ -75,36 +76,13 @@ func externalize(mod *ir.Module) (ret *Module) {
 		}
 		return
 	}
-	{
-		for _, _v := range mod.ConstDecl {
-			c := &Const{}
-			c.Guid = ret.this(_v)
-			var e ir.Expression
-			switch v := _v.Expr.(type) {
-			case ir.EvaluatedExpression:
-				e = v.Eval()
-			case *ir.AtomExpr:
-				e = v
-			default:
-				halt.As(100, "unknown expression ", reflect.TypeOf(v))
-			}
-			assert.For(e != nil, 40)
-			c.Expr = expr(e)
-			ret.ConstDecl[_v.Name] = c
-		}
-	}
-	{
-		for _, v := range mod.VarDecl {
-			i := &Var{}
-			i.Guid = ret.this(v)
-			i.Type = v.Type.String()
-			ret.VarDecl[v.Name] = i
-		}
-	}
 	stmt = func(_s ir.Statement) (st *Statement) {
 		st = &Statement{}
 		st.Leaf = make(map[string]interface{})
 		switch s := _s.(type) {
+		case *ir.CallStmt:
+			st.Type = Call
+			st.Leaf["proc"] = ret.this(s.Proc)
 		case *ir.AssignStmt:
 			st.Type = Assign
 			st.Leaf["selector"] = sel(s.Sel)
@@ -153,6 +131,43 @@ func externalize(mod *ir.Module) (ret *Module) {
 			halt.As(100, "unexpected ", reflect.TypeOf(s))
 		}
 		return
+	}
+	{
+		for _, _v := range mod.ConstDecl {
+			c := &Const{}
+			c.Guid = ret.this(_v)
+			var e ir.Expression
+			switch v := _v.Expr.(type) {
+			case ir.EvaluatedExpression:
+				e = v.Eval()
+			case *ir.AtomExpr:
+				e = v
+			default:
+				halt.As(100, "unknown expression ", reflect.TypeOf(v))
+			}
+			assert.For(e != nil, 40)
+			c.Expr = expr(e)
+			ret.ConstDecl[_v.Name] = c
+		}
+	}
+	{
+		for _, v := range mod.VarDecl {
+			i := &Var{}
+			i.Guid = ret.this(v)
+			i.Type = v.Type.String()
+			ret.VarDecl[v.Name] = i
+		}
+	}
+	{
+		for _, v := range mod.ProcDecl {
+			i := &Proc{}
+			i.Guid = ret.this(v)
+			for _, s := range v.Seq {
+				fmt.Println(s)
+				i.Seq = append(i.Seq, stmt(s))
+			}
+			ret.ProcDecl[v.Name] = i
+		}
 	}
 	{
 		for _, v := range mod.BeginSeq {

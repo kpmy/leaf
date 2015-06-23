@@ -20,6 +20,7 @@ func (t *target) init(mod string) {
 type scopeLevel struct {
 	varScope   map[string]*ir.Variable
 	constScope map[string]*ir.Const
+	procScope  map[string]*ir.Procedure
 }
 
 type level int
@@ -238,8 +239,9 @@ func (b *exprBuilder) selector(sel ir.Selector) ir.Expression {
 }
 
 type blockBuilder struct {
-	scope scopeLevel
-	seq   []ir.Statement
+	scope    scopeLevel
+	seq      []ir.Statement
+	procList []*ir.Procedure
 }
 
 func (b *blockBuilder) isObj(id string) bool {
@@ -247,7 +249,7 @@ func (b *blockBuilder) isObj(id string) bool {
 }
 
 func (b *blockBuilder) isProc(id string) bool {
-	return true
+	return b.scope.procScope[id] != nil
 }
 
 func (b *blockBuilder) obj(id string) ir.Selector {
@@ -256,8 +258,18 @@ func (b *blockBuilder) obj(id string) ir.Selector {
 	return &ir.SelectVar{Var: v}
 }
 
+func (b *blockBuilder) proc(id string) *ir.Procedure {
+	p := b.scope.procScope[id]
+	assert.For(p != nil, 30)
+	return p
+}
+
 func (b *blockBuilder) put(s ir.Statement) {
 	b.seq = append(b.seq, s)
+}
+
+func (b *blockBuilder) putProc(p *ir.Procedure) {
+	b.procList = append(b.procList, p)
 }
 
 type selBuilder struct {

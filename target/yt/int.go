@@ -97,27 +97,12 @@ func internalize(m *Module) (ret *ir.Module) {
 		assert.For(len(ds.chain) > 0, 60)
 		return ds
 	}
-	{
-		for k, v := range m.ConstDecl {
-			c := &ir.Const{}
-			c.Name = k
-			c.Expr = expr(v.Expr)
-			m.that(v.Guid, c)
-			ret.ConstDecl[k] = c
-		}
-	}
-
-	{
-		for k, v := range m.VarDecl {
-			i := &ir.Variable{}
-			i.Name = k
-			i.Type = types.TypMap[v.Type]
-			m.that(v.Guid, i)
-			ret.VarDecl[k] = i
-		}
-	}
 	stmt = func(s *Statement) (ret ir.Statement) {
 		switch s.Type {
+		case Call:
+			this := &ir.CallStmt{}
+			this.Proc = m.that(s.Leaf["proc"].(string)).(*ir.Procedure)
+			ret = this
 		case Assign:
 			this := &ir.AssignStmt{}
 			this.Sel = sel(treatSelList(s.Leaf["selector"]))
@@ -169,6 +154,37 @@ func internalize(m *Module) (ret *ir.Module) {
 			halt.As(100, "unexpected ", s.Type)
 		}
 		return
+	}
+	{
+		for k, v := range m.ConstDecl {
+			c := &ir.Const{}
+			c.Name = k
+			c.Expr = expr(v.Expr)
+			m.that(v.Guid, c)
+			ret.ConstDecl[k] = c
+		}
+	}
+
+	{
+		for k, v := range m.VarDecl {
+			i := &ir.Variable{}
+			i.Name = k
+			i.Type = types.TypMap[v.Type]
+			m.that(v.Guid, i)
+			ret.VarDecl[k] = i
+		}
+	}
+
+	{
+		for k, v := range m.ProcDecl {
+			p := &ir.Procedure{}
+			p.Name = k
+			for _, s := range v.Seq {
+				p.Seq = append(p.Seq, stmt(s))
+			}
+			m.that(v.Guid, p)
+			ret.ProcDecl[k] = p
+		}
 	}
 	{
 		for _, v := range m.BeginSeq {

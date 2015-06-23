@@ -449,7 +449,9 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 				}
 			} else if b.isProc(id) {
 				p.next()
-				//CallStmt here
+				stmt := &ir.CallStmt{}
+				stmt.Proc = b.proc(id)
+				b.put(stmt)
 			}
 		case scanner.If:
 			stmt := &ir.IfStmt{}
@@ -536,23 +538,24 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 
 func (p *pr) procDecl(b *blockBuilder) {
 	assert.For(p.is(scanner.Proc), 20, "PROCEDURE expected here")
+	ret := &ir.Procedure{}
 	p.next()
 	p.expect(scanner.Ident, "procedure name expected", scanner.Separator)
-	pn := p.ident()
-	fmt.Println("PROCEDURE", p.ident())
-	p.mark("not implemented")
+	ret.Name = p.ident()
 	p.next()
 	p.expect(scanner.Begin, "BEGIN expected", scanner.Separator, scanner.Delimiter)
 	p.next()
 	proc := &blockBuilder{}
 	proc.scope = b.scope
 	p.stmtSeq(proc)
+	ret.Seq = proc.seq
 	p.expect(scanner.End, "no END", scanner.Delimiter, scanner.Separator)
 	p.next()
 	p.expect(scanner.Ident, "procedure name expected", scanner.Separator)
-	if p.ident() != pn {
+	if p.ident() != ret.Name {
 		p.mark("procedure name does not match")
 	}
+	b.putProc(ret)
 	p.next()
 }
 
@@ -579,18 +582,21 @@ func (p *pr) Module() (ret *ir.Module, err error) {
 		b := &blockBuilder{}
 		b.scope = scopeLevel{varScope: p.root.VarDecl, constScope: p.root.ConstDecl}
 		p.procDecl(b)
+		for _, v := range b.procList {
+			p.root.ProcDecl[v.Name] = v
+		}
 	}
 	if p.await(scanner.Begin, scanner.Delimiter, scanner.Separator) {
 		p.next()
 		b := &blockBuilder{}
-		b.scope = scopeLevel{varScope: p.root.VarDecl, constScope: p.root.ConstDecl}
+		b.scope = scopeLevel{varScope: p.root.VarDecl, constScope: p.root.ConstDecl, procScope: p.root.ProcDecl}
 		p.stmtSeq(b)
 		p.root.BeginSeq = b.seq
 	}
 	if p.await(scanner.Close, scanner.Delimiter, scanner.Separator) {
 		p.next()
 		b := &blockBuilder{}
-		b.scope = scopeLevel{varScope: p.root.VarDecl, constScope: p.root.ConstDecl}
+		b.scope = scopeLevel{varScope: p.root.VarDecl, constScope: p.root.ConstDecl, procScope: p.root.ProcDecl}
 		p.stmtSeq(b)
 		p.root.CloseSeq = b.seq
 	}
