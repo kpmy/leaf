@@ -426,25 +426,30 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 		p.pass(scanner.Separator, scanner.Delimiter)
 		switch p.sym.Code {
 		case scanner.Ident:
-			obj := b.obj(p.ident())
-			p.next()
-			p.pass(scanner.Separator)
-			sel := &selBuilder{scope: b.scope}
-			p.selector(sel)
-			sel.head(obj)
-			if p.is(scanner.Becomes) {
-				stmt := &ir.AssignStmt{}
+			if id := p.ident(); b.isObj(id) {
+				obj := b.obj(id)
 				p.next()
 				p.pass(scanner.Separator)
-				expr := &exprBuilder{}
-				expr.scope = b.scope
-				p.expression(expr)
-				stmt.Sel = sel
-				stmt.Expr = expr
-				b.put(stmt)
-				//p.expect(scanner.Delimiter, "delimiter expected", scanner.Separator)
-			} else {
-				p.mark("illegal statement")
+				sel := &selBuilder{scope: b.scope}
+				p.selector(sel)
+				sel.head(obj)
+				if p.is(scanner.Becomes) {
+					stmt := &ir.AssignStmt{}
+					p.next()
+					p.pass(scanner.Separator)
+					expr := &exprBuilder{}
+					expr.scope = b.scope
+					p.expression(expr)
+					stmt.Sel = sel
+					stmt.Expr = expr
+					b.put(stmt)
+					//p.expect(scanner.Delimiter, "delimiter expected", scanner.Separator)
+				} else {
+					p.mark("illegal statement")
+				}
+			} else if b.isProc(id) {
+				p.next()
+				//CallStmt here
 			}
 		case scanner.If:
 			stmt := &ir.IfStmt{}
@@ -529,6 +534,28 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 	}
 }
 
+func (p *pr) procDecl(b *blockBuilder) {
+	assert.For(p.is(scanner.Proc), 20, "PROCEDURE expected here")
+	p.next()
+	p.expect(scanner.Ident, "procedure name expected", scanner.Separator)
+	pn := p.ident()
+	fmt.Println("PROCEDURE", p.ident())
+	p.mark("not implemented")
+	p.next()
+	p.expect(scanner.Begin, "BEGIN expected", scanner.Separator, scanner.Delimiter)
+	p.next()
+	proc := &blockBuilder{}
+	proc.scope = b.scope
+	p.stmtSeq(proc)
+	p.expect(scanner.End, "no END", scanner.Delimiter, scanner.Separator)
+	p.next()
+	p.expect(scanner.Ident, "procedure name expected", scanner.Separator)
+	if p.ident() != pn {
+		p.mark("procedure name does not match")
+	}
+	p.next()
+}
+
 func (p *pr) Module() (ret *ir.Module, err error) {
 	if !p.await(scanner.Module, scanner.Delimiter, scanner.Separator) {
 		if p.sc.Error() != nil {
@@ -547,6 +574,11 @@ func (p *pr) Module() (ret *ir.Module, err error) {
 	}
 	for p.await(scanner.Var, scanner.Delimiter, scanner.Separator) {
 		p.varDecl()
+	}
+	for p.await(scanner.Proc, scanner.Delimiter, scanner.Separator) {
+		b := &blockBuilder{}
+		b.scope = scopeLevel{varScope: p.root.VarDecl, constScope: p.root.ConstDecl}
+		p.procDecl(b)
 	}
 	if p.await(scanner.Begin, scanner.Delimiter, scanner.Separator) {
 		p.next()

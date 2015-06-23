@@ -1,4 +1,11 @@
 (* dummy *)
 MODULE Simple0
 
+	PROCEDURE Init
+	BEGIN
+
+	END Init
+
+BEGIN
+	Init
 END Simple0.

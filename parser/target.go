@@ -242,6 +242,14 @@ type blockBuilder struct {
 	seq   []ir.Statement
 }
 
+func (b *blockBuilder) isObj(id string) bool {
+	return b.scope.varScope[id] != nil
+}
+
+func (b *blockBuilder) isProc(id string) bool {
+	return true
+}
+
 func (b *blockBuilder) obj(id string) ir.Selector {
 	v := b.scope.varScope[id]
 	assert.For(v != nil, 30)
