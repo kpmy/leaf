@@ -238,6 +238,11 @@ func (p *pr) factor(b *exprBuilder) {
 		val.Type = types.TRILEAN
 		b.factor(val)
 		p.next()
+	case scanner.Im:
+		p.next()
+		p.factor(b)
+		p.pass(scanner.Separator)
+		b.factor(&ir.Monadic{Op: operation.Im})
 	case scanner.Not:
 		p.next()
 		p.factor(b)
@@ -261,8 +266,29 @@ func (p *pr) factor(b *exprBuilder) {
 	}
 }
 
-func (p *pr) power(b *exprBuilder) {
+func (p *pr) cpx(b *exprBuilder) {
 	p.factor(b)
+	for stop := false; !stop; {
+		p.pass(scanner.Separator)
+		switch p.sym.Code {
+		case scanner.Ncmp, scanner.Pcmp:
+			op := p.sym.Code
+			p.next()
+			p.pass(scanner.Separator)
+			if p.sym.Code != scanner.Im {
+				p.factor(b)
+			} else {
+				p.mark("imaginary operator not expected")
+			}
+			b.power(&ir.Dyadic{Op: operation.Map(op)})
+		default:
+			stop = true
+		}
+	}
+}
+
+func (p *pr) power(b *exprBuilder) {
+	p.cpx(b)
 	for stop := false; !stop; {
 		p.pass(scanner.Separator)
 		switch p.sym.Code {
@@ -270,7 +296,7 @@ func (p *pr) power(b *exprBuilder) {
 			op := p.sym.Code
 			p.next()
 			p.pass(scanner.Separator)
-			p.factor(b)
+			p.cpx(b)
 			b.power(&ir.Dyadic{Op: operation.Map(op)})
 		default:
 			stop = true
@@ -371,13 +397,13 @@ func (p *pr) typ(consume func(t types.Type)) {
 	id := p.ident()
 	if t, ok := entries[p.sym.User].(Type); ok {
 		switch t.typ {
-		case types.INTEGER, types.REAL, types.BOOLEAN, types.TRILEAN:
+		case types.INTEGER, types.REAL, types.COMPLEX:
 			p.next()
 			consume(t.typ)
 		case types.CHAR, types.STRING:
 			p.next()
 			consume(t.typ)
-		case types.ATOM:
+		case types.ATOM, types.BOOLEAN, types.TRILEAN:
 			p.next()
 			consume(t.typ)
 		default:

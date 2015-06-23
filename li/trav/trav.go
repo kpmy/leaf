@@ -53,6 +53,17 @@ func ThisRat(x *big.Rat) (ret *Rat) {
 	return
 }
 
+type Cmp struct {
+	re, im *big.Rat
+}
+
+func NewCmp(re, im float64) (ret *Cmp) {
+	ret = &Cmp{}
+	ret.re = big.NewRat(0, 1).SetFloat64(re)
+	ret.im = big.NewRat(0, 1).SetFloat64(im)
+	return
+}
+
 type storage struct {
 	schema map[string]*ir.Variable
 	data   map[string]interface{}
@@ -229,6 +240,8 @@ func (s *storage) alloc(vl map[string]*ir.Variable) {
 			s.data[v.Name] = nil
 		case types.REAL:
 			s.data[v.Name] = NewRat(0.0)
+		case types.COMPLEX:
+			s.data[v.Name] = NewCmp(0.0, 0.0)
 		default:
 			halt.As(100, "unknown type ", v.Name, ": ", v.Type)
 		}
@@ -278,7 +291,7 @@ func (c *context) expr(_e ir.Expression, typ types.Type) {
 			c.push(&value{typ: types.ATOM, val: Atom(this.Value)})
 		case *ir.ConstExpr:
 			switch typ {
-			case types.INTEGER, types.BOOLEAN, types.CHAR, types.STRING, types.REAL:
+			case types.INTEGER, types.BOOLEAN, types.CHAR, types.STRING, types.REAL, types.COMPLEX:
 				c.push(cval(this))
 			case types.TRILEAN:
 				c.push(&value{typ: typ, val: tri.This(this.Value)})

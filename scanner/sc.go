@@ -49,6 +49,9 @@ const (
 	Div
 	Divide
 	Mod
+	Im
+	Ncmp
+	Pcmp
 
 	Module
 	End
@@ -202,6 +205,12 @@ func (s Symbol) String() (ret string) {
 		ret = "num"
 	case UpTo:
 		ret = ".."
+	case Im:
+		ret = "!"
+	case Pcmp:
+		ret = "+!"
+	case Ncmp:
+		ret = "-!"
 	default:
 		ret = fmt.Sprint("sym [", strconv.Itoa(int(s)), "]")
 	}
@@ -509,8 +518,12 @@ func (s *sc) Get() (sym Sym) {
 				sym.Code = Equal
 			}
 		case '-':
-			sym.Code = Minus
-			s.next()
+			if s.next() == '!' {
+				sym.Code = Ncmp
+				s.next()
+			} else {
+				sym.Code = Minus
+			}
 		case '#':
 			sym.Code = Nequal
 			s.next()
@@ -537,9 +550,16 @@ func (s *sc) Get() (sym Sym) {
 		case '~':
 			sym.Code = Not
 			s.next()
-		case '+':
-			sym.Code = Plus
+		case '!':
+			sym.Code = Im
 			s.next()
+		case '+':
+			if s.next() == '!' {
+				sym.Code = Pcmp
+				s.next()
+			} else {
+				sym.Code = Plus
+			}
 		case '{':
 			sym.Code = Lbrace
 			s.next()

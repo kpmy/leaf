@@ -19,6 +19,10 @@ const (
 	Mod
 	Pow
 
+	Im
+	Pcmp
+	Ncmp
+
 	And
 	Or
 	Not
@@ -72,6 +76,12 @@ func (o Operation) String() string {
 		return "<="
 	case Pow:
 		return "^"
+	case Im:
+		return "!"
+	case Ncmp:
+		return "-!"
+	case Pcmp:
+		return "+!"
 	case None:
 		return "nop"
 	default:
@@ -94,7 +104,9 @@ func init() {
 		scanner.Nequal: Neq,
 		scanner.Lss:    Lss,
 		scanner.Leq:    Leq,
-		scanner.Arrow:  Pow}
+		scanner.Arrow:  Pow,
+		scanner.Ncmp:   Ncmp,
+		scanner.Pcmp:   Pcmp}
 
 	OpMap = make(map[string]Operation)
 	for i := int(Undef); i < int(None); i++ {
