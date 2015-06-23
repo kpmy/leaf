@@ -1,7 +1,6 @@
 package yt
 
 import (
-	"fmt"
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
@@ -80,6 +79,8 @@ func externalize(mod *ir.Module) (ret *Module) {
 		st = &Statement{}
 		st.Leaf = make(map[string]interface{})
 		switch s := _s.(type) {
+		case ir.WrappedStatement:
+			return stmt(s.Fwd())
 		case *ir.CallStmt:
 			st.Type = Call
 			st.Leaf["proc"] = ret.this(s.Proc)
@@ -163,7 +164,6 @@ func externalize(mod *ir.Module) (ret *Module) {
 			i := &Proc{}
 			i.Guid = ret.this(v)
 			for _, s := range v.Seq {
-				fmt.Println(s)
 				i.Seq = append(i.Seq, stmt(s))
 			}
 			ret.ProcDecl[v.Name] = i

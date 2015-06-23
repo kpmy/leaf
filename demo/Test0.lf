@@ -1,12 +1,3 @@
 (* dummy *)
-MODULE Simple0
-	VAR i INTEGER
-
-	PROCEDURE Init
-	BEGIN
-		i := 42
-	END Init
-
-BEGIN
-	Init
-END Simple0.
+MODULE Test0
+END Test0.

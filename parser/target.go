@@ -54,6 +54,21 @@ func (e *forwardNamedConstExpr) Eval() (ret ir.Expression) {
 	panic(0)
 }
 
+type forwardCall struct {
+	name  string
+	scope map[string]*ir.Procedure
+}
+
+func (s *forwardCall) Do() {}
+func (s *forwardCall) Fwd() ir.Statement {
+	if p := s.scope[s.name]; p != nil {
+		return &ir.CallStmt{Proc: p}
+	} else {
+		halt.As(100, "undefined procedure ", s.name)
+	}
+	panic(0)
+}
+
 type exprBuilder struct {
 	scope scopeLevel
 	stack []*exprItem
@@ -248,20 +263,18 @@ func (b *blockBuilder) isObj(id string) bool {
 	return b.scope.varScope[id] != nil
 }
 
-func (b *blockBuilder) isProc(id string) bool {
-	return b.scope.procScope[id] != nil
-}
-
 func (b *blockBuilder) obj(id string) ir.Selector {
 	v := b.scope.varScope[id]
 	assert.For(v != nil, 30)
 	return &ir.SelectVar{Var: v}
 }
 
-func (b *blockBuilder) proc(id string) *ir.Procedure {
-	p := b.scope.procScope[id]
-	assert.For(p != nil, 30)
-	return p
+func (b *blockBuilder) call(id string) ir.Statement {
+	if p := b.scope.procScope[id]; p != nil {
+		return &ir.CallStmt{Proc: p}
+	} else {
+		return &forwardCall{scope: b.scope.procScope, name: id}
+	}
 }
 
 func (b *blockBuilder) put(s ir.Statement) {

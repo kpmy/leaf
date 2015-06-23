@@ -63,6 +63,11 @@ type Statement interface {
 	Do()
 }
 
+type WrappedStatement interface {
+	Statement
+	Fwd() Statement
+}
+
 type AtomExpr struct {
 	Value string
 }

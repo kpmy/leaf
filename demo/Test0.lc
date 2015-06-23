@@ -252,3 +252,21 @@ BEGIN
 	UNTIL  i = 0
 	IF i = 0 THEN r:=0.0 END
 END TestCycles.
+
+MODULE TestProcCall
+	VAR i INTEGER
+
+	PROCEDURE Init
+	BEGIN
+		i := 420
+		Dec
+	END Init
+
+	PROCEDURE Dec
+	BEGIN
+		WHILE i>42 DO i := i - 1 END
+	END Dec
+
+BEGIN
+	Init
+END TestProcCall.

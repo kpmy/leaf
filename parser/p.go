@@ -25,6 +25,7 @@ const (
 	char
 	str
 	atom
+	comp
 	flo //for real, real is builtin go function O_o
 )
 
@@ -35,7 +36,8 @@ func init() {
 		"CHAR":    char,
 		"STRING":  str,
 		"ATOM":    atom,
-		"REAL":    flo}
+		"REAL":    flo,
+		"COMPLEX": comp}
 
 	entries = map[scanner.Foreign]interface{}{integer: Type{typ: types.INTEGER},
 		boolean: Type{typ: types.BOOLEAN},
@@ -43,7 +45,8 @@ func init() {
 		char:    Type{typ: types.CHAR},
 		str:     Type{typ: types.STRING},
 		atom:    Type{typ: types.ATOM},
-		flo:     Type{typ: types.REAL}}
+		flo:     Type{typ: types.REAL},
+		comp:    Type{typ: types.COMPLEX}}
 }
 
 type Parser interface {
@@ -447,10 +450,9 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 				} else {
 					p.mark("illegal statement")
 				}
-			} else if b.isProc(id) {
+			} else {
 				p.next()
-				stmt := &ir.CallStmt{}
-				stmt.Proc = b.proc(id)
+				stmt := b.call(id)
 				b.put(stmt)
 			}
 		case scanner.If:
@@ -545,6 +547,7 @@ func (p *pr) procDecl(b *blockBuilder) {
 	p.next()
 	p.expect(scanner.Begin, "BEGIN expected", scanner.Separator, scanner.Delimiter)
 	p.next()
+	b.putProc(ret)
 	proc := &blockBuilder{}
 	proc.scope = b.scope
 	p.stmtSeq(proc)
@@ -555,7 +558,6 @@ func (p *pr) procDecl(b *blockBuilder) {
 	if p.ident() != ret.Name {
 		p.mark("procedure name does not match")
 	}
-	b.putProc(ret)
 	p.next()
 }
 
@@ -580,7 +582,7 @@ func (p *pr) Module() (ret *ir.Module, err error) {
 	}
 	for p.await(scanner.Proc, scanner.Delimiter, scanner.Separator) {
 		b := &blockBuilder{}
-		b.scope = scopeLevel{varScope: p.root.VarDecl, constScope: p.root.ConstDecl}
+		b.scope = scopeLevel{varScope: p.root.VarDecl, constScope: p.root.ConstDecl, procScope: p.root.ProcDecl}
 		p.procDecl(b)
 		for _, v := range b.procList {
 			p.root.ProcDecl[v.Name] = v

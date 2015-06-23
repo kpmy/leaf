@@ -1,3 +1,15 @@
 (* dummy *)
 MODULE Simple0
+	VAR s STRING
+
+	PROCEDURE Init
+		CONST n = 5
+		VAR i INTEGER
+	BEGIN
+		i:=0
+		WHILE i<n DO s = s + "." END
+	END Init
+
+BEGIN
+	Init
 END Simple0.

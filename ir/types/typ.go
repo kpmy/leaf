@@ -11,6 +11,7 @@ const (
 	STRING
 	ATOM
 	REAL
+	COMPLEX
 	// leave this last
 	NONE
 )
@@ -33,6 +34,8 @@ func (t Type) String() (ret string) {
 		return "ATOM"
 	case REAL:
 		return "REAL"
+	case COMPLEX:
+		return "COMPLEX"
 	default:
 		return ""
 	}
