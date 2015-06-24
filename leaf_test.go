@@ -1,11 +1,11 @@
-package demo
+package leaf
 
 import (
 	"bufio"
 	"fmt"
 	"leaf/ir"
-	"leaf/li"
-	_ "leaf/li/trav"
+	"leaf/leint"
+	_ "leaf/leint/trav"
 	"leaf/parser"
 	"leaf/scanner"
 	"leaf/target"

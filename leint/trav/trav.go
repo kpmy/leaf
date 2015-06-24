@@ -9,7 +9,7 @@ import (
 	"leaf/ir"
 	"leaf/ir/operation"
 	"leaf/ir/types"
-	"leaf/li"
+	"leaf/leint"
 	"math/big"
 	"reflect"
 )
