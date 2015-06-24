@@ -193,6 +193,19 @@ BEGIN
 	ok := (s = t) & (s # t)
 END TestReal.
 
+MODULE TestComplex
+	CONST
+		i = !1
+		iE = !2.71
+		re = 14
+		im = 34
+		cmp = re +! im
+		cmp2 = 14 -!44
+	VAR x COMPLEX
+BEGIN
+	x:=cmp + cmp2 + i
+END TestComplex.
+
 MODULE TestSelector
 	CONST hw = "Hello, World!"
 	VAR s, t STRING; i INTEGER; c CHAR; ok BOOLEAN

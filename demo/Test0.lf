@@ -1,12 +1,3 @@
 (* dummy *)
 MODULE Test0
-	CONST
-		i = !1
-		re = 14
-		im = 34
-		cmp = re +! im
-		cmp2 = 14 -!44
-	VAR x COMPLEX
-BEGIN
-	x:=cmp + cmp2 + i
 END Test0.

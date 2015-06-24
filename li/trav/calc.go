@@ -111,6 +111,62 @@ func r_ir_ir_(fn func(*big.Rat, *big.Rat) *big.Rat) func(*big.Rat, *value) *big.
 	}
 }
 
+func c_(fn func(*value, *value) *Cmp) func(*value, *value) *value {
+	return func(l *value, r *value) (ret *value) {
+		ret = &value{typ: types.COMPLEX}
+		ret.val = ThisCmp(fn(l, r))
+		return
+	}
+}
+
+func c_c_(fn func(*Cmp, *value) *Cmp) func(*value, *value) *Cmp {
+	return func(l *value, r *value) *Cmp {
+		lc := l.toCmp()
+		return fn(lc, r)
+	}
+}
+
+func c_c_c_(fn func(*Cmp, *Cmp) *Cmp) func(*Cmp, *value) *Cmp {
+	return func(lc *Cmp, r *value) *Cmp {
+		rc := r.toCmp()
+		return fn(lc, rc)
+	}
+}
+
+func c_ir_(fn func(*big.Rat, *value) *Cmp) func(*value, *value) *Cmp {
+	return func(l *value, r *value) *Cmp {
+		if l.typ == types.REAL {
+			lr := l.toReal()
+			return fn(lr, r)
+		} else if l.typ == types.INTEGER {
+			li := l.toInt()
+			lr := big.NewRat(0, 1)
+			lr.SetInt(li)
+			return fn(lr, r)
+		} else {
+			halt.As(100, "cannot convert")
+		}
+		panic(0)
+	}
+}
+
+func c_ir_ir_(fn func(*big.Rat, *big.Rat) *Cmp) func(*big.Rat, *value) *Cmp {
+	return func(lr *big.Rat, r *value) *Cmp {
+		if r.typ == types.REAL {
+			rr := r.toReal()
+			return fn(lr, rr)
+		} else if r.typ == types.INTEGER {
+			ri := r.toInt()
+			rr := big.NewRat(0, 1)
+			rr.SetInt(ri)
+			return fn(lr, rr)
+		} else {
+			halt.As(100, "cannot convert")
+		}
+		panic(0)
+	}
+}
+
 func i_i_(fn func(*big.Int, *value) *big.Int) func(*value, *value) *big.Int {
 	return func(l *value, r *value) *big.Int {
 		li := l.toInt()
@@ -438,6 +494,16 @@ func dyREAL() {
 		}))))
 }
 
+func dyCOMPLEX() {
+	putDyadic(types.COMPLEX, types.COMPLEX, operation.Sum,
+		c_(c_c_(c_c_c_(func(l *Cmp, r *Cmp) *Cmp {
+			ret := &Cmp{}
+			ret.re = l.re.Add(l.re, r.re)
+			ret.im = l.im.Add(l.im, r.im)
+			return ret
+		}))))
+}
+
 func dyCHAR() {
 	putDyadic(types.CHAR, types.CHAR, operation.Eq, b_(b_c_(b_c_c_(func(lc rune, rc rune) bool { return lc == rc }))))
 	putDyadic(types.CHAR, types.CHAR, operation.Neq, b_(b_c_(b_c_c_(func(lc rune, rc rune) bool { return lc != rc }))))
@@ -512,6 +578,17 @@ func dyINT2REAL() {
 	putDyadic(types.INTEGER, types.INTEGER, operation.Quot,
 		r_(r_ir_(r_ir_ir_(func(l *big.Rat, r *big.Rat) *big.Rat {
 			return l.Quo(l, r)
+		}))))
+}
+
+func dyREAL2COMPLEX() {
+	putDyadic(types.INTEGER, types.INTEGER, operation.Pcmp,
+		c_(c_ir_(c_ir_ir_(func(l *big.Rat, r *big.Rat) *Cmp {
+			return &Cmp{re: l, im: r}
+		}))))
+	putDyadic(types.INTEGER, types.INTEGER, operation.Ncmp,
+		c_(c_ir_(c_ir_ir_(func(l *big.Rat, r *big.Rat) *Cmp {
+			return &Cmp{re: l, im: r.Neg(r)}
 		}))))
 }
 
@@ -640,9 +717,11 @@ func init() {
 	dyadic = make(tm)
 	dyINTEGER()
 	dyREAL()
+	dyCOMPLEX()
 	dyCHAR()
 	dySTRING()
 	dyINT2REAL()
+	dyREAL2COMPLEX()
 	dyCHAR2STRING()
 	dyABT()
 }
