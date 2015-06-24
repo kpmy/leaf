@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"container/list"
 	"fmt"
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
@@ -8,19 +9,85 @@ import (
 	"reflect"
 )
 
+type block struct {
+	parent    *block
+	childList []*block
+	cm        map[string]*ir.Const
+	vm        map[string]*ir.Variable
+	pm        map[string]*ir.Procedure
+}
+
+func (b *block) init() {
+	b.cm = make(map[string]*ir.Const)
+	b.vm = make(map[string]*ir.Variable)
+	b.pm = make(map[string]*ir.Procedure)
+}
+
+func (b *block) this(id string) interface{} {
+	c := b.cm[id]
+	v := b.vm[id]
+	p := b.pm[id]
+	switch {
+	case c != nil:
+		return c
+	case v != nil:
+		return v
+	case p != nil:
+		return p
+	}
+	return nil
+}
+
+func (b *block) find(id string) (ret interface{}) {
+	for x := b; x != nil && ret == nil; {
+		ret = x.this(id)
+		x = x.parent
+	}
+	return
+}
+
+type stack struct {
+	ls *list.List
+}
+
+func (s *stack) init() {
+	s.ls = list.New()
+}
+
+func (s *stack) push() {
+	b := &block{}
+	b.init()
+	b.parent = s.this()
+	s.ls.PushFront(b)
+}
+
+func (s *stack) pop() {
+	if s.ls.Len() > 0 {
+		b := s.this()
+		if b.parent != nil {
+			b.parent.childList = append(b.parent.childList, b)
+		}
+		s.ls.Remove(s.ls.Front())
+	}
+}
+
+func (s *stack) this() (ret *block) {
+	if s.ls.Len() > 0 {
+		ret = s.ls.Front().Value.(*block)
+	}
+	return
+}
+
 type target struct {
-	root *ir.Module
+	top *ir.Module
+	st  *stack
 }
 
 func (t *target) init(mod string) {
-	t.root = &ir.Module{Name: mod}
-	t.root.Init()
-}
-
-type scopeLevel struct {
-	varScope   map[string]*ir.Variable
-	constScope map[string]*ir.Const
-	procScope  map[string]*ir.Procedure
+	t.top = &ir.Module{Name: mod}
+	t.top.Init()
+	t.st = &stack{}
+	t.st.init()
 }
 
 type level int
@@ -39,14 +106,14 @@ type exprItem struct {
 }
 
 type forwardNamedConstExpr struct {
-	name  string
-	scope map[string]*ir.Const
+	name string
+	sc   *block
 }
 
 func (e *forwardNamedConstExpr) Self() {}
 
 func (e *forwardNamedConstExpr) Eval() (ret ir.Expression) {
-	if c := e.scope[e.name]; c != nil {
+	if c, _ := e.sc.find(e.name).(*ir.Const); c != nil {
 		return &ir.NamedConstExpr{Named: c}
 	} else {
 		halt.As(100, "undefined constant ", e.name)
@@ -55,22 +122,22 @@ func (e *forwardNamedConstExpr) Eval() (ret ir.Expression) {
 }
 
 type forwardCall struct {
-	name  string
-	scope map[string]*ir.Procedure
+	name string
+	sc   *block
 }
 
 func (s *forwardCall) Do() {}
 func (s *forwardCall) Fwd() ir.Statement {
-	if p := s.scope[s.name]; p != nil {
+	if p, _ := s.sc.find(s.name).(*ir.Procedure); p != nil {
 		return &ir.CallStmt{Proc: p}
 	} else {
-		halt.As(100, "undefined procedure ", s.name)
+		halt.As(100, "undefined procedure ", s.name, s.sc)
 	}
 	panic(0)
 }
 
 type exprBuilder struct {
-	scope scopeLevel
+	sc    *block
 	stack []*exprItem
 }
 
@@ -233,18 +300,17 @@ func (e *exprBuilder) expr(expr ir.Expression) {
 }
 
 func (e *exprBuilder) as(id string) ir.Expression {
-	if e.scope.constScope != nil && e.scope.varScope != nil {
-		if c := e.scope.constScope[id]; c != nil {
-			return &ir.NamedConstExpr{Named: c}
-		} else if v := e.scope.varScope[id]; v != nil {
+	if x := e.sc.find(id); x != nil {
+		switch v := x.(type) {
+		case *ir.Const:
+			return &ir.NamedConstExpr{Named: v}
+		case *ir.Variable:
 			return &ir.VariableExpr{Obj: v}
+		default:
+			halt.As(100, "unexpected ", reflect.TypeOf(v))
 		}
-	} else if e.scope.constScope != nil && e.scope.varScope == nil {
-		if c := e.scope.constScope[id]; c != nil {
-			return &ir.NamedConstExpr{Named: c}
-		} else {
-			return &forwardNamedConstExpr{name: id, scope: e.scope.constScope}
-		}
+	} else {
+		return &forwardNamedConstExpr{name: id, sc: e.sc}
 	}
 	panic(0)
 }
@@ -254,26 +320,30 @@ func (b *exprBuilder) selector(sel ir.Selector) ir.Expression {
 }
 
 type blockBuilder struct {
-	scope    scopeLevel
-	seq      []ir.Statement
-	procList []*ir.Procedure
+	sc  *block
+	seq []ir.Statement
 }
 
 func (b *blockBuilder) isObj(id string) bool {
-	return b.scope.varScope[id] != nil
+	x := b.sc.find(id)
+	_, ok := x.(*ir.Procedure)
+	return x != nil && !ok
 }
 
 func (b *blockBuilder) obj(id string) ir.Selector {
-	v := b.scope.varScope[id]
-	assert.For(v != nil, 30)
+	_v := b.sc.find(id)
+	assert.For(_v != nil, 30, id)
+	v, ok := _v.(*ir.Variable)
+	assert.For(ok, 31, id)
 	return &ir.SelectVar{Var: v}
 }
 
 func (b *blockBuilder) call(id string) ir.Statement {
-	if p := b.scope.procScope[id]; p != nil {
+	if p, _ := b.sc.find(id).(*ir.Procedure); p != nil {
 		return &ir.CallStmt{Proc: p}
 	} else {
-		return &forwardCall{scope: b.scope.procScope, name: id}
+		fmt.Println("forward call")
+		return &forwardCall{sc: b.sc, name: id}
 	}
 }
 
@@ -281,12 +351,13 @@ func (b *blockBuilder) put(s ir.Statement) {
 	b.seq = append(b.seq, s)
 }
 
-func (b *blockBuilder) putProc(p *ir.Procedure) {
-	b.procList = append(b.procList, p)
+func (b *blockBuilder) decl(id string, p *ir.Procedure) {
+	assert.For(b.sc.pm[id] == nil, 20)
+	b.sc.pm[id] = p
 }
 
 type selBuilder struct {
-	scope scopeLevel
+	sc    *block
 	chain []ir.Selector
 }
 
@@ -317,4 +388,44 @@ func (s *selBuilder) appy(expr ir.Expression) ir.Expression {
 func (s *selBuilder) Chain() []ir.Selector {
 	assert.For(len(s.chain) > 0, 20)
 	return s.chain
+}
+
+type constBuilder struct {
+	sc *block
+}
+
+func (b *constBuilder) this(id string) (ret *ir.Const, free bool) {
+	if ret = b.sc.cm[id]; ret != nil {
+		free = false
+		return
+	} else if b.sc.parent != nil {
+		x := b.sc.parent.this(id)
+		return nil, x == nil
+	}
+	return nil, true
+}
+
+func (b *constBuilder) decl(id string, c *ir.Const) {
+	assert.For(b.sc.cm[id] == nil, 20)
+	b.sc.cm[id] = c
+}
+
+type varBuilder struct {
+	sc *block
+}
+
+func (b *varBuilder) this(id string) (ret *ir.Variable, free bool) {
+	if ret = b.sc.vm[id]; ret != nil {
+		free = false
+		return
+	} else {
+		x := b.sc.this(id)
+		return nil, x == nil
+	}
+	return nil, true
+}
+
+func (b *varBuilder) decl(id string, v *ir.Variable) {
+	assert.For(b.sc.vm[id] == nil, 20)
+	b.sc.vm[id] = v
 }

@@ -20,13 +20,13 @@ var idents map[string]scanner.Foreign
 const (
 	none scanner.Foreign = iota
 	integer
-	boolean
-	trilean
+	comp
+	flo //for real, real is builtin go function O_o
 	char
 	str
 	atom
-	comp
-	flo //for real, real is builtin go function O_o
+	boolean
+	trilean
 )
 
 func init() {
@@ -195,7 +195,7 @@ func (p *pr) selector(b *selBuilder) {
 		case scanner.Lbrak:
 			p.next()
 			this := &ir.SelectIndex{}
-			expr := &exprBuilder{scope: b.scope}
+			expr := &exprBuilder{sc: b.sc}
 			p.expression(expr)
 			this.Expr = expr
 			b.join(this)
@@ -251,12 +251,12 @@ func (p *pr) factor(b *exprBuilder) {
 	case scanner.Ident:
 		e := b.as(p.ident())
 		p.next()
-		sel := &selBuilder{scope: b.scope}
+		sel := &selBuilder{sc: b.sc}
 		p.selector(sel)
 		b.factor(sel.appy(e))
 	case scanner.Lparen:
 		p.next()
-		expr := &exprBuilder{scope: b.scope}
+		expr := &exprBuilder{sc: b.sc}
 		p.expression(expr)
 		b.factor(expr)
 		p.expect(scanner.Rparen, ") expected", scanner.Separator)
@@ -363,13 +363,13 @@ func (p *pr) expression(b *exprBuilder) {
 	}
 }
 
-func (p *pr) constDecl() {
+func (p *pr) constDecl(b *constBuilder) {
 	assert.For(p.sym.Code == scanner.Const, 20, "CONST block expected")
 	p.next()
 	for {
 		if p.await(scanner.Ident, scanner.Delimiter, scanner.Separator) {
 			id := p.ident()
-			if p.root.ConstDecl[id] != nil {
+			if c, free := b.this(id); c != nil || !free {
 				p.mark("identifier already exists")
 			}
 			p.next()
@@ -377,7 +377,7 @@ func (p *pr) constDecl() {
 			if p.await(scanner.Equal, scanner.Separator) { //const expression
 				p.next()
 				p.pass(scanner.Separator)
-				obj.Expr = &exprBuilder{scope: scopeLevel{constScope: p.root.ConstDecl}}
+				obj.Expr = &exprBuilder{sc: b.sc}
 				p.expression(obj.Expr.(*exprBuilder))
 			} else if p.is(scanner.Delimiter) { //ATOM
 				obj.Expr = &ir.AtomExpr{Value: id}
@@ -385,7 +385,7 @@ func (p *pr) constDecl() {
 			} else {
 				p.mark("delimiter or expression expected")
 			}
-			p.root.ConstDecl[id] = obj
+			b.decl(id, obj)
 		} else {
 			break
 		}
@@ -414,7 +414,7 @@ func (p *pr) typ(consume func(t types.Type)) {
 	}
 }
 
-func (p *pr) varDecl() {
+func (p *pr) varDecl(b *varBuilder) {
 	assert.For(p.sym.Code == scanner.Var, 20, "VAR block expected")
 	p.next()
 	for {
@@ -423,12 +423,12 @@ func (p *pr) varDecl() {
 			for {
 				obj := &ir.Variable{}
 				id := p.ident()
-				if p.root.ConstDecl[id] != nil {
+				if v, free := b.this(id); v != nil || !free {
 					p.mark("identifier already exists")
 				}
 				obj.Name = id
 				vl = append(vl, obj)
-				p.root.VarDecl[obj.Name] = obj
+				b.decl(obj.Name, obj)
 				p.next()
 				if p.await(scanner.Comma, scanner.Separator) {
 					p.next()
@@ -459,15 +459,14 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 				obj := b.obj(id)
 				p.next()
 				p.pass(scanner.Separator)
-				sel := &selBuilder{scope: b.scope}
+				sel := &selBuilder{sc: b.sc}
 				p.selector(sel)
 				sel.head(obj)
 				if p.is(scanner.Becomes) {
 					stmt := &ir.AssignStmt{}
 					p.next()
 					p.pass(scanner.Separator)
-					expr := &exprBuilder{}
-					expr.scope = b.scope
+					expr := &exprBuilder{sc: b.sc}
 					p.expression(expr)
 					stmt.Sel = sel
 					stmt.Expr = expr
@@ -488,11 +487,11 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 				case scanner.If, scanner.Elsif:
 					p.next()
 					p.pass(scanner.Separator)
-					expr := &exprBuilder{scope: b.scope}
+					expr := &exprBuilder{sc: b.sc}
 					p.expression(expr)
 					p.expect(scanner.Then, "THEN not found", scanner.Separator)
 					p.next()
-					st := &blockBuilder{scope: b.scope}
+					st := &blockBuilder{sc: b.sc}
 					p.stmtSeq(st)
 					p.pass(scanner.Separator, scanner.Delimiter)
 					br := &ir.ConditionBranch{}
@@ -501,7 +500,7 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 					stmt.Cond = append(stmt.Cond, br)
 				case scanner.Else:
 					p.next()
-					st := &blockBuilder{scope: b.scope}
+					st := &blockBuilder{sc: b.sc}
 					p.stmtSeq(st)
 					p.pass(scanner.Separator, scanner.Delimiter)
 					br := &ir.ElseBranch{}
@@ -522,11 +521,11 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 				case scanner.While, scanner.Elsif:
 					p.next()
 					p.pass(scanner.Separator)
-					expr := &exprBuilder{scope: b.scope}
+					expr := &exprBuilder{sc: b.sc}
 					p.expression(expr)
 					p.expect(scanner.Do, "DO not found", scanner.Separator)
 					p.next()
-					st := &blockBuilder{scope: b.scope}
+					st := &blockBuilder{sc: b.sc}
 					p.stmtSeq(st)
 					p.pass(scanner.Separator, scanner.Delimiter)
 					br := &ir.ConditionBranch{}
@@ -545,12 +544,12 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 			p.next()
 			stmt := &ir.RepeatStmt{}
 			br := &ir.ConditionBranch{}
-			st := &blockBuilder{scope: b.scope}
+			st := &blockBuilder{sc: b.sc}
 			p.pass(scanner.Separator, scanner.Delimiter)
 			p.stmtSeq(st)
 			p.expect(scanner.Until, "UNTIL expected", scanner.Separator, scanner.Delimiter)
 			p.next()
-			expr := &exprBuilder{scope: b.scope}
+			expr := &exprBuilder{sc: b.sc}
 			p.expression(expr)
 			p.expect(scanner.Delimiter, "delimiter expected", scanner.Separator)
 			p.next()
@@ -567,24 +566,46 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 func (p *pr) procDecl(b *blockBuilder) {
 	assert.For(p.is(scanner.Proc), 20, "PROCEDURE expected here")
 	ret := &ir.Procedure{}
+	ret.Init()
 	p.next()
 	p.expect(scanner.Ident, "procedure name expected", scanner.Separator)
 	ret.Name = p.ident()
 	p.next()
+	p.st.push()
+	this := p.st.this()
+	p.block(this)
 	p.expect(scanner.Begin, "BEGIN expected", scanner.Separator, scanner.Delimiter)
 	p.next()
-	b.putProc(ret)
-	proc := &blockBuilder{}
-	proc.scope = b.scope
+	b.decl(ret.Name, ret)
+	proc := &blockBuilder{sc: this}
 	p.stmtSeq(proc)
 	ret.Seq = proc.seq
+	ret.ConstDecl = this.cm
+	ret.VarDecl = this.vm
+	ret.ProcDecl = this.pm
 	p.expect(scanner.End, "no END", scanner.Delimiter, scanner.Separator)
 	p.next()
 	p.expect(scanner.Ident, "procedure name expected", scanner.Separator)
 	if p.ident() != ret.Name {
 		p.mark("procedure name does not match")
 	}
+	p.st.pop()
 	p.next()
+}
+
+func (p *pr) block(bl *block) {
+	for p.await(scanner.Const, scanner.Delimiter, scanner.Separator) {
+		b := &constBuilder{sc: bl}
+		p.constDecl(b)
+	}
+	for p.await(scanner.Var, scanner.Delimiter, scanner.Separator) {
+		b := &varBuilder{sc: bl}
+		p.varDecl(b)
+	}
+	for p.await(scanner.Proc, scanner.Delimiter, scanner.Separator) {
+		b := &blockBuilder{sc: bl}
+		p.procDecl(b)
+	}
 }
 
 func (p *pr) Module() (ret *ir.Module, err error) {
@@ -600,44 +621,35 @@ func (p *pr) Module() (ret *ir.Module, err error) {
 	p.target.init(p.ident())
 	p.next()
 	p.pass(scanner.Separator, scanner.Delimiter)
-	for p.await(scanner.Const, scanner.Delimiter, scanner.Separator) {
-		p.constDecl()
-	}
-	for p.await(scanner.Var, scanner.Delimiter, scanner.Separator) {
-		p.varDecl()
-	}
-	for p.await(scanner.Proc, scanner.Delimiter, scanner.Separator) {
-		b := &blockBuilder{}
-		b.scope = scopeLevel{varScope: p.root.VarDecl, constScope: p.root.ConstDecl, procScope: p.root.ProcDecl}
-		p.procDecl(b)
-		for _, v := range b.procList {
-			p.root.ProcDecl[v.Name] = v
-		}
-	}
+	p.st.push()
+	top := p.st.this()
+	p.block(top)
+	p.st.pop()
+	p.top.ConstDecl = top.cm
+	p.top.VarDecl = top.vm
+	p.top.ProcDecl = top.pm
 	if p.await(scanner.Begin, scanner.Delimiter, scanner.Separator) {
 		p.next()
-		b := &blockBuilder{}
-		b.scope = scopeLevel{varScope: p.root.VarDecl, constScope: p.root.ConstDecl, procScope: p.root.ProcDecl}
+		b := &blockBuilder{sc: top}
 		p.stmtSeq(b)
-		p.root.BeginSeq = b.seq
+		p.top.BeginSeq = b.seq
 	}
 	if p.await(scanner.Close, scanner.Delimiter, scanner.Separator) {
 		p.next()
-		b := &blockBuilder{}
-		b.scope = scopeLevel{varScope: p.root.VarDecl, constScope: p.root.ConstDecl, procScope: p.root.ProcDecl}
+		b := &blockBuilder{sc: top}
 		p.stmtSeq(b)
-		p.root.CloseSeq = b.seq
+		p.top.CloseSeq = b.seq
 	}
 	//p.run(scanner.End)
 	p.expect(scanner.End, "no END", scanner.Delimiter, scanner.Separator)
 	p.next()
 	p.expect(scanner.Ident, "module name expected", scanner.Separator)
-	if p.ident() != p.root.Name {
+	if p.ident() != p.top.Name {
 		p.mark("module name does not match")
 	}
 	p.next()
 	p.expect(scanner.Period, "end of module expected")
-	ret = p.root
+	ret = p.top
 	return
 }
 

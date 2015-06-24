@@ -21,8 +21,17 @@ func (m *Module) Init() {
 }
 
 type Procedure struct {
-	Name string
-	Seq  []Statement
+	Name      string
+	ConstDecl map[string]*Const
+	VarDecl   map[string]*Variable
+	ProcDecl  map[string]*Procedure
+	Seq       []Statement
+}
+
+func (p *Procedure) Init() {
+	p.ConstDecl = make(map[string]*Const)
+	p.VarDecl = make(map[string]*Variable)
+	p.ProcDecl = make(map[string]*Procedure)
 }
 
 type Const struct {
