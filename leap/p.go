@@ -1,4 +1,4 @@
-package parser
+package leap
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"leaf/ir"
 	"leaf/ir/operation"
 	"leaf/ir/types"
-	"leaf/scanner"
+	"leaf/leap/scanner"
 	"strconv"
 )
 

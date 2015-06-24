@@ -5,8 +5,8 @@ import (
 	"bytes"
 	"io"
 	"leaf/ir"
-	"leaf/target"
-	"leaf/target/yt"
+	"leaf/ir/target"
+	"leaf/ir/target/yt"
 )
 
 const CODE = "code"

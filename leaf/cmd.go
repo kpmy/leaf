@@ -4,12 +4,12 @@ import (
 	"bufio"
 	"flag"
 	"github.com/kpmy/ypk/assert"
+	"leaf/ir/target"
+	_ "leaf/ir/target/yt/z"
+	"leaf/leap"
+	"leaf/leap/scanner"
 	"leaf/lenin"
 	_ "leaf/lenin/trav"
-	"leaf/parser"
-	"leaf/scanner"
-	"leaf/target"
-	_ "leaf/target/yt/z"
 	"log"
 	"os"
 )
@@ -28,7 +28,7 @@ func main() {
 	sname := name + ".lf"
 	if f, err := os.Open(sname); err == nil {
 		defer f.Close()
-		p := parser.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)))
+		p := leap.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)))
 		ir, _ := p.Module()
 		if t, err := os.Create(name + ".li"); err == nil {
 			target.New(ir, t)

@@ -4,12 +4,12 @@ import (
 	"bufio"
 	"fmt"
 	"leaf/ir"
+	"leaf/ir/target"
+	_ "leaf/ir/target/yt/z"
+	"leaf/leap"
+	"leaf/leap/scanner"
 	"leaf/lenin"
 	_ "leaf/lenin/trav"
-	"leaf/parser"
-	"leaf/scanner"
-	"leaf/target"
-	_ "leaf/target/yt/z"
 	"log"
 	"os"
 	"strconv"
@@ -54,7 +54,7 @@ func TestParser(t *testing.T) {
 		if _, err = os.Stat(sname); err == nil {
 			if f, err := os.Open(sname); err == nil {
 				defer f.Close()
-				p := parser.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)))
+				p := leap.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)))
 				ir, _ := p.Module()
 				if t, err := os.Create(mname + ".li"); err == nil {
 					defer t.Close()
@@ -91,7 +91,7 @@ func TestInterp(t *testing.T) {
 		if _, err = os.Stat(sname); err == nil {
 			if f, err := os.Open(sname); err == nil {
 				defer f.Close()
-				p := parser.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)))
+				p := leap.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)))
 				ir, _ := p.Module()
 				lenin.Do(ir)
 			}
@@ -109,7 +109,7 @@ func TestCollection(t *testing.T) {
 				defer f.Close()
 				rd := bufio.NewReader(f)
 				for err == nil {
-					p := parser.ConnectTo(scanner.ConnectTo(rd))
+					p := leap.ConnectTo(scanner.ConnectTo(rd))
 					var ast *ir.Module
 					if ast, err = p.Module(); err == nil {
 						if t, err := os.Create(ast.Name + ".li"); err == nil {
