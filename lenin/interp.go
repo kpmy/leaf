@@ -1,4 +1,7 @@
-package li
+/*
+	lenin - leaf naive interpreter
+*/
+package lenin
 
 import (
 	"github.com/kpmy/ypk/assert"
