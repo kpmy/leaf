@@ -268,22 +268,19 @@ func (p *pr) factor(b *exprBuilder) {
 
 func (p *pr) cpx(b *exprBuilder) {
 	p.factor(b)
-	for stop := false; !stop; {
+	p.pass(scanner.Separator)
+	switch p.sym.Code {
+	case scanner.Ncmp, scanner.Pcmp:
+		op := p.sym.Code
+		p.next()
 		p.pass(scanner.Separator)
-		switch p.sym.Code {
-		case scanner.Ncmp, scanner.Pcmp:
-			op := p.sym.Code
-			p.next()
-			p.pass(scanner.Separator)
-			if p.sym.Code != scanner.Im {
-				p.factor(b)
-			} else {
-				p.mark("imaginary operator not expected")
-			}
-			b.power(&ir.Dyadic{Op: operation.Map(op)})
-		default:
-			stop = true
+		if p.sym.Code != scanner.Im {
+			p.factor(b)
+		} else {
+			p.mark("imaginary operator not expected")
 		}
+		b.power(&ir.Dyadic{Op: operation.Map(op)})
+
 	}
 }
 
