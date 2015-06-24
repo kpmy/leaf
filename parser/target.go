@@ -342,7 +342,6 @@ func (b *blockBuilder) call(id string) ir.Statement {
 	if p, _ := b.sc.find(id).(*ir.Procedure); p != nil {
 		return &ir.CallStmt{Proc: p}
 	} else {
-		fmt.Println("forward call")
 		return &forwardCall{sc: b.sc, name: id}
 	}
 }

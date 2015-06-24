@@ -27,8 +27,11 @@ type Const struct {
 }
 
 type Proc struct {
-	Guid string
-	Seq  []*Statement `yaml:"seq,omitempty"`
+	Guid      string
+	ConstDecl map[string]*Const `yaml:"const,omitempty"`
+	VarDecl   map[string]*Var   `yaml:"var,omitempty"`
+	ProcDecl  map[string]*Proc  `yaml:"proc,omitempty"`
+	Seq       []*Statement      `yaml:"seq,omitempty"`
 }
 
 type Selector struct {

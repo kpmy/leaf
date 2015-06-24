@@ -14,238 +14,13 @@ import (
 	"reflect"
 )
 
-type Atom string
-
-type Int struct {
-	big.Int
-}
-
-func NewInt(x int64) (ret *Int) {
-	ret = &Int{}
-	ret.Int = *big.NewInt(x)
-	return
-}
-
-func ThisInt(x *big.Int) (ret *Int) {
-	ret = &Int{}
-	ret.Int = *x
-	return
-}
-
-func (i *Int) String() string {
-	x, _ := i.Int.MarshalText()
-	return string(x)
-}
-
-type Rat struct {
-	big.Rat
-}
-
-func NewRat(x float64) (ret *Rat) {
-	ret = &Rat{}
-	ret.Rat = *big.NewRat(0, 1)
-	return
-}
-
-func ThisRat(x *big.Rat) (ret *Rat) {
-	ret = &Rat{}
-	ret.Rat = *x
-	return
-}
-
-type Cmp struct {
-	re, im *big.Rat
-}
-
-func (c *Cmp) String() (ret string) {
-	null := big.NewRat(0, 1)
-	if c.re.Cmp(null) != 0 {
-		ret = fmt.Sprint(c.re)
-	}
-	if eq := c.im.Cmp(null); eq > 0 {
-		ret = fmt.Sprint(ret, "+i", c.im.Abs(c.im))
-	} else if eq < 0 {
-		ret = fmt.Sprint(ret, "-i", c.im.Abs(c.im))
-	} else if ret == "" {
-		ret = "0"
-	}
-	return
-}
-
-func NewCmp(re, im float64) (ret *Cmp) {
-	ret = &Cmp{}
-	ret.re = big.NewRat(0, 1).SetFloat64(re)
-	ret.im = big.NewRat(0, 1).SetFloat64(im)
-	return
-}
-
-func ThisCmp(c *Cmp) (ret *Cmp) {
-	ret = &Cmp{}
-	*ret = *c
-	return
-}
-
 type storage struct {
 	schema map[string]*ir.Variable
 	data   map[string]interface{}
 }
 
-type stack struct {
+type exprStack struct {
 	vl *list.List
-}
-
-type value struct {
-	typ types.Type
-	val interface{}
-}
-
-type context struct {
-	storage
-	stack
-	root *ir.Module
-}
-
-func (v *value) toInt() (ret *big.Int) {
-	assert.For(v.typ == types.INTEGER, 20)
-	switch x := v.val.(type) {
-	case int:
-		ret = big.NewInt(int64(x))
-	case *Int:
-		ret = big.NewInt(0)
-		ret.Add(ret, &x.Int)
-	default:
-		halt.As(100, "wrong integer ", reflect.TypeOf(x))
-	}
-	return
-}
-
-func (v *value) toReal() (ret *big.Rat) {
-	assert.For(v.typ == types.REAL, 20)
-	switch x := v.val.(type) {
-	case *Rat:
-		ret = big.NewRat(0, 1)
-		ret.Add(ret, &x.Rat)
-	default:
-		halt.As(100, "wrong real ", reflect.TypeOf(x))
-	}
-	return
-}
-
-func (v *value) toBool() (ret bool) {
-	assert.For(v.typ == types.BOOLEAN, 20)
-	switch x := v.val.(type) {
-	case bool:
-		ret = x
-	default:
-		halt.As(100, "wrong boolean ", reflect.TypeOf(x))
-	}
-	return
-}
-
-func (v *value) toStr() (ret string) {
-	assert.For(v.typ == types.STRING, 20)
-	switch x := v.val.(type) {
-	case string:
-		ret = x
-	default:
-		halt.As(100, "wrong string ", reflect.TypeOf(x))
-	}
-	return
-}
-
-func (v *value) toRune() (ret rune) {
-	assert.For(v.typ == types.CHAR, 20)
-	switch x := v.val.(type) {
-	case rune:
-		ret = x
-	default:
-		halt.As(100, "wrong rune ", reflect.TypeOf(x))
-	}
-	return
-}
-
-func (v *value) toTril() (ret tri.Trit) {
-	assert.For(v.typ == types.TRILEAN, 20)
-	switch x := v.val.(type) {
-	case tri.Trit:
-		ret = x
-	default:
-		halt.As(100, "wrong trilean ", reflect.TypeOf(x))
-	}
-	return
-}
-
-func (v *value) toAtom() (ret *Atom) {
-	assert.For(v.typ == types.ATOM, 20)
-	switch x := v.val.(type) {
-	case Atom:
-		ret = &x
-	case nil: //do nothing
-	default:
-		halt.As(100, "wrong atom ", reflect.TypeOf(x))
-	}
-	return
-}
-
-func (v *value) toCmp() (ret *Cmp) {
-	assert.For(v.typ == types.COMPLEX, 20)
-	switch x := v.val.(type) {
-	case *Cmp:
-		ret = ThisCmp(x)
-	default:
-		halt.As(100, "wrong complex ", reflect.TypeOf(x))
-	}
-	return
-}
-
-func cval(e *ir.ConstExpr) (ret *value) {
-	t := e.Type
-	switch t {
-	case types.INTEGER:
-		b := big.NewInt(0)
-		if err := b.UnmarshalText([]byte(e.Value.(string))); err == nil {
-			v := ThisInt(b)
-			ret = &value{typ: t, val: v}
-		} else {
-			halt.As(100, "wrong integer")
-		}
-	case types.BOOLEAN:
-		v := e.Value.(bool)
-		ret = &value{typ: t, val: v}
-	case types.CHAR:
-		var v rune
-		switch x := e.Value.(type) {
-		case int32:
-			v = rune(x)
-		case int:
-			v = rune(x)
-		default:
-			halt.As(100, "unsupported rune coding")
-		}
-		ret = &value{typ: t, val: v}
-	case types.STRING:
-		v := e.Value.(string)
-		ret = &value{typ: t, val: v}
-	case types.TRILEAN:
-		if e.Value == nil {
-			ret = &value{typ: t, val: tri.NIL}
-		} else if tv := e.Value.(bool); tv {
-			ret = &value{typ: t, val: tri.TRUE}
-		} else {
-			ret = &value{typ: t, val: tri.FALSE}
-		}
-	case types.REAL:
-		r := big.NewRat(0, 1)
-		if err := r.UnmarshalText([]byte(e.Value.(string))); err == nil {
-			v := ThisRat(r)
-			ret = &value{typ: t, val: v}
-		} else {
-			halt.As(100, "wrong real")
-		}
-	default:
-		halt.As(100, "unknown type ", t, " for ", e)
-	}
-	return
 }
 
 func (s *storage) init() {
@@ -283,6 +58,7 @@ func (s *storage) alloc(vl map[string]*ir.Variable) {
 
 func (s *storage) findObj(o *ir.Variable, fn func(*value) *value) {
 	data := s.data[o.Name]
+	assert.For(o.Type == types.ATOM || data != nil, 20)
 	nv := fn(&value{typ: o.Type, val: data})
 	if nv != nil {
 		assert.For(nv.typ == o.Type, 40, "provided ", nv.typ, " != expected ", o.Type)
@@ -291,16 +67,16 @@ func (s *storage) findObj(o *ir.Variable, fn func(*value) *value) {
 	}
 }
 
-func (s *stack) init() {
+func (s *exprStack) init() {
 	s.vl = list.New()
 }
 
-func (s *stack) push(v *value) {
+func (s *exprStack) push(v *value) {
 	assert.For(v != nil, 20)
 	s.vl.PushFront(v)
 }
 
-func (s *stack) pop() (ret *value) {
+func (s *exprStack) pop() (ret *value) {
 	if s.vl.Len() > 0 {
 		el := s.vl.Front()
 		ret = s.vl.Remove(el).(*value)
@@ -548,6 +324,8 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 
 func (ctx *context) stmt(_s ir.Statement) {
 	switch this := _s.(type) {
+	case ir.WrappedStatement:
+		ctx.do(this.Fwd())
 	case *ir.CallStmt:
 		ctx.do(this.Proc)
 	case *ir.AssignStmt:
@@ -642,7 +420,7 @@ func connectTo(m *ir.Module) (ret *context) {
 	ret = &context{}
 	ret.root = m
 	ret.storage.init()
-	ret.stack.init()
+	ret.exprStack.init()
 	return
 }
 

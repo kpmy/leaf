@@ -133,8 +133,9 @@ func externalize(mod *ir.Module) (ret *Module) {
 		}
 		return
 	}
-	{
-		for _, _v := range mod.ConstDecl {
+	cdecl := func(cm map[string]*ir.Const) (m map[string]*Const) {
+		m = make(map[string]*Const)
+		for _, _v := range cm {
 			c := &Const{}
 			c.Guid = ret.this(_v)
 			var e ir.Expression
@@ -148,28 +149,41 @@ func externalize(mod *ir.Module) (ret *Module) {
 			}
 			assert.For(e != nil, 40)
 			c.Expr = expr(e)
-			ret.ConstDecl[_v.Name] = c
+			m[_v.Name] = c
 		}
+		return
 	}
-	{
-		for _, v := range mod.VarDecl {
+	vdecl := func(vm map[string]*ir.Variable) (m map[string]*Var) {
+		m = make(map[string]*Var)
+		for _, v := range vm {
 			i := &Var{}
 			i.Guid = ret.this(v)
 			i.Type = v.Type.String()
-			ret.VarDecl[v.Name] = i
+			m[v.Name] = i
 		}
+		return
 	}
-	{
-		for _, v := range mod.ProcDecl {
+
+	var pdecl func(pm map[string]*ir.Procedure) (m map[string]*Proc)
+	pdecl = func(pm map[string]*ir.Procedure) (m map[string]*Proc) {
+		m = make(map[string]*Proc)
+		for _, v := range pm {
 			i := &Proc{}
 			i.Guid = ret.this(v)
+			i.ConstDecl = cdecl(v.ConstDecl)
+			i.VarDecl = vdecl(v.VarDecl)
+			i.ProcDecl = pdecl(v.ProcDecl)
 			for _, s := range v.Seq {
 				i.Seq = append(i.Seq, stmt(s))
 			}
-			ret.ProcDecl[v.Name] = i
+			m[v.Name] = i
 		}
+		return
 	}
 	{
+		ret.ConstDecl = cdecl(mod.ConstDecl)
+		ret.VarDecl = vdecl(mod.VarDecl)
+		ret.ProcDecl = pdecl(mod.ProcDecl)
 		for _, v := range mod.BeginSeq {
 			ret.BeginSeq = append(ret.BeginSeq, stmt(v))
 		}

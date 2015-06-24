@@ -29,6 +29,20 @@ func (d *dumbSel) Chain() []ir.Selector {
 }
 func (d *dumbSel) put(s ir.Selector) { d.chain = append(d.chain, s) }
 
+type dumbCall struct {
+	c     *ir.CallStmt
+	later func() *ir.CallStmt
+}
+
+func (d *dumbCall) Do() {}
+func (d *dumbCall) Fwd() ir.Statement {
+	if d.c != nil {
+		return d.c
+	} else {
+		return d.later()
+	}
+}
+
 func treatSel(_s interface{}) (ret *Selector) {
 	ret = &Selector{}
 	m := _s.(map[interface{}]interface{})
