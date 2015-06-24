@@ -14,13 +14,92 @@ import (
 	"reflect"
 )
 
+type context struct {
+	data *storeStack
+	exprStack
+	load []*ir.Module
+}
+
 type storage struct {
+	root   *ir.Module
+	link   interface{}
 	schema map[string]*ir.Variable
 	data   map[string]interface{}
 }
 
-type exprStack struct {
-	vl *list.List
+type storeStack struct {
+	store map[string]*storage
+	sl    *list.List
+	ml    *list.List
+}
+
+func (s *storeStack) init() {
+	s.store = make(map[string]*storage)
+	s.sl = list.New()
+	s.ml = list.New()
+}
+
+func (s *storeStack) mpush(m *ir.Module) {
+	assert.For(m != nil, 20)
+	s.ml.PushFront(m)
+}
+
+func (s *storeStack) mtop() *ir.Module {
+	if s.ml.Len() > 0 {
+		return s.ml.Front().Value.(*ir.Module)
+	}
+	return nil
+}
+
+func (s *storeStack) push(st *storage) {
+	assert.For(st != nil, 20)
+	s.sl.PushFront(st)
+}
+
+func (s *storeStack) pop() (ret *storage) {
+	if s.sl.Len() > 0 {
+		el := s.ml.Front()
+		ret = s.ml.Remove(el).(*storage)
+	} else {
+		halt.As(100, "pop on empty stack")
+	}
+	return
+}
+
+func (s *storeStack) top() *storage {
+	if s.ml.Len() > 0 {
+		return s.ml.Front().Value.(*storage)
+	}
+	return nil
+}
+
+func (s *storeStack) alloc(_x interface{}) {
+	switch x := _x.(type) {
+	case *ir.Module:
+		d := &storage{root: x}
+		d.alloc(x.VarDecl)
+		s.store[x.Name] = d
+		s.mpush(x)
+	case *ir.Procedure:
+		d := &storage{root: s.mtop(), link: x}
+		d.alloc(x.VarDecl)
+		s.push(d)
+	default:
+		halt.As(100, reflect.TypeOf(x))
+	}
+}
+
+func (s *storeStack) dealloc(_x interface{}) {
+	switch x := _x.(type) {
+	case *ir.Module:
+		s.store[x.Name] = nil
+		//TODO проверить наличие связанных элементов стека
+	case *ir.Procedure:
+		assert.For(s.top() != nil && s.top().link == x, 20)
+		s.pop()
+	default:
+		halt.As(100, reflect.TypeOf(x))
+	}
 }
 
 func (s *storage) init() {
@@ -29,9 +108,9 @@ func (s *storage) init() {
 }
 
 func (s *storage) alloc(vl map[string]*ir.Variable) {
-	if vl != nil {
-		s.schema = vl
-	}
+	assert.For(vl != nil, 20)
+	s.schema = vl
+	s.data = make(map[string]interface{})
 	for _, v := range s.schema {
 		switch v.Type {
 		case types.INTEGER:
@@ -65,6 +144,10 @@ func (s *storage) findObj(o *ir.Variable, fn func(*value) *value) {
 		assert.For(nv.val != nil, 41)
 		s.data[o.Name] = nv.val
 	}
+}
+
+type exprStack struct {
+	vl *list.List
 }
 
 func (s *exprStack) init() {
@@ -108,10 +191,11 @@ func (ctx *context) expr(_e ir.Expression, typ types.Type) {
 				halt.As(100, "unknown target type ", typ)
 			}
 		case *ir.VariableExpr:
-			ctx.findObj(this.Obj, func(v *value) *value {
+			/*ctx.findObj(this.Obj, func(v *value) *value {
 				ctx.push(v)
 				return nil
-			})
+			})*/
+			panic(0)
 		case *ir.SelectExpr:
 			eval(this.Base)
 			e := ctx.pop()
@@ -269,10 +353,11 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 		case *ir.SelectVar:
 			chain = append(chain, func(in, out *value, l ...hs) (ret *value) {
 				//fmt.Println("select var ", s.Var, in, out)
-				ctx.findObj(s.Var, func(val *value) *value {
+				/*ctx.findObj(s.Var, func(val *value) *value {
 					ret = first(in, val, l...)
 					return ret
-				})
+				})*/
+				panic(0)
 				return
 			})
 		case *ir.SelectIndex:
@@ -385,13 +470,15 @@ func (ctx *context) stmt(_s ir.Statement) {
 func (ctx *context) do(_t interface{}) {
 	switch this := _t.(type) {
 	case *ir.Module:
-		ctx.alloc(this.VarDecl)
+		ctx.data.alloc(this)
+		panic(0)
 		if len(this.BeginSeq) > 0 {
 			fmt.Println("BEGIN", this.Name, ctx.data)
 			for _, v := range this.BeginSeq {
 				ctx.do(v)
 			}
 		}
+		ctx.run()
 		if len(this.CloseSeq) > 0 {
 			fmt.Println("CLOSE", ctx.data)
 			for _, v := range this.CloseSeq {
@@ -399,12 +486,15 @@ func (ctx *context) do(_t interface{}) {
 			}
 		}
 		fmt.Println("END", this.Name, ctx.data)
+		ctx.data.dealloc(this)
 	case *ir.Procedure:
+		ctx.data.alloc(this)
 		fmt.Println("BEGIN", this.Name)
 		for _, v := range this.Seq {
 			ctx.do(v)
 		}
 		fmt.Println("END", this.Name)
+		ctx.data.dealloc(this.Name)
 	case ir.Statement:
 		ctx.stmt(this)
 	default:
@@ -413,13 +503,23 @@ func (ctx *context) do(_t interface{}) {
 }
 
 func (c *context) run() {
-	c.do(c.root)
+	if len(c.load) > 0 {
+		m := c.load[0]
+		if len(c.load) > 1 {
+			c.load = c.load[1:]
+		} else {
+			c.load = nil
+		}
+		c.do(m)
+	}
 }
 
-func connectTo(m *ir.Module) (ret *context) {
+func connectTo(m ...*ir.Module) (ret *context) {
+	assert.For(len(m) > 0, 20)
 	ret = &context{}
-	ret.root = m
-	ret.storage.init()
+	ret.load = m
+	ret.data = &storeStack{}
+	ret.data.init()
 	ret.exprStack.init()
 	return
 }

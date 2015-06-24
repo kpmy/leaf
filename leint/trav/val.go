@@ -15,12 +15,6 @@ type value struct {
 	val interface{}
 }
 
-type context struct {
-	storage
-	exprStack
-	root *ir.Module
-}
-
 func (v *value) toInt() (ret *big.Int) {
 	assert.For(v.typ == types.INTEGER, 20)
 	switch x := v.val.(type) {
