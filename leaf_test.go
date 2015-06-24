@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"leaf/ir"
-	"leaf/leint"
-	_ "leaf/leint/trav"
+	"leaf/lenin"
+	_ "leaf/lenin/trav"
 	"leaf/parser"
 	"leaf/scanner"
 	"leaf/target"
@@ -93,10 +93,9 @@ func TestInterp(t *testing.T) {
 				defer f.Close()
 				p := parser.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)))
 				ir, _ := p.Module()
-				li.Do(ir)
+				lenin.Do(ir)
 			}
 		}
-		fmt.Println()
 	}
 }
 
@@ -120,10 +119,9 @@ func TestCollection(t *testing.T) {
 						if t, err := os.Open(ast.Name + ".li"); err == nil {
 							defer t.Close()
 							ast := target.Old(t)
-							li.Do(ast)
+							lenin.Do(ast)
 						}
 					}
-					fmt.Println()
 				}
 			}
 		}

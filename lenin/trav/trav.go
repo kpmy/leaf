@@ -58,8 +58,8 @@ func (s *storeStack) push(st *storage) {
 
 func (s *storeStack) pop() (ret *storage) {
 	if s.sl.Len() > 0 {
-		el := s.ml.Front()
-		ret = s.ml.Remove(el).(*storage)
+		el := s.sl.Front()
+		ret = s.sl.Remove(el).(*storage)
 	} else {
 		halt.As(100, "pop on empty stack")
 	}
@@ -67,8 +67,8 @@ func (s *storeStack) pop() (ret *storage) {
 }
 
 func (s *storeStack) top() *storage {
-	if s.ml.Len() > 0 {
-		return s.ml.Front().Value.(*storage)
+	if s.sl.Len() > 0 {
+		return s.sl.Front().Value.(*storage)
 	}
 	return nil
 }
@@ -80,10 +80,12 @@ func (s *storeStack) alloc(_x interface{}) {
 		d.alloc(x.VarDecl)
 		s.store[x.Name] = d
 		s.mpush(x)
+		fmt.Println("alloc", x.Name, d.data)
 	case *ir.Procedure:
 		d := &storage{root: s.mtop(), link: x}
 		d.alloc(x.VarDecl)
 		s.push(d)
+		fmt.Println("alloc", x.Name, d.data)
 	default:
 		halt.As(100, reflect.TypeOf(x))
 	}
@@ -92,10 +94,12 @@ func (s *storeStack) alloc(_x interface{}) {
 func (s *storeStack) dealloc(_x interface{}) {
 	switch x := _x.(type) {
 	case *ir.Module:
+		fmt.Println("dealloc", x.Name, s.store[x.Name].data)
 		s.store[x.Name] = nil
 		//TODO проверить наличие связанных элементов стека
 	case *ir.Procedure:
 		assert.For(s.top() != nil && s.top().link == x, 20)
+		fmt.Println("dealloc", x.Name, s.top().data)
 		s.pop()
 	default:
 		halt.As(100, reflect.TypeOf(x))
@@ -135,14 +139,28 @@ func (s *storage) alloc(vl map[string]*ir.Variable) {
 	}
 }
 
-func (s *storage) findObj(o *ir.Variable, fn func(*value) *value) {
-	data := s.data[o.Name]
-	assert.For(o.Type == types.ATOM || data != nil, 20)
-	nv := fn(&value{typ: o.Type, val: data})
-	if nv != nil {
-		assert.For(nv.typ == o.Type, 40, "provided ", nv.typ, " != expected ", o.Type)
-		assert.For(nv.val != nil, 41)
-		s.data[o.Name] = nv.val
+func (s *storeStack) obj(o *ir.Variable, fn func(*value) *value) {
+	find := func(s map[string]interface{}) (ret bool) {
+		if data, ok := s[o.Name]; ok {
+			assert.For(o.Type == types.ATOM || data != nil, 20)
+			nv := fn(&value{typ: o.Type, val: data})
+			if nv != nil {
+				assert.For(nv.typ == o.Type, 40, "provided ", nv.typ, " != expected ", o.Type)
+				assert.For(nv.val != nil, 41)
+				s[o.Name] = nv.val
+				fmt.Println("touch", o.Name, nv.val)
+			}
+			ret = true
+		}
+		return
+	}
+	found := false
+	if local := s.top(); local != nil {
+		found = find(local.data)
+	}
+	if !found {
+		mod := s.mtop()
+		found = find(s.store[mod.Name].data)
 	}
 }
 
@@ -191,11 +209,10 @@ func (ctx *context) expr(_e ir.Expression, typ types.Type) {
 				halt.As(100, "unknown target type ", typ)
 			}
 		case *ir.VariableExpr:
-			/*ctx.findObj(this.Obj, func(v *value) *value {
+			ctx.data.obj(this.Obj, func(v *value) *value {
 				ctx.push(v)
 				return nil
-			})*/
-			panic(0)
+			})
 		case *ir.SelectExpr:
 			eval(this.Base)
 			e := ctx.pop()
@@ -353,11 +370,10 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 		case *ir.SelectVar:
 			chain = append(chain, func(in, out *value, l ...hs) (ret *value) {
 				//fmt.Println("select var ", s.Var, in, out)
-				/*ctx.findObj(s.Var, func(val *value) *value {
+				ctx.data.obj(s.Var, func(val *value) *value {
 					ret = first(in, val, l...)
 					return ret
-				})*/
-				panic(0)
+				})
 				return
 			})
 		case *ir.SelectIndex:
@@ -468,33 +484,28 @@ func (ctx *context) stmt(_s ir.Statement) {
 }
 
 func (ctx *context) do(_t interface{}) {
+	//	fmt.Println("do", reflect.TypeOf(_t))
 	switch this := _t.(type) {
 	case *ir.Module:
 		ctx.data.alloc(this)
-		panic(0)
 		if len(this.BeginSeq) > 0 {
-			fmt.Println("BEGIN", this.Name, ctx.data)
 			for _, v := range this.BeginSeq {
 				ctx.do(v)
 			}
 		}
 		ctx.run()
 		if len(this.CloseSeq) > 0 {
-			fmt.Println("CLOSE", ctx.data)
 			for _, v := range this.CloseSeq {
 				ctx.do(v)
 			}
 		}
-		fmt.Println("END", this.Name, ctx.data)
 		ctx.data.dealloc(this)
 	case *ir.Procedure:
 		ctx.data.alloc(this)
-		fmt.Println("BEGIN", this.Name)
 		for _, v := range this.Seq {
 			ctx.do(v)
 		}
-		fmt.Println("END", this.Name)
-		ctx.data.dealloc(this.Name)
+		ctx.data.dealloc(this)
 	case ir.Statement:
 		ctx.stmt(this)
 	default:
@@ -529,5 +540,5 @@ func run(m *ir.Module) {
 }
 
 func init() {
-	li.Run = run
+	lenin.Run = run
 }

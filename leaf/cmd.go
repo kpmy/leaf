@@ -24,7 +24,7 @@ func main() {
 	log.Println("Leaf compiler, pk, 20150529")
 	flag.Parse()
 	assert.For(name != "", 20)
-	log.Println(name)
+	log.Println(name, "compiling...")
 	sname := name + ".lf"
 	if f, err := os.Open(sname); err == nil {
 		defer f.Close()
@@ -36,8 +36,10 @@ func main() {
 		}
 		if z, err := os.Open(name + ".li"); err == nil {
 			ir := target.Old(z)
-			li.Do(ir)
+			log.Println(name, "running...")
+			lenin.Do(ir)
 		}
+		log.Println(name, "end.")
 	} else {
 		log.Fatal(err)
 	}
