@@ -478,6 +478,41 @@ func (ctx *context) stmt(_s ir.Statement) {
 			val := ctx.pop()
 			stop = val.toBool()
 		}
+	case *ir.ChooseStmt:
+		var base *ir.Dyadic
+		if this.Expr != nil {
+			base = &ir.Dyadic{}
+			base.Op = operation.Eq
+			base.Left = this.Expr
+			//base.Right is open
+		}
+		done := false
+		for _, i := range this.Cond {
+			var ex ir.Expression
+			if base != nil {
+				base.Right = i.Expr
+				ex = base
+			} else {
+				ex = i.Expr
+			}
+			assert.For(ex != nil, 40)
+			ctx.expr(ex, types.BOOLEAN)
+			val := ctx.pop()
+			if val.toBool() {
+				done = true
+				for _, s := range i.Seq {
+					ctx.do(s)
+				}
+				break
+			} else if base != nil {
+				base.Right = nil
+			}
+		}
+		if !done && this.Else != nil {
+			for _, s := range this.Else.Seq {
+				ctx.do(s)
+			}
+		}
 	default:
 		halt.As(100, "unknown statement ", reflect.TypeOf(this))
 	}

@@ -128,6 +128,28 @@ func externalize(mod *ir.Module) (ret *Module) {
 				c.Seq = append(c.Seq, stmt(v))
 			}
 			st.Leaf["leaf"] = c
+		case *ir.ChooseStmt:
+			st.Type = Choose
+			if s.Expr != nil {
+				st.Leaf["expression"] = expr(s.Expr.(ir.EvaluatedExpression).Eval())
+			}
+			var brs []*Condition
+			for _, v := range s.Cond {
+				c := &Condition{}
+				c.Expr = expr(v.Expr.(ir.EvaluatedExpression).Eval())
+				for _, x := range v.Seq {
+					c.Seq = append(c.Seq, stmt(x))
+				}
+				brs = append(brs, c)
+			}
+			st.Leaf["leaf"] = brs
+			if s.Else != nil {
+				var ss []*Statement
+				for _, x := range s.Else.Seq {
+					ss = append(ss, stmt(x))
+				}
+				st.Leaf["else"] = ss
+			}
 		default:
 			halt.As(100, "unexpected ", reflect.TypeOf(s))
 		}

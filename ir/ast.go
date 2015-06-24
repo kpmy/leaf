@@ -169,3 +169,11 @@ type ConditionBranch struct {
 type ElseBranch struct {
 	Seq []Statement
 }
+
+type ChooseStmt struct {
+	Expr Expression
+	Cond []*ConditionBranch
+	Else *ElseBranch
+}
+
+func (c *ChooseStmt) Do() {}

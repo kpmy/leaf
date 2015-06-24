@@ -19,6 +19,7 @@ const (
 	If     StmtType = "if"
 	While  StmtType = "while"
 	Repeat StmtType = "repeat"
+	Choose StmtType = "choose"
 	Call   StmtType = "call"
 )
 

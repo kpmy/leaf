@@ -1,16 +1,3 @@
 (* dummy *)
 MODULE Simple0
-	CONST hw = "Hello, world"
-	VAR s STRING
-
-	PROCEDURE Init
-		CONST n = 5
-		VAR i INTEGER
-	BEGIN
-		i:=0
-		WHILE i<n DO s := s + "."; i := i + 1 END
-	END Init
-
-BEGIN
-	Init
 END Simple0.

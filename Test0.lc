@@ -283,3 +283,48 @@ MODULE TestProcCall
 BEGIN
 	Init
 END TestProcCall.
+
+MODULE TestScopes
+	CONST hw = "Hello, world"
+	VAR s STRING
+
+	PROCEDURE Init
+		CONST n = 5
+		VAR i INTEGER
+	BEGIN
+		i:=0
+		WHILE i<n DO s := s + "."; i := i + 1 END
+	END Init
+
+BEGIN
+	Init
+END TestScopes.
+
+MODULE TestChoose
+	VAR i INTEGER; s STRING
+BEGIN
+	i:=0
+	WHILE i<5 DO
+		CHOOSE (i)
+		OF	0: s:=s + "happy "
+		OR	1: s:=s + "tree "
+		OR	2: s:=s + "friends "
+		OR	3: s:=s+ "died"
+		ELSE s := s+"!" END
+		CHOOSE
+		OF	i = 0: s:=s+ "happy "
+		OR	i = 1: s:=s+ "tree "
+		OR	i = 2: s:=s+ "friends "
+		OR	i = 3: s:=s+"died"
+		ELSE s := s+"!" END
+		i:=i+1
+	END
+
+	i:=0
+	WHILE i < 10 DO
+		CHOOSE i-1
+		OF 0, 1, 2, 2 + 2, 1 + 2: s:="small"
+		ELSE s:="big" END
+		i:=i+1
+	END
+END TestChoose.

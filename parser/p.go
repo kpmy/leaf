@@ -482,9 +482,14 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 			}
 		case scanner.If:
 			stmt := &ir.IfStmt{}
+			first := true
 			for stop := false; !stop; {
 				switch p.sym.Code {
 				case scanner.If, scanner.Elsif:
+					if p.is(scanner.If) && !first {
+						p.mark("ELSIF expected")
+					}
+					first = false
 					p.next()
 					p.pass(scanner.Separator)
 					expr := &exprBuilder{sc: b.sc}
@@ -516,9 +521,14 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 			b.put(stmt)
 		case scanner.While:
 			stmt := &ir.WhileStmt{}
+			first := true
 			for stop := false; !stop; {
 				switch p.sym.Code {
 				case scanner.While, scanner.Elsif:
+					if p.is(scanner.While) && !first {
+						p.mark("ELSIF expected")
+					}
+					first = false
 					p.next()
 					p.pass(scanner.Separator)
 					expr := &exprBuilder{sc: b.sc}
@@ -556,6 +566,65 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 			br.Expr = expr
 			br.Seq = st.seq
 			stmt.Cond = br
+			b.put(stmt)
+		case scanner.Choose:
+			p.next()
+			stmt := &ir.ChooseStmt{}
+			if !p.await(scanner.Of, scanner.Separator, scanner.Delimiter) {
+				expr := &exprBuilder{sc: b.sc}
+				p.expression(expr)
+				stmt.Expr = expr
+				p.next()
+				p.expect(scanner.Of, "OF expected", scanner.Separator, scanner.Delimiter)
+			}
+			first := true
+			for stop := false; !stop; {
+				switch p.sym.Code {
+				case scanner.Of, scanner.Opt:
+					if p.is(scanner.Of) && !first {
+						p.mark("ELSIF expected")
+					}
+					first = false
+					p.next()
+					p.pass(scanner.Separator, scanner.Delimiter)
+					var bunch []ir.Expression
+					for {
+						expr := &exprBuilder{sc: b.sc}
+						p.expression(expr)
+						bunch = append(bunch, expr)
+						if p.await(scanner.Colon, scanner.Separator) {
+							p.next()
+							break
+						} else if !p.is(scanner.Comma) {
+							p.mark("comma expected")
+						} else {
+							p.next()
+						}
+					}
+					st := &blockBuilder{sc: b.sc}
+					p.stmtSeq(st)
+					p.pass(scanner.Separator, scanner.Delimiter)
+					for _, e := range bunch {
+						br := &ir.ConditionBranch{}
+						br.Expr = e
+						br.Seq = st.seq
+						stmt.Cond = append(stmt.Cond, br)
+					}
+				case scanner.Else:
+					p.next()
+					st := &blockBuilder{sc: b.sc}
+					p.stmtSeq(st)
+					p.pass(scanner.Separator, scanner.Delimiter)
+					br := &ir.ElseBranch{}
+					br.Seq = st.seq
+					stmt.Else = br
+				case scanner.End:
+					stop = true
+					p.next()
+				default:
+					p.mark("END expected")
+				}
+			}
 			b.put(stmt)
 		default:
 			stop = true

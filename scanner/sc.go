@@ -86,6 +86,8 @@ const (
 	With
 	For
 	By
+	Choose
+	Opt
 )
 
 var keyTab map[string]Symbol
@@ -123,7 +125,9 @@ func init() {
 		"NIL":       Nil,
 		"WITH":      With,
 		"FOR":       For,
-		"BY":        By}
+		"BY":        By,
+		"CHOOSE":    Choose,
+		"OR":        Opt}
 }
 
 func keyByTab(s Symbol) (ret string) {
@@ -137,7 +141,7 @@ func keyByTab(s Symbol) (ret string) {
 
 func (s Symbol) String() (ret string) {
 	switch s {
-	case Module, End, Do, While, Elsif, Import, Const, Type, Of, To, This, In, Out, Io, Pre, Post, Proc, Var, Begin, Close, Match, If, Case, Then, Repeat, Until, Else, True, False, Nil, With, For, By:
+	case Module, End, Do, While, Elsif, Import, Const, Type, Of, To, This, In, Out, Io, Pre, Post, Proc, Var, Begin, Close, Match, If, Case, Then, Repeat, Until, Else, True, False, Nil, With, For, By, Choose, Opt:
 		ret = keyByTab(s)
 	case Null:
 		ret = "null"

@@ -168,6 +168,29 @@ func internalize(m *Module) (ret *ir.Module) {
 			}
 			this.Cond = i
 			ret = this
+		case Choose:
+			this := &ir.ChooseStmt{}
+			cl := treatIfList(s.Leaf["leaf"])
+			for _, c := range cl {
+				i := &ir.ConditionBranch{}
+				i.Expr = expr(c.Expr)
+				for _, s := range c.Seq {
+					i.Seq = append(i.Seq, stmt(s))
+				}
+				this.Cond = append(this.Cond, i)
+			}
+			if s.Leaf["expression"] != nil {
+				this.Expr = expr(treatExpr(s.Leaf["expression"]))
+			}
+			sl := treatElse(s.Leaf["else"])
+			if sl != nil {
+				e := &ir.ElseBranch{}
+				for _, s := range sl {
+					e.Seq = append(e.Seq, stmt(s))
+				}
+				this.Else = e
+			}
+			ret = this
 		default:
 			halt.As(100, "unexpected ", s.Type)
 		}
