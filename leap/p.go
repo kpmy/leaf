@@ -367,6 +367,25 @@ func (p *pr) expression(b *exprBuilder) {
 		p.pass(scanner.Separator)
 		p.quantum(b)
 		b.expr(&ir.Dyadic{Op: operation.Map(op)})
+	case scanner.Infixate:
+		p.next()
+		p.expect(scanner.Ident, "identifier expected")
+		id := p.ident()
+		p.next()
+		limit := 1
+		for stop := false; !stop; {
+			if !p.await(scanner.Delimiter, scanner.Separator) {
+				p.quantum(b)
+				limit++
+			} else {
+				stop = true
+				p.next()
+			}
+		}
+		if limit < 2 {
+			p.mark("expected two or more args")
+		}
+		b.expr(b.infix(id, limit))
 	}
 }
 
@@ -748,7 +767,6 @@ func (p *pr) block(bl *block, typ scanner.Symbol) {
 							p.mark("unknown identifier")
 						}
 						bl.in = append(bl.in, obj)
-						fmt.Println(p.ident())
 						p.next()
 						if p.await(scanner.Comma, scanner.Separator) {
 							p.next()

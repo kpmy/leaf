@@ -10,6 +10,7 @@ const (
 	Monadic       ExprType = "monadic"
 	Dyadic        ExprType = "dyadic"
 	SelExpr       ExprType = "selector"
+	Infix         ExprType = "infix"
 )
 
 type StmtType string

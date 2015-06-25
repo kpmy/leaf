@@ -177,7 +177,7 @@ func (s *storeStack) alloc(_x interface{}) {
 	}
 }
 
-func (s *storeStack) dealloc(_x interface{}) {
+func (s *storeStack) dealloc(_x interface{}) (ret *storage) {
 	switch x := _x.(type) {
 	case *ir.Module:
 		fmt.Println("dealloc", x.Name, s.store[x.Name].data)
@@ -186,10 +186,12 @@ func (s *storeStack) dealloc(_x interface{}) {
 	case *ir.Procedure:
 		assert.For(s.top() != nil && s.top().link == x, 20)
 		fmt.Println("dealloc", x.Name, s.top().data)
+		ret = s.top()
 		s.pop()
 	default:
 		halt.As(100, reflect.TypeOf(x))
 	}
+	return
 }
 
 func (s *storage) init() {
@@ -263,7 +265,8 @@ func (s *storeStack) obj(o *ir.Variable, fn func(*value) *value) {
 			assert.For(data != nil, 20)
 			nv := fn(&value{typ: o.Type, val: data.read()})
 			if nv != nil {
-				assert.For(nv.typ == o.Type, 40, "provided ", nv.typ, " != expected ", o.Type)
+				assert.For(compTypes(nv.typ, o.Type), 40, "provided ", nv.typ, " != expected ", o.Type)
+				nv = conv(nv, o.Type)
 				s.data[o.Name].write(nv.val)
 				fmt.Println("touch", o.Name, nv.val)
 			}
@@ -458,6 +461,29 @@ func (ctx *context) expr(_e ir.Expression, typ types.Type) {
 				default:
 					halt.As(100, "unknown dyadic op ", this.Op)
 				}
+			}
+		case *ir.Infix:
+			var vl []*value
+			for _, e := range this.Args {
+				eval(e)
+				val := ctx.pop()
+				vl = append(vl, val)
+			}
+			assert.For(len(vl) == len(this.Proc.Infix)-1, 40, len(vl), len(this.Proc.Infix))
+			var pl []interface{}
+			for i, v := range vl {
+				par := this.Proc.Infix[i+1]
+				p := &param{obj: par, val: v}
+				//fmt.Println(par.Name, vl[i].val)
+				pl = append(pl, p)
+			}
+			if x, _ := ctx.do(this.Proc, pl...).(*storage); x != nil {
+				out := this.Proc.Infix[0]
+				val := x.data[out.Name]
+				assert.For(val != nil, 40)
+				ctx.push(&value{typ: typ, val: val.read()})
+			} else {
+				halt.As(100, "no result from infix")
 			}
 		default:
 			halt.As(100, "unknown expression ", reflect.TypeOf(this))
@@ -654,7 +680,7 @@ func (ctx *context) stmt(_s ir.Statement) {
 	}
 }
 
-func (ctx *context) do(_t interface{}, par ...interface{}) {
+func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 	//	fmt.Println("do", reflect.TypeOf(_t))
 	switch this := _t.(type) {
 	case *ir.Module:
@@ -688,12 +714,13 @@ func (ctx *context) do(_t interface{}, par ...interface{}) {
 		for _, v := range this.Seq {
 			ctx.do(v)
 		}
-		ctx.data.dealloc(this)
+		ret = ctx.data.dealloc(this)
 	case ir.Statement:
 		ctx.stmt(this)
 	default:
 		halt.As(100, reflect.TypeOf(this))
 	}
+	return
 }
 
 func (c *context) run() {

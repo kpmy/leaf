@@ -2,6 +2,8 @@ package trav
 
 import (
 	"fmt"
+	"github.com/kpmy/ypk/assert"
+	"leaf/ir/types"
 	"math/big"
 )
 
@@ -73,5 +75,28 @@ func NewCmp(re, im float64) (ret *Cmp) {
 func ThisCmp(c *Cmp) (ret *Cmp) {
 	ret = &Cmp{}
 	*ret = *c
+	return
+}
+
+func compTypes(propose, expect types.Type) (ret bool) {
+	switch {
+	case propose == expect:
+		ret = true
+	case propose == types.INTEGER && expect == types.REAL:
+		ret = true
+	}
+	return
+}
+
+func conv(v *value, target types.Type) (ret *value) {
+	switch {
+	case v.typ == target:
+		ret = v
+	case v.typ == types.INTEGER && target == types.REAL:
+		i := v.toInt()
+		x := big.NewRat(0, 1)
+		ret = &value{typ: target, val: ThisRat(x.SetInt(i))}
+	}
+	assert.For(ret != nil, 60, v.typ, target, v.val)
 	return
 }

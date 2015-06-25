@@ -93,8 +93,20 @@ func treatExpr(_m interface{}) (ret *Expression) {
 	case SelExpr:
 		ret.Leaf[fldz.Base] = leaf[fldz.Base]
 		ret.Leaf[fldz.Selector] = leaf[fldz.Selector]
+	case Infix:
+		ret.Leaf[fldz.Procedure] = leaf[fldz.Procedure]
+		ret.Leaf[fldz.Length] = leaf[fldz.Length]
+		ret.Leaf[fldz.Operand] = leaf[fldz.Operand]
 	default:
 		halt.As(100, "unexpected ", ret.Type, " ", _m)
+	}
+	return
+}
+
+func treatExprList(_l interface{}) (ret []*Expression) {
+	l := _l.([]interface{})
+	for _, c := range l {
+		ret = append(ret, treatExpr(c))
 	}
 	return
 }

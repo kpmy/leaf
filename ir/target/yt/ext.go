@@ -47,6 +47,15 @@ func externalize(mod *ir.Module) (ret *Module) {
 			ex.Type = SelExpr
 			ex.Leaf[fldz.Base] = expr(e.Base)
 			ex.Leaf[fldz.Selector] = sel(e.Sel)
+		case *ir.Infix:
+			ex.Type = Infix
+			ex.Leaf[fldz.Length] = e.Len
+			var ops []*Expression
+			for _, o := range e.Args {
+				ops = append(ops, expr(o))
+			}
+			ex.Leaf[fldz.Operand] = ops
+			ex.Leaf[fldz.Procedure] = ret.this(e.Proc)
 		case *dumbExpr:
 			return expr(e.Eval())
 		default:
@@ -209,6 +218,9 @@ func externalize(mod *ir.Module) (ret *Module) {
 			i.ConstDecl = cdecl(v.ConstDecl)
 			i.VarDecl = vdecl(v.VarDecl)
 			i.ProcDecl = pdecl(v.ProcDecl)
+			for _, v := range v.Infix {
+				i.Infix = append(i.Infix, ret.this(v))
+			}
 			for _, s := range v.Seq {
 				i.Seq = append(i.Seq, stmt(s))
 			}

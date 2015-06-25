@@ -380,3 +380,26 @@ MODULE TestVarPar
 BEGIN
 	Do0
 END TestVarPar.
+
+MODULE TestInfix
+
+	VAR z REAL
+
+	PROCEDURE Add3
+		VAR i-, j-, k- INTEGER; r+ REAL;
+		INFIX r, i, j, k
+	BEGIN
+		r := i + j + k
+	END Add3
+
+	PROCEDURE Add2
+		VAR i-, j- REAL; r+ REAL;
+		INFIX r, i, j
+	BEGIN
+		r := i + j
+	END Add2
+
+BEGIN
+	z := 1 \Add3 4 (8 + 33)
+	z := 1.0 \Add2 z
+END TestInfix.

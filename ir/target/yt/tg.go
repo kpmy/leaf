@@ -38,6 +38,7 @@ type Proc struct {
 	ConstDecl map[string]*Const `yaml:"constant,omitempty"`
 	VarDecl   map[string]*Var   `yaml:"variable,omitempty"`
 	ProcDecl  map[string]*Proc  `yaml:"procedure,omitempty"`
+	Infix     []string          `yaml:"infix,omitempty"`
 	Seq       []*Statement      `yaml:"sequence,omitempty"`
 }
 

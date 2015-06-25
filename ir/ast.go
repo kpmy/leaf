@@ -139,6 +139,14 @@ type Dyadic struct {
 
 func (d *Dyadic) Self() {}
 
+type Infix struct {
+	Proc *Procedure
+	Args []Expression
+	Len  int
+}
+
+func (i *Infix) Self() {}
+
 type SelectExpr struct {
 	Base Expression
 	Sel  Selector

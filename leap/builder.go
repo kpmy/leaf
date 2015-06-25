@@ -123,6 +123,25 @@ func (e *forwardNamedConstExpr) Eval() (ret ir.Expression) {
 	panic(0)
 }
 
+type forwardInfix struct {
+	name string
+	sc   *block
+	args int
+}
+
+func (e *forwardInfix) Self() {}
+
+func (e *forwardInfix) Eval() (ret ir.Expression) {
+	if p, _ := e.sc.find(e.name).(*ir.Procedure); p != nil {
+		assert.For(len(p.Infix)-1 == e.args, 20)
+		i := &ir.Infix{Proc: p, Len: e.args}
+		return i
+	} else {
+		halt.As(100, "undefined procedure")
+	}
+	panic(0)
+}
+
 type forwardCall struct {
 	name  string
 	param []*forwardParam
@@ -207,6 +226,9 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 		} else if f, ok := ret.e.(*forwardNamedConstExpr); ok {
 			skip = true
 			ret = &exprItem{e: f.Eval(), priority: ret.priority}
+		} else if i, ok := ret.e.(*forwardInfix); ok {
+			skip = true
+			ret = &exprItem{e: i.Eval(), priority: ret.priority}
 		}
 		return
 	}
@@ -246,6 +268,29 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 				ret = trav(left, tail)
 			}
 			root.Left = left.e
+		case *ir.Infix:
+			ret = stack
+			ok := false
+			//fmt.Println(root.Len)
+			for i := 0; i < root.Len; i++ {
+				expr, tail := first(ret)
+				assert.For(expr != nil, 40)
+				//fmt.Println("NOW", expr, len(ret))
+				expr, ok = bypass(expr)
+				if !ok {
+					//fmt.Println("trav")
+					ret = trav(expr, tail)
+				} else {
+					ret = tail
+				}
+				root.Args = append(root.Args, expr.e)
+			}
+			//reverse
+			tmp := root.Args
+			root.Args = nil
+			for i := len(tmp) - 1; i >= 0; i-- {
+				root.Args = append(root.Args, tmp[i])
+			}
 		case nil: //do nothing
 		default:
 			halt.As(100, "unsupported type ", fmt.Sprint(reflect.TypeOf(root)))
@@ -281,6 +326,11 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 				fmt.Println("dop right")
 				eprint(e.Right)
 				fmt.Println(e.Op)
+			case *ir.Infix:
+				fmt.Println("infix")
+				for _, x := range e.Args {
+					eprint(x)
+				}
 			default:
 				halt.As(100, reflect.TypeOf(e))
 			}
@@ -334,6 +384,16 @@ func (e *exprBuilder) as(id string) ir.Expression {
 
 func (b *exprBuilder) selector(sel ir.Selector) ir.Expression {
 	return &ir.SelectExpr{Sel: sel}
+}
+
+func (b *exprBuilder) infix(id string, num int) ir.Expression {
+	if p, _ := b.sc.find(id).(*ir.Procedure); p != nil {
+		assert.For(len(p.Infix)-1 == num, 20)
+		i := &ir.Infix{Proc: p, Len: num}
+		return i
+	} else {
+		return &forwardInfix{name: id, sc: b.sc, args: num}
+	}
 }
 
 type blockBuilder struct {

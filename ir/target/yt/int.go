@@ -73,6 +73,32 @@ func internalize(m *Module) (ret *ir.Module) {
 			this.Base = expr(treatExpr(e.Leaf[fldz.Base]))
 			this.Sel = sel(treatSelList(e.Leaf[fldz.Selector]))
 			d.e = this
+		case Infix:
+			this := &ir.Infix{}
+			this.Len = e.Leaf[fldz.Length].(int)
+			ops := treatExprList(e.Leaf[fldz.Operand])
+			for _, o := range ops {
+				this.Args = append(this.Args, expr(o))
+			}
+			_n := m.that(e.Leaf[fldz.Procedure].(string))
+			if n, ok := _n.(*ir.Procedure); ok {
+				this.Proc = n
+				d.e = this
+			} else if _n != nil {
+				d.later = func() ir.Expression {
+					fn := _n.(func() interface{})
+					if x, ok := fn().(*ir.Procedure); ok {
+						this.Proc = x
+						return this
+					} else {
+						halt.As(101, "wrong future expr")
+					}
+					panic(0)
+				}
+			} else {
+				halt.As(100, "unexpected nil")
+
+			}
 		default:
 			halt.As(100, "unknown type ", e.Type)
 		}
@@ -247,6 +273,9 @@ func internalize(m *Module) (ret *ir.Module) {
 			p.ConstDecl = cdecl(v.ConstDecl)
 			p.VarDecl = vdecl(v.VarDecl)
 			p.ProcDecl = pdecl(v.ProcDecl)
+			for _, v := range v.Infix {
+				p.Infix = append(p.Infix, m.that(v).(*ir.Variable))
+			}
 			for _, s := range v.Seq {
 				p.Seq = append(p.Seq, stmt(s))
 			}

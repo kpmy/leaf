@@ -52,6 +52,7 @@ const (
 	Im
 	Ncmp
 	Pcmp
+	Infixate
 
 	Module
 	End
@@ -221,6 +222,8 @@ func (s Symbol) String() (ret string) {
 		ret = "+!"
 	case Ncmp:
 		ret = "-!"
+	case Infixate:
+		ret = "\\"
 	default:
 		ret = fmt.Sprint("sym [", strconv.Itoa(int(s)), "]")
 	}
@@ -589,6 +592,9 @@ func (s *sc) Get() (sym Sym) {
 			} else {
 				sym.Code = Divide
 			}
+		case '\\':
+			sym.Code = Infixate
+			s.next()
 		case '%':
 			sym.Code = Mod
 			s.next()
