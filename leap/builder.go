@@ -6,6 +6,7 @@ import (
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
+	"leaf/ir/modifiers"
 	"reflect"
 )
 
@@ -134,7 +135,7 @@ func (s *forwardCall) Fwd() ir.Statement {
 		for _, par := range s.param {
 			x := &ir.Parameter{}
 			x.Var = p.VarDecl[par.name]
-			assert.For(x.Var != nil, 30)
+			assert.For(x.Var != nil && x.Var.Modifier == modifiers.Semi, 30)
 			x.Expr = par.expr
 			param = append(param, x)
 		}
@@ -148,6 +149,7 @@ func (s *forwardCall) Fwd() ir.Statement {
 type forwardParam struct {
 	name string
 	expr ir.Expression
+	link ir.Selector
 }
 
 type exprBuilder struct {
@@ -359,7 +361,14 @@ func (b *blockBuilder) call(id string, pl []*forwardParam) ir.Statement {
 			x := &ir.Parameter{}
 			x.Var = p.VarDecl[par.name]
 			assert.For(x.Var != nil, 30)
-			x.Expr = par.expr
+			assert.For((par.expr != nil) != (par.link != nil), 31)
+			if par.expr != nil {
+				assert.For(x.Var.Modifier == modifiers.Semi, 32)
+				x.Expr = par.expr
+			} else {
+				assert.For(x.Var.Modifier == modifiers.Full, 33)
+				x.Sel = par.link
+			}
 			param = append(param, x)
 		}
 		return &ir.CallStmt{Proc: p, Par: param}

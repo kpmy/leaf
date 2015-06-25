@@ -9,7 +9,7 @@ type Modifier int
 const (
 	None Modifier = iota
 	Semi
-
+	Full
 	//leave this last
 	NONE
 )
@@ -22,6 +22,8 @@ func (m Modifier) String() string {
 		return "none"
 	case Semi:
 		return "semi"
+	case Full:
+		return "full"
 	default:
 		return strconv.Itoa(int(m))
 	}

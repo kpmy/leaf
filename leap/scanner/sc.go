@@ -28,6 +28,7 @@ const (
 	Lbrak
 	Rbrak
 	Colon
+	Square
 	Comma
 	Times
 	Equal
@@ -167,6 +168,8 @@ func (s Symbol) String() (ret string) {
 		ret = "}"
 	case Colon:
 		ret = ":"
+	case Square:
+		ret = "::"
 	case Comma:
 		ret = ","
 	case Times:
@@ -503,9 +506,12 @@ func (s *sc) Get() (sym Sym) {
 			sym.Str = s.str()
 			sym.Code = String
 		case ':':
-			if s.next() == '=' {
+			if ch := s.next(); ch == '=' {
 				s.next()
 				sym.Code = Becomes
+			} else if ch == ':' {
+				s.next()
+				sym.Code = Square
 			} else {
 				sym.Code = Colon
 			}

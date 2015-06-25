@@ -7,6 +7,7 @@ import (
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
+	"leaf/ir/modifiers"
 	"leaf/ir/operation"
 	"leaf/ir/types"
 	"leaf/lenin"
@@ -20,23 +21,96 @@ type context struct {
 	load []*ir.Module
 }
 
+type anyData interface {
+	String() string
+	read() interface{}
+	write(interface{})
+	null()
+}
+
+type direct struct {
+	x interface{}
+}
+
+func (d *direct) String() string {
+	return fmt.Sprint(d.x)
+}
+
+func (d *direct) read() interface{} { return d.x }
+func (d *direct) write(x interface{}) {
+	assert.For(x != nil, 20)
+	d.x = x
+}
+func (d *direct) null() {
+	d.x = nil
+}
+
+type indirect struct {
+	sel ir.Selector
+	ctx *context
+	x   interface{}
+}
+
+func (i *indirect) String() string {
+	return fmt.Sprint("@", i.x)
+}
+
+func (d *indirect) doSel(in, out *value, end func(*value) *value) {
+	d.ctx.sel(d.sel, in, out, end)
+}
+
+func (d *indirect) read() (ret interface{}) {
+	if d.sel != nil {
+		fmt.Println("indirect")
+		d.doSel(nil, nil, func(v *value) *value {
+			fmt.Println(v)
+			panic(0)
+		})
+		return
+	} else {
+		return d.x
+	}
+}
+
+func (d *indirect) write(x interface{}) {
+	assert.For(x != nil, 20)
+	if d.sel != nil {
+		panic(0)
+	} else {
+		d.x = x
+	}
+}
+
+func (d *indirect) null() {
+	if d.sel != nil {
+		panic(0)
+	} else {
+		d.x = nil
+	}
+}
+
 type storage struct {
 	root   *ir.Module
 	link   interface{}
 	schema map[string]*ir.Variable
-	data   map[string]interface{}
+	data   map[string]anyData
+	lock   map[string]*lock
 }
+
+type lock struct{}
 
 type storeStack struct {
 	store map[string]*storage
 	sl    *list.List
 	ml    *list.List
+	owner *context
 }
 
-func (s *storeStack) init() {
+func (s *storeStack) init(o *context) {
 	s.store = make(map[string]*storage)
 	s.sl = list.New()
 	s.ml = list.New()
+	s.owner = o
 }
 
 func (s *storeStack) mpush(m *ir.Module) {
@@ -108,47 +182,80 @@ func (s *storeStack) dealloc(_x interface{}) {
 
 func (s *storage) init() {
 	s.schema = make(map[string]*ir.Variable)
-	s.data = make(map[string]interface{})
+	s.data = make(map[string]anyData)
 }
 
 func (s *storage) alloc(vl map[string]*ir.Variable) {
 	assert.For(vl != nil, 20)
 	s.schema = vl
-	s.data = make(map[string]interface{})
+	s.data = make(map[string]anyData)
 	for _, v := range s.schema {
+		init := func(val interface{}) anyData {
+			switch v.Modifier {
+			case modifiers.Full:
+				return &indirect{x: val}
+			case modifiers.Semi, modifiers.None:
+				return &direct{x: val}
+			default:
+				halt.As(100, "wrong modifier ", v.Modifier)
+			}
+			panic(0)
+		}
 		switch v.Type {
 		case types.INTEGER:
-			s.data[v.Name] = NewInt(0)
+			s.data[v.Name] = init(NewInt(0))
 		case types.BOOLEAN:
-			s.data[v.Name] = false
+			s.data[v.Name] = init(false)
 		case types.TRILEAN:
-			s.data[v.Name] = tri.NIL
+			s.data[v.Name] = init(tri.NIL)
 		case types.CHAR:
-			s.data[v.Name] = rune(0)
+			s.data[v.Name] = init(rune(0))
 		case types.STRING:
-			s.data[v.Name] = ""
+			s.data[v.Name] = init("")
 		case types.ATOM:
-			s.data[v.Name] = nil
+			s.data[v.Name] = init(nil)
 		case types.REAL:
-			s.data[v.Name] = NewRat(0.0)
+			s.data[v.Name] = init(NewRat(0.0))
 		case types.COMPLEX:
-			s.data[v.Name] = NewCmp(0.0, 0.0)
+			s.data[v.Name] = init(NewCmp(0.0, 0.0))
 		default:
 			halt.As(100, "unknown type ", v.Name, ": ", v.Type)
 		}
 	}
 }
 
+func (st *storeStack) ref(o *ir.Variable, sel ir.Selector) {
+	find := func(s *storage) (ret bool) {
+		if data, ok := s.data[o.Name]; ok {
+			assert.For(data != nil, 20)
+			r := data.(*indirect)
+			r.sel = sel
+			r.ctx = st.owner
+			ret = true
+		}
+		return
+	}
+	found := false
+	if local := st.top(); local != nil {
+		found = find(local)
+	}
+	assert.For(found, 60)
+}
+
 func (s *storeStack) obj(o *ir.Variable, fn func(*value) *value) {
-	find := func(s map[string]interface{}) (ret bool) {
-		if data, ok := s[o.Name]; ok {
-			assert.For(o.Type == types.ATOM || data != nil, 20)
-			nv := fn(&value{typ: o.Type, val: data})
+	find := func(s *storage) (ret bool) {
+		if data, ok := s.data[o.Name]; ok {
+			assert.For(data != nil, 20)
+			panic("добавить лок")
+			nv := fn(&value{typ: o.Type, val: data.read()})
 			if nv != nil {
 				assert.For(nv.typ == o.Type, 40, "provided ", nv.typ, " != expected ", o.Type)
-				assert.For(nv.val != nil, 41)
-				s[o.Name] = nv.val
+				s.data[o.Name].write(nv.val)
 				fmt.Println("touch", o.Name, nv.val)
+			} else {
+				if o.Type == types.ATOM {
+					s.data[o.Name].null()
+				}
 			}
 			ret = true
 		}
@@ -156,12 +263,13 @@ func (s *storeStack) obj(o *ir.Variable, fn func(*value) *value) {
 	}
 	found := false
 	if local := s.top(); local != nil {
-		found = find(local.data)
+		found = find(local)
 	}
 	if !found {
 		mod := s.mtop()
-		found = find(s.store[mod.Name].data)
+		found = find(s.store[mod.Name])
 	}
+	assert.For(found, 60)
 }
 
 type exprStack struct {
@@ -369,7 +477,7 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 			}
 		case *ir.SelectVar:
 			chain = append(chain, func(in, out *value, l ...hs) (ret *value) {
-				//fmt.Println("select var ", s.Var, in, out)
+				fmt.Println("select var ", s.Var, in, out)
 				ctx.data.obj(s.Var, func(val *value) *value {
 					ret = first(in, val, l...)
 					return ret
@@ -432,8 +540,12 @@ func (ctx *context) stmt(_s ir.Statement) {
 		for _, p := range this.Par {
 			x := &param{}
 			x.obj = p.Var
-			ctx.expr(p.Expr, p.Var.Type)
-			x.val = ctx.pop()
+			if p.Expr != nil {
+				ctx.expr(p.Expr, p.Var.Type)
+				x.val = ctx.pop()
+			} else {
+				x.sel = p.Sel
+			}
 			par = append(par, x)
 		}
 		ctx.do(this.Proc, par...)
@@ -548,7 +660,11 @@ func (ctx *context) do(_t interface{}, par ...interface{}) {
 		for _, _v := range par {
 			switch v := _v.(type) {
 			case *param:
-				ctx.data.obj(v.obj, func(*value) *value { return v.val })
+				if v.val != nil {
+					ctx.data.obj(v.obj, func(*value) *value { return v.val })
+				} else {
+					ctx.data.ref(v.obj, v.sel)
+				}
 			default:
 				halt.As(100, "unknown par ", reflect.TypeOf(v))
 			}
@@ -581,7 +697,7 @@ func connectTo(m ...*ir.Module) (ret *context) {
 	ret = &context{}
 	ret.load = m
 	ret.data = &storeStack{}
-	ret.data.init()
+	ret.data.init(ret)
 	ret.exprStack.init()
 	return
 }

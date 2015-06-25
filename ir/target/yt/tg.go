@@ -14,6 +14,7 @@ import (
 type Param struct {
 	Uuid string
 	Expr *Expression `yaml:"expression"`
+	Sel  []*Selector `yaml:"selector"`
 }
 
 type Expression struct {

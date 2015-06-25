@@ -50,7 +50,7 @@ func init() {
 		flo:     Type{typ: types.REAL},
 		comp:    Type{typ: types.COMPLEX}}
 
-	mods = map[scanner.Symbol]modifiers.Modifier{scanner.Minus: modifiers.Semi}
+	mods = map[scanner.Symbol]modifiers.Modifier{scanner.Minus: modifiers.Semi, scanner.Plus: modifiers.Full}
 }
 
 type Parser interface {
@@ -431,7 +431,7 @@ func (p *pr) varDecl(b *varBuilder) {
 				vl = append(vl, obj)
 				b.decl(obj.Name, obj)
 				p.next()
-				if p.await(scanner.Minus) {
+				if p.await(scanner.Minus) || p.is(scanner.Plus) {
 					obj.Modifier = mods[p.sym.Code]
 					p.next()
 				}
@@ -487,14 +487,34 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 					p.next()
 					for {
 						p.expect(scanner.Ident, "identifier expected", scanner.Separator, scanner.Delimiter)
-						par := &forwardParam{name: p.ident()}
+						id := p.ident()
 						p.next()
-						p.expect(scanner.Colon, "colon expected", scanner.Separator)
-						p.next()
-						e := &exprBuilder{sc: b.sc}
-						p.expression(e)
-						par.expr = e
-						param = append(param, par)
+						if p.await(scanner.Colon, scanner.Separator) {
+							par := &forwardParam{name: id}
+							p.next()
+							e := &exprBuilder{sc: b.sc}
+							p.expression(e)
+							par.expr = e
+							param = append(param, par)
+						} else if p.is(scanner.Square) {
+							par := &forwardParam{name: id}
+							p.next()
+							p.expect(scanner.Ident, "ident expected", scanner.Separator)
+							id := p.ident()
+							if !b.isObj(id) {
+								p.mark("not an object")
+							}
+							obj := b.obj(id)
+							p.next()
+							p.pass(scanner.Separator)
+							sel := &selBuilder{sc: b.sc}
+							p.selector(sel)
+							sel.head(obj)
+							par.link = sel
+							param = append(param, par)
+						} else {
+							p.mark("colon expected")
+						}
 						if p.await(scanner.Comma, scanner.Separator, scanner.Delimiter) {
 							p.next()
 						} else {

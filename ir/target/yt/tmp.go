@@ -150,7 +150,11 @@ func treatIf(_m interface{}) (ret *Condition) {
 func treatPar(_m interface{}) (ret *Param) {
 	ret = &Param{}
 	m := _m.(map[interface{}]interface{})
-	ret.Expr = treatExpr(m[fldz.Expression])
+	if expr := m[fldz.Expression]; expr != nil {
+		ret.Expr = treatExpr(expr)
+	} else {
+		ret.Sel = treatSelList(m[fldz.Selector])
+	}
 	ret.Uuid = m[fldz.UUID].(string)
 	return
 }

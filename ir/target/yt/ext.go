@@ -89,7 +89,11 @@ func externalize(mod *ir.Module) (ret *Module) {
 			for _, p := range s.Par {
 				par := &Param{}
 				par.Uuid = ret.this(p.Var)
-				par.Expr = expr(p.Expr.(ir.EvaluatedExpression).Eval())
+				if p.Expr != nil {
+					par.Expr = expr(p.Expr.(ir.EvaluatedExpression).Eval())
+				} else {
+					par.Sel = sel(p.Sel)
+				}
 				lp = append(lp, par)
 			}
 			st.Leaf[fldz.Parameter] = lp

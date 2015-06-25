@@ -101,6 +101,7 @@ func (c *CallStmt) Do() {}
 
 type Parameter struct {
 	Var  *Variable
+	Sel  Selector
 	Expr Expression
 }
 

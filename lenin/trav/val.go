@@ -13,6 +13,7 @@ import (
 type param struct {
 	obj *ir.Variable
 	val *value
+	sel ir.Selector
 }
 
 type value struct {
