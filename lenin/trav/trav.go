@@ -428,7 +428,15 @@ func (ctx *context) stmt(_s ir.Statement) {
 	case ir.WrappedStatement:
 		ctx.do(this.Fwd())
 	case *ir.CallStmt:
-		ctx.do(this.Proc)
+		var par []interface{}
+		for _, p := range this.Par {
+			x := &param{}
+			x.obj = p.Var
+			ctx.expr(p.Expr, p.Var.Type)
+			x.val = ctx.pop()
+			par = append(par, x)
+		}
+		ctx.do(this.Proc, par...)
 	case *ir.AssignStmt:
 		ctx.sel(this.Sel, nil, nil, func(in *value) *value {
 			ctx.expr(this.Expr, in.typ)
@@ -518,7 +526,7 @@ func (ctx *context) stmt(_s ir.Statement) {
 	}
 }
 
-func (ctx *context) do(_t interface{}) {
+func (ctx *context) do(_t interface{}, par ...interface{}) {
 	//	fmt.Println("do", reflect.TypeOf(_t))
 	switch this := _t.(type) {
 	case *ir.Module:
@@ -537,6 +545,14 @@ func (ctx *context) do(_t interface{}) {
 		ctx.data.dealloc(this)
 	case *ir.Procedure:
 		ctx.data.alloc(this)
+		for _, _v := range par {
+			switch v := _v.(type) {
+			case *param:
+				ctx.data.obj(v.obj, func(*value) *value { return v.val })
+			default:
+				halt.As(100, "unknown par ", reflect.TypeOf(v))
+			}
+		}
 		for _, v := range this.Seq {
 			ctx.do(v)
 		}

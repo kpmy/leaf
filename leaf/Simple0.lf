@@ -1,16 +1,4 @@
 (* dummy *)
 MODULE Simple0
 
-VAR
-	i INTEGER
-
-	PROCEDURE Do(x INTEGER)
-		VAR i INTEGER
-	BEGIN
-		i:=x
-	END Do
-
-BEGIN
-	i:=4
-	Do(x: i+4)
 END Simple0.

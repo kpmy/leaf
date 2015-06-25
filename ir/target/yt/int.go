@@ -4,7 +4,9 @@ import (
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
+	"leaf/ir/modifiers"
 	"leaf/ir/operation"
+	"leaf/ir/target/yt/fldz"
 	"leaf/ir/types"
 )
 
@@ -103,14 +105,27 @@ func internalize(m *Module) (ret *ir.Module) {
 			d := &dumbCall{}
 			this := &ir.CallStmt{}
 			_n := m.that(s.Leaf["proc"].(string))
+			pl := treatParList(s.Leaf["param"])
 			if n, ok := _n.(*ir.Procedure); ok {
 				this.Proc = n
+				for _, par := range pl {
+					x := &ir.Parameter{}
+					x.Expr = expr(par.Expr)
+					x.Var = m.that(par.Guid).(*ir.Variable)
+					this.Par = append(this.Par, x)
+				}
 				d.c = this
 			} else if _n != nil {
 				d.later = func() *ir.CallStmt {
 					fn := _n.(func() interface{})
 					if x, ok := fn().(*ir.Procedure); ok {
 						this.Proc = x
+						for _, par := range pl {
+							x := &ir.Parameter{}
+							x.Expr = expr(par.Expr)
+							x.Var = m.that(par.Guid).(*ir.Variable)
+							this.Par = append(this.Par, x)
+						}
 						return this
 					} else {
 						halt.As(101, "wrong forward call")
@@ -123,7 +138,7 @@ func internalize(m *Module) (ret *ir.Module) {
 			ret = d
 		case Assign:
 			this := &ir.AssignStmt{}
-			this.Sel = sel(treatSelList(s.Leaf["selector"]))
+			this.Sel = sel(treatSelList(s.Leaf[fldz.Selector]))
 			this.Expr = expr(treatExpr(s.Leaf["expression"]))
 			ret = this
 		case If:
@@ -213,6 +228,7 @@ func internalize(m *Module) (ret *ir.Module) {
 			i := &ir.Variable{}
 			i.Name = k
 			i.Type = types.TypMap[v.Type]
+			i.Modifier = modifiers.ModMap[v.Modifier]
 			m.that(v.Guid, i)
 			im[k] = i
 		}

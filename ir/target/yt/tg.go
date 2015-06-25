@@ -11,14 +11,20 @@ import (
 	"leaf/ir/types"
 )
 
+type Param struct {
+	Guid string
+	Expr *Expression `yaml:"expression"`
+}
+
 type Expression struct {
 	Type ExprType
 	Leaf map[string]interface{} `yaml:"leaf,omitempty"`
 }
 
 type Var struct {
-	Guid string
-	Type string
+	Guid     string
+	Type     string
+	Modifier string
 }
 
 type Const struct {

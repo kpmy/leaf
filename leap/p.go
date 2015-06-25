@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/kpmy/ypk/assert"
 	"leaf/ir"
+	"leaf/ir/modifiers"
 	"leaf/ir/operation"
 	"leaf/ir/types"
 	"leaf/leap/scanner"
@@ -16,6 +17,7 @@ type Type struct {
 
 var entries map[scanner.Foreign]interface{}
 var idents map[string]scanner.Foreign
+var mods map[scanner.Symbol]modifiers.Modifier
 
 const (
 	none scanner.Foreign = iota
@@ -47,6 +49,8 @@ func init() {
 		atom:    Type{typ: types.ATOM},
 		flo:     Type{typ: types.REAL},
 		comp:    Type{typ: types.COMPLEX}}
+
+	mods = map[scanner.Symbol]modifiers.Modifier{scanner.Minus: modifiers.Semi}
 }
 
 type Parser interface {
@@ -427,6 +431,10 @@ func (p *pr) varDecl(b *varBuilder) {
 				vl = append(vl, obj)
 				b.decl(obj.Name, obj)
 				p.next()
+				if p.await(scanner.Minus) {
+					obj.Modifier = mods[p.sym.Code]
+					p.next()
+				}
 				if p.await(scanner.Comma, scanner.Separator) {
 					p.next()
 					p.pass(scanner.Separator)
@@ -474,7 +482,29 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 				}
 			} else {
 				p.next()
-				stmt := b.call(id)
+				var param []*forwardParam
+				if p.await(scanner.Lparen, scanner.Separator, scanner.Delimiter) {
+					p.next()
+					for {
+						p.expect(scanner.Ident, "identifier expected", scanner.Separator, scanner.Delimiter)
+						par := &forwardParam{name: p.ident()}
+						p.next()
+						p.expect(scanner.Colon, "colon expected", scanner.Separator)
+						p.next()
+						e := &exprBuilder{sc: b.sc}
+						p.expression(e)
+						par.expr = e
+						param = append(param, par)
+						if p.await(scanner.Comma, scanner.Separator, scanner.Delimiter) {
+							p.next()
+						} else {
+							break
+						}
+					}
+					p.expect(scanner.Rparen, "no ) found", scanner.Separator, scanner.Delimiter)
+					p.next()
+				}
+				stmt := b.call(id, param)
 				b.put(stmt)
 			}
 		case scanner.If:

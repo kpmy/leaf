@@ -122,18 +122,32 @@ func (e *forwardNamedConstExpr) Eval() (ret ir.Expression) {
 }
 
 type forwardCall struct {
-	name string
-	sc   *block
+	name  string
+	param []*forwardParam
+	sc    *block
 }
 
 func (s *forwardCall) Do() {}
 func (s *forwardCall) Fwd() ir.Statement {
 	if p, _ := s.sc.find(s.name).(*ir.Procedure); p != nil {
-		return &ir.CallStmt{Proc: p}
+		var param []*ir.Parameter
+		for _, par := range s.param {
+			x := &ir.Parameter{}
+			x.Var = p.VarDecl[par.name]
+			assert.For(x.Var != nil, 30)
+			x.Expr = par.expr
+			param = append(param, x)
+		}
+		return &ir.CallStmt{Proc: p, Par: param}
 	} else {
 		halt.As(100, "undefined procedure ", s.name, s.sc)
 	}
 	panic(0)
+}
+
+type forwardParam struct {
+	name string
+	expr ir.Expression
 }
 
 type exprBuilder struct {
@@ -338,11 +352,19 @@ func (b *blockBuilder) obj(id string) ir.Selector {
 	return &ir.SelectVar{Var: v}
 }
 
-func (b *blockBuilder) call(id string) ir.Statement {
+func (b *blockBuilder) call(id string, pl []*forwardParam) ir.Statement {
 	if p, _ := b.sc.find(id).(*ir.Procedure); p != nil {
-		return &ir.CallStmt{Proc: p}
+		var param []*ir.Parameter
+		for _, par := range pl {
+			x := &ir.Parameter{}
+			x.Var = p.VarDecl[par.name]
+			assert.For(x.Var != nil, 30)
+			x.Expr = par.expr
+			param = append(param, x)
+		}
+		return &ir.CallStmt{Proc: p, Par: param}
 	} else {
-		return &forwardCall{sc: b.sc, name: id}
+		return &forwardCall{sc: b.sc, name: id, param: pl}
 	}
 }
 

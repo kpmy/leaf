@@ -1,5 +1,9 @@
 package types
 
+import (
+	"strconv"
+)
+
 type Type int
 
 const (
@@ -37,7 +41,7 @@ func (t Type) String() (ret string) {
 	case COMPLEX:
 		return "COMPLEX"
 	default:
-		return ""
+		return strconv.Itoa(int(t))
 	}
 }
 

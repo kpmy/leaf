@@ -3,6 +3,7 @@ package yt
 import (
 	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
+	"leaf/ir/target/yt/fldz"
 )
 
 type dumbExpr struct {
@@ -46,14 +47,14 @@ func (d *dumbCall) Fwd() ir.Statement {
 func treatSel(_s interface{}) (ret *Selector) {
 	ret = &Selector{}
 	m := _s.(map[interface{}]interface{})
-	ret.Type = SelType(m["type"].(string))
+	ret.Type = SelType(m[fldz.Type].(string))
 	ret.Leaf = make(map[string]interface{})
-	leaf := m["leaf"].(map[interface{}]interface{})
+	leaf := m[fldz.Leaf].(map[interface{}]interface{})
 	switch ret.Type {
 	case SelVar:
-		ret.Leaf["object"] = leaf["object"]
+		ret.Leaf[fldz.Object] = leaf[fldz.Object]
 	case SelIdx:
-		ret.Leaf["expression"] = leaf["expression"]
+		ret.Leaf[fldz.Expression] = leaf[fldz.Expression]
 	default:
 		halt.As(100, "unexpected selector type ", ret.Type, " ", m)
 	}
@@ -71,20 +72,20 @@ func treatSelList(_l interface{}) (ret []*Selector) {
 func treatExpr(_m interface{}) (ret *Expression) {
 	ret = &Expression{}
 	m := _m.(map[interface{}]interface{})
-	ret.Type = ExprType(m["type"].(string))
+	ret.Type = ExprType(m[fldz.Type].(string))
 	ret.Leaf = make(map[string]interface{})
-	leaf := m["leaf"].(map[interface{}]interface{})
+	leaf := m[fldz.Leaf].(map[interface{}]interface{})
 	switch ret.Type {
 	case Constant:
-		ret.Leaf["value"] = leaf["value"]
-		ret.Leaf["type"] = leaf["type"]
+		ret.Leaf[fldz.Value] = leaf[fldz.Value]
+		ret.Leaf[fldz.Type] = leaf[fldz.Type]
 	case NamedConstant:
-		ret.Leaf["object"] = leaf["object"]
+		ret.Leaf[fldz.Object] = leaf[fldz.Object]
 	case Variable:
-		ret.Leaf["object"] = leaf["object"]
+		ret.Leaf[fldz.Object] = leaf[fldz.Object]
 	case Monadic:
-		ret.Leaf["operand"] = leaf["operand"]
-		ret.Leaf["operation"] = leaf["operation"]
+		ret.Leaf[fldz.Operand] = leaf[fldz.Operand]
+		ret.Leaf[fldz.Operation] = leaf[fldz.Operation]
 	case Dyadic:
 		ret.Leaf["left"] = leaf["left"]
 		ret.Leaf["right"] = leaf["right"]
@@ -105,6 +106,9 @@ func treatStmt(_m interface{}) (ret *Statement) {
 	ret.Leaf = make(map[string]interface{})
 	leaf := m["leaf"].(map[interface{}]interface{})
 	switch ret.Type {
+	case Call:
+		ret.Leaf["param"] = leaf["param"]
+		ret.Leaf["proc"] = leaf["proc"]
 	case Assign:
 		ret.Leaf["selector"] = leaf["selector"]
 		ret.Leaf["expression"] = leaf["expression"]
@@ -140,6 +144,22 @@ func treatIf(_m interface{}) (ret *Condition) {
 	m := _m.(map[interface{}]interface{})
 	ret.Expr = treatExpr(m["expression"])
 	ret.Seq = treatBlock(m["block"])
+	return
+}
+
+func treatPar(_m interface{}) (ret *Param) {
+	ret = &Param{}
+	m := _m.(map[interface{}]interface{})
+	ret.Expr = treatExpr(m["expression"])
+	ret.Guid = m["guid"].(string)
+	return
+}
+
+func treatParList(_l interface{}) (ret []*Param) {
+	l := _l.([]interface{})
+	for _, c := range l {
+		ret = append(ret, treatPar(c))
+	}
 	return
 }
 

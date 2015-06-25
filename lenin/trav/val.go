@@ -10,6 +10,11 @@ import (
 	"reflect"
 )
 
+type param struct {
+	obj *ir.Variable
+	val *value
+}
+
 type value struct {
 	typ types.Type
 	val interface{}

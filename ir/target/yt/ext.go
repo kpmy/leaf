@@ -84,6 +84,14 @@ func externalize(mod *ir.Module) (ret *Module) {
 		case *ir.CallStmt:
 			st.Type = Call
 			st.Leaf["proc"] = ret.this(s.Proc)
+			var lp []*Param
+			for _, p := range s.Par {
+				par := &Param{}
+				par.Guid = ret.this(p.Var)
+				par.Expr = expr(p.Expr.(ir.EvaluatedExpression).Eval())
+				lp = append(lp, par)
+			}
+			st.Leaf["param"] = lp
 		case *ir.AssignStmt:
 			st.Type = Assign
 			st.Leaf["selector"] = sel(s.Sel)
@@ -181,6 +189,7 @@ func externalize(mod *ir.Module) (ret *Module) {
 			i := &Var{}
 			i.Guid = ret.this(v)
 			i.Type = v.Type.String()
+			i.Modifier = v.Modifier.String()
 			m[v.Name] = i
 		}
 		return

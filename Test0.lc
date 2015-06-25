@@ -328,3 +328,27 @@ BEGIN
 		i:=i+1
 	END
 END TestChoose.
+
+MODULE TestParams
+VAR
+	i, j INTEGER
+
+	PROCEDURE Do
+		VAR x-, y- INTEGER
+		VAR i, j INTEGER
+	BEGIN
+		i := x + y
+		j := 0
+		WHILE j<3 DO Do2(z: i); j:=j+1 END
+	END Do
+
+	PROCEDURE Do2
+		VAR z- INTEGER
+	BEGIN
+		j := j+z
+	END Do2
+
+BEGIN
+	i := 4
+	Do(x: i + 4,  y: i ^ i)
+END TestParams.

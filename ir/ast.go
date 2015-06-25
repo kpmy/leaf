@@ -1,6 +1,7 @@
 package ir
 
 import (
+	"leaf/ir/modifiers"
 	"leaf/ir/operation"
 	"leaf/ir/types"
 )
@@ -40,8 +41,9 @@ type Const struct {
 }
 
 type Variable struct {
-	Name string
-	Type types.Type
+	Name     string
+	Type     types.Type
+	Modifier modifiers.Modifier
 }
 
 type Selector interface {
@@ -92,9 +94,15 @@ func (c *ConstExpr) Self() {}
 
 type CallStmt struct {
 	Proc *Procedure
+	Par  []*Parameter
 }
 
 func (c *CallStmt) Do() {}
+
+type Parameter struct {
+	Var  *Variable
+	Expr Expression
+}
 
 type AssignStmt struct {
 	Sel  Selector
