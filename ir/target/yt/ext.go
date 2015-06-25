@@ -4,6 +4,7 @@ import (
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
+	"leaf/ir/target/yt/fldz"
 	"reflect"
 )
 
@@ -22,30 +23,30 @@ func externalize(mod *ir.Module) (ret *Module) {
 		switch e := _e.(type) {
 		case *ir.AtomExpr:
 			ex.Type = Atom
-			ex.Leaf["name"] = e.Value
+			ex.Leaf[fldz.Name] = e.Value
 		case *ir.ConstExpr:
 			ex.Type = Constant
-			ex.Leaf["value"] = e.Value
-			ex.Leaf["type"] = e.Type.String()
+			ex.Leaf[fldz.Value] = e.Value
+			ex.Leaf[fldz.Type] = e.Type.String()
 		case *ir.NamedConstExpr:
 			ex.Type = NamedConstant
-			ex.Leaf["object"] = ret.this(e.Named)
+			ex.Leaf[fldz.Object] = ret.this(e.Named)
 		case *ir.VariableExpr:
 			ex.Type = Variable
-			ex.Leaf["object"] = ret.this(e.Obj)
+			ex.Leaf[fldz.Object] = ret.this(e.Obj)
 		case *ir.Monadic:
 			ex.Type = Monadic
-			ex.Leaf["operand"] = expr(e.Operand)
-			ex.Leaf["operation"] = e.Op.String()
+			ex.Leaf[fldz.Operand] = expr(e.Operand)
+			ex.Leaf[fldz.Operation] = e.Op.String()
 		case *ir.Dyadic:
 			ex.Type = Dyadic
-			ex.Leaf["left"] = expr(e.Left)
-			ex.Leaf["right"] = expr(e.Right)
-			ex.Leaf["operation"] = e.Op.String()
+			ex.Leaf[fldz.Left] = expr(e.Left)
+			ex.Leaf[fldz.Right] = expr(e.Right)
+			ex.Leaf[fldz.Operation] = e.Op.String()
 		case *ir.SelectExpr:
 			ex.Type = SelExpr
-			ex.Leaf["base"] = expr(e.Base)
-			ex.Leaf["selector"] = sel(e.Sel)
+			ex.Leaf[fldz.Base] = expr(e.Base)
+			ex.Leaf[fldz.Selector] = sel(e.Sel)
 		case *dumbExpr:
 			return expr(e.Eval())
 		default:
@@ -64,11 +65,11 @@ func externalize(mod *ir.Module) (ret *Module) {
 			}
 		case *ir.SelectVar:
 			x.Type = SelVar
-			x.Leaf["object"] = ret.this(s.Var)
+			x.Leaf[fldz.Object] = ret.this(s.Var)
 			sl = append(sl, x)
 		case *ir.SelectIndex:
 			x.Type = SelIdx
-			x.Leaf["expression"] = expr(s.Expr.(ir.EvaluatedExpression).Eval())
+			x.Leaf[fldz.Expression] = expr(s.Expr.(ir.EvaluatedExpression).Eval())
 			sl = append(sl, x)
 		default:
 			halt.As(100, "unknown selector ", reflect.TypeOf(s))
@@ -83,20 +84,20 @@ func externalize(mod *ir.Module) (ret *Module) {
 			return stmt(s.Fwd())
 		case *ir.CallStmt:
 			st.Type = Call
-			st.Leaf["proc"] = ret.this(s.Proc)
+			st.Leaf[fldz.Procedure] = ret.this(s.Proc)
 			var lp []*Param
 			for _, p := range s.Par {
 				par := &Param{}
-				par.Guid = ret.this(p.Var)
+				par.Uuid = ret.this(p.Var)
 				par.Expr = expr(p.Expr.(ir.EvaluatedExpression).Eval())
 				lp = append(lp, par)
 			}
-			st.Leaf["param"] = lp
+			st.Leaf[fldz.Parameter] = lp
 		case *ir.AssignStmt:
 			st.Type = Assign
-			st.Leaf["selector"] = sel(s.Sel)
+			st.Leaf[fldz.Selector] = sel(s.Sel)
 			e := s.Expr.(ir.EvaluatedExpression).Eval()
-			st.Leaf["expression"] = expr(e)
+			st.Leaf[fldz.Expression] = expr(e)
 		case *ir.IfStmt:
 			st.Type = If
 			var ifs []*Condition
@@ -108,13 +109,13 @@ func externalize(mod *ir.Module) (ret *Module) {
 				}
 				ifs = append(ifs, c)
 			}
-			st.Leaf["leaf"] = ifs
+			st.Leaf[fldz.Leaf] = ifs
 			if s.Else != nil {
 				var ss []*Statement
 				for _, x := range s.Else.Seq {
 					ss = append(ss, stmt(x))
 				}
-				st.Leaf["else"] = ss
+				st.Leaf[fldz.Else] = ss
 			}
 		case *ir.WhileStmt:
 			st.Type = While
@@ -127,7 +128,7 @@ func externalize(mod *ir.Module) (ret *Module) {
 				}
 				brs = append(brs, c)
 			}
-			st.Leaf["leaf"] = brs
+			st.Leaf[fldz.Leaf] = brs
 		case *ir.RepeatStmt:
 			st.Type = Repeat
 			c := &Condition{}
@@ -135,11 +136,11 @@ func externalize(mod *ir.Module) (ret *Module) {
 			for _, v := range s.Cond.Seq {
 				c.Seq = append(c.Seq, stmt(v))
 			}
-			st.Leaf["leaf"] = c
+			st.Leaf[fldz.Leaf] = c
 		case *ir.ChooseStmt:
 			st.Type = Choose
 			if s.Expr != nil {
-				st.Leaf["expression"] = expr(s.Expr.(ir.EvaluatedExpression).Eval())
+				st.Leaf[fldz.Expression] = expr(s.Expr.(ir.EvaluatedExpression).Eval())
 			}
 			var brs []*Condition
 			for _, v := range s.Cond {
@@ -150,13 +151,13 @@ func externalize(mod *ir.Module) (ret *Module) {
 				}
 				brs = append(brs, c)
 			}
-			st.Leaf["leaf"] = brs
+			st.Leaf[fldz.Leaf] = brs
 			if s.Else != nil {
 				var ss []*Statement
 				for _, x := range s.Else.Seq {
 					ss = append(ss, stmt(x))
 				}
-				st.Leaf["else"] = ss
+				st.Leaf[fldz.Else] = ss
 			}
 		default:
 			halt.As(100, "unexpected ", reflect.TypeOf(s))
@@ -167,7 +168,7 @@ func externalize(mod *ir.Module) (ret *Module) {
 		m = make(map[string]*Const)
 		for _, _v := range cm {
 			c := &Const{}
-			c.Guid = ret.this(_v)
+			c.Uuid = ret.this(_v)
 			var e ir.Expression
 			switch v := _v.Expr.(type) {
 			case ir.EvaluatedExpression:
@@ -187,7 +188,7 @@ func externalize(mod *ir.Module) (ret *Module) {
 		m = make(map[string]*Var)
 		for _, v := range vm {
 			i := &Var{}
-			i.Guid = ret.this(v)
+			i.Uuid = ret.this(v)
 			i.Type = v.Type.String()
 			i.Modifier = v.Modifier.String()
 			m[v.Name] = i
@@ -200,7 +201,7 @@ func externalize(mod *ir.Module) (ret *Module) {
 		m = make(map[string]*Proc)
 		for _, v := range pm {
 			i := &Proc{}
-			i.Guid = ret.this(v)
+			i.Uuid = ret.this(v)
 			i.ConstDecl = cdecl(v.ConstDecl)
 			i.VarDecl = vdecl(v.VarDecl)
 			i.ProcDecl = pdecl(v.ProcDecl)

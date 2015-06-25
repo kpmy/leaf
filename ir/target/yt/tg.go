@@ -12,7 +12,7 @@ import (
 )
 
 type Param struct {
-	Guid string
+	Uuid string
 	Expr *Expression `yaml:"expression"`
 }
 
@@ -22,22 +22,22 @@ type Expression struct {
 }
 
 type Var struct {
-	Guid     string
+	Uuid     string
 	Type     string
 	Modifier string
 }
 
 type Const struct {
-	Guid string
+	Uuid string
 	Expr *Expression `yaml:"expression"`
 }
 
 type Proc struct {
-	Guid      string
-	ConstDecl map[string]*Const `yaml:"const,omitempty"`
-	VarDecl   map[string]*Var   `yaml:"var,omitempty"`
-	ProcDecl  map[string]*Proc  `yaml:"proc,omitempty"`
-	Seq       []*Statement      `yaml:"seq,omitempty"`
+	Uuid      string
+	ConstDecl map[string]*Const `yaml:"constant,omitempty"`
+	VarDecl   map[string]*Var   `yaml:"variable,omitempty"`
+	ProcDecl  map[string]*Proc  `yaml:"procedure,omitempty"`
+	Seq       []*Statement      `yaml:"sequence,omitempty"`
 }
 
 type Selector struct {
@@ -57,9 +57,9 @@ type Condition struct {
 
 type Module struct {
 	Name      string
-	ConstDecl map[string]*Const `yaml:"const,omitempty"`
-	VarDecl   map[string]*Var   `yaml:"var,omitempty"`
-	ProcDecl  map[string]*Proc  `yaml:"proc,omitempty"`
+	ConstDecl map[string]*Const `yaml:"constant,omitempty"`
+	VarDecl   map[string]*Var   `yaml:"variable,omitempty"`
+	ProcDecl  map[string]*Proc  `yaml:"procedure,omitempty"`
 	BeginSeq  []*Statement      `yaml:"begin,omitempty"`
 	CloseSeq  []*Statement      `yaml:"close,omitempty"`
 

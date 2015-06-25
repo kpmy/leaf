@@ -87,12 +87,12 @@ func treatExpr(_m interface{}) (ret *Expression) {
 		ret.Leaf[fldz.Operand] = leaf[fldz.Operand]
 		ret.Leaf[fldz.Operation] = leaf[fldz.Operation]
 	case Dyadic:
-		ret.Leaf["left"] = leaf["left"]
-		ret.Leaf["right"] = leaf["right"]
-		ret.Leaf["operation"] = leaf["operation"]
+		ret.Leaf[fldz.Left] = leaf[fldz.Left]
+		ret.Leaf[fldz.Right] = leaf[fldz.Right]
+		ret.Leaf[fldz.Operation] = leaf[fldz.Operation]
 	case SelExpr:
-		ret.Leaf["base"] = leaf["base"]
-		ret.Leaf["selector"] = leaf["selector"]
+		ret.Leaf[fldz.Base] = leaf[fldz.Base]
+		ret.Leaf[fldz.Selector] = leaf[fldz.Selector]
 	default:
 		halt.As(100, "unexpected ", ret.Type, " ", _m)
 	}
@@ -102,27 +102,27 @@ func treatExpr(_m interface{}) (ret *Expression) {
 func treatStmt(_m interface{}) (ret *Statement) {
 	ret = &Statement{}
 	m := _m.(map[interface{}]interface{})
-	ret.Type = StmtType(m["statement"].(string))
+	ret.Type = StmtType(m[fldz.Statement].(string))
 	ret.Leaf = make(map[string]interface{})
-	leaf := m["leaf"].(map[interface{}]interface{})
+	leaf := m[fldz.Leaf].(map[interface{}]interface{})
 	switch ret.Type {
 	case Call:
-		ret.Leaf["param"] = leaf["param"]
-		ret.Leaf["proc"] = leaf["proc"]
+		ret.Leaf[fldz.Parameter] = leaf[fldz.Parameter]
+		ret.Leaf[fldz.Procedure] = leaf[fldz.Procedure]
 	case Assign:
-		ret.Leaf["selector"] = leaf["selector"]
-		ret.Leaf["expression"] = leaf["expression"]
+		ret.Leaf[fldz.Selector] = leaf[fldz.Selector]
+		ret.Leaf[fldz.Expression] = leaf[fldz.Expression]
 	case If:
-		ret.Leaf["leaf"] = leaf["leaf"]
-		ret.Leaf["else"] = leaf["else"]
+		ret.Leaf[fldz.Leaf] = leaf[fldz.Leaf]
+		ret.Leaf[fldz.Else] = leaf[fldz.Else]
 	case While:
-		ret.Leaf["leaf"] = leaf["leaf"]
+		ret.Leaf[fldz.Leaf] = leaf[fldz.Leaf]
 	case Repeat:
-		ret.Leaf["leaf"] = leaf["leaf"]
+		ret.Leaf[fldz.Leaf] = leaf[fldz.Leaf]
 	case Choose:
-		ret.Leaf["expression"] = leaf["expression"]
-		ret.Leaf["leaf"] = leaf["leaf"]
-		ret.Leaf["else"] = leaf["else"]
+		ret.Leaf[fldz.Expression] = leaf[fldz.Expression]
+		ret.Leaf[fldz.Leaf] = leaf[fldz.Leaf]
+		ret.Leaf[fldz.Else] = leaf[fldz.Else]
 	default:
 		halt.As(100, "unexpected ", ret.Type, " ", _m)
 	}
@@ -142,16 +142,16 @@ func treatBlock(_l interface{}) (ret []*Statement) {
 func treatIf(_m interface{}) (ret *Condition) {
 	ret = &Condition{}
 	m := _m.(map[interface{}]interface{})
-	ret.Expr = treatExpr(m["expression"])
-	ret.Seq = treatBlock(m["block"])
+	ret.Expr = treatExpr(m[fldz.Expression])
+	ret.Seq = treatBlock(m[fldz.Block])
 	return
 }
 
 func treatPar(_m interface{}) (ret *Param) {
 	ret = &Param{}
 	m := _m.(map[interface{}]interface{})
-	ret.Expr = treatExpr(m["expression"])
-	ret.Guid = m["guid"].(string)
+	ret.Expr = treatExpr(m[fldz.Expression])
+	ret.Uuid = m[fldz.UUID].(string)
 	return
 }
 

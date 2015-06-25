@@ -23,17 +23,17 @@ func internalize(m *Module) (ret *ir.Module) {
 		switch e.Type {
 		case Atom:
 			this := &ir.AtomExpr{}
-			this.Value = e.Leaf["name"].(string)
+			this.Value = e.Leaf[fldz.Name].(string)
 			d.later = func() ir.Expression { return this }
 		case Constant:
 			this := &ir.ConstExpr{}
-			this.Value = e.Leaf["value"]
-			this.Type = types.TypMap[e.Leaf["type"].(string)]
+			this.Value = e.Leaf[fldz.Value]
+			this.Type = types.TypMap[e.Leaf[fldz.Type].(string)]
 			typeFix(this)
 			d.e = this
 		case NamedConstant:
 			this := &ir.NamedConstExpr{}
-			id := e.Leaf["object"].(string)
+			id := e.Leaf[fldz.Object].(string)
 			_n := m.that(id)
 			if n, ok := _n.(*ir.Const); ok {
 				this.Named = n
@@ -54,24 +54,24 @@ func internalize(m *Module) (ret *ir.Module) {
 			}
 		case Variable:
 			this := &ir.VariableExpr{}
-			id := e.Leaf["object"].(string)
+			id := e.Leaf[fldz.Object].(string)
 			this.Obj = m.that(id).(*ir.Variable)
 			d.e = this
 		case Monadic:
 			this := &ir.Monadic{}
-			this.Operand = expr(treatExpr(e.Leaf["operand"]))
-			this.Op = operation.OpMap[e.Leaf["operation"].(string)]
+			this.Operand = expr(treatExpr(e.Leaf[fldz.Operand]))
+			this.Op = operation.OpMap[e.Leaf[fldz.Operation].(string)]
 			d.e = this
 		case Dyadic:
 			this := &ir.Dyadic{}
-			this.Left = expr(treatExpr(e.Leaf["left"]))
-			this.Right = expr(treatExpr(e.Leaf["right"]))
-			this.Op = operation.OpMap[e.Leaf["operation"].(string)]
+			this.Left = expr(treatExpr(e.Leaf[fldz.Left]))
+			this.Right = expr(treatExpr(e.Leaf[fldz.Right]))
+			this.Op = operation.OpMap[e.Leaf[fldz.Operation].(string)]
 			d.e = this
 		case SelExpr:
 			this := &ir.SelectExpr{}
-			this.Base = expr(treatExpr(e.Leaf["base"]))
-			this.Sel = sel(treatSelList(e.Leaf["selector"]))
+			this.Base = expr(treatExpr(e.Leaf[fldz.Base]))
+			this.Sel = sel(treatSelList(e.Leaf[fldz.Selector]))
 			d.e = this
 		default:
 			halt.As(100, "unknown type ", e.Type)
@@ -85,12 +85,12 @@ func internalize(m *Module) (ret *ir.Module) {
 			switch s.Type {
 			case SelVar:
 				this := &ir.SelectVar{}
-				id := s.Leaf["object"].(string)
+				id := s.Leaf[fldz.Object].(string)
 				this.Var = m.that(id).(*ir.Variable)
 				ds.put(this)
 			case SelIdx:
 				this := &ir.SelectIndex{}
-				this.Expr = expr(treatExpr(s.Leaf["expression"]))
+				this.Expr = expr(treatExpr(s.Leaf[fldz.Expression]))
 				ds.put(this)
 			default:
 				halt.As(100, "unknown type ", s.Type)
@@ -104,14 +104,14 @@ func internalize(m *Module) (ret *ir.Module) {
 		case Call:
 			d := &dumbCall{}
 			this := &ir.CallStmt{}
-			_n := m.that(s.Leaf["proc"].(string))
-			pl := treatParList(s.Leaf["param"])
+			_n := m.that(s.Leaf[fldz.Procedure].(string))
+			pl := treatParList(s.Leaf[fldz.Parameter])
 			if n, ok := _n.(*ir.Procedure); ok {
 				this.Proc = n
 				for _, par := range pl {
 					x := &ir.Parameter{}
 					x.Expr = expr(par.Expr)
-					x.Var = m.that(par.Guid).(*ir.Variable)
+					x.Var = m.that(par.Uuid).(*ir.Variable)
 					this.Par = append(this.Par, x)
 				}
 				d.c = this
@@ -123,7 +123,7 @@ func internalize(m *Module) (ret *ir.Module) {
 						for _, par := range pl {
 							x := &ir.Parameter{}
 							x.Expr = expr(par.Expr)
-							x.Var = m.that(par.Guid).(*ir.Variable)
+							x.Var = m.that(par.Uuid).(*ir.Variable)
 							this.Par = append(this.Par, x)
 						}
 						return this
@@ -139,12 +139,12 @@ func internalize(m *Module) (ret *ir.Module) {
 		case Assign:
 			this := &ir.AssignStmt{}
 			this.Sel = sel(treatSelList(s.Leaf[fldz.Selector]))
-			this.Expr = expr(treatExpr(s.Leaf["expression"]))
+			this.Expr = expr(treatExpr(s.Leaf[fldz.Expression]))
 			ret = this
 		case If:
 			this := &ir.IfStmt{}
-			cl := treatIfList(s.Leaf["leaf"])
-			sl := treatElse(s.Leaf["else"])
+			cl := treatIfList(s.Leaf[fldz.Leaf])
+			sl := treatElse(s.Leaf[fldz.Else])
 			for _, c := range cl {
 				i := &ir.ConditionBranch{}
 				i.Expr = expr(c.Expr)
@@ -163,7 +163,7 @@ func internalize(m *Module) (ret *ir.Module) {
 			ret = this
 		case While:
 			this := &ir.WhileStmt{}
-			cl := treatIfList(s.Leaf["leaf"])
+			cl := treatIfList(s.Leaf[fldz.Leaf])
 			for _, c := range cl {
 				i := &ir.ConditionBranch{}
 				i.Expr = expr(c.Expr)
@@ -175,7 +175,7 @@ func internalize(m *Module) (ret *ir.Module) {
 			ret = this
 		case Repeat:
 			this := &ir.RepeatStmt{}
-			c := treatIf(s.Leaf["leaf"])
+			c := treatIf(s.Leaf[fldz.Leaf])
 			i := &ir.ConditionBranch{}
 			i.Expr = expr(c.Expr)
 			for _, s := range c.Seq {
@@ -185,7 +185,7 @@ func internalize(m *Module) (ret *ir.Module) {
 			ret = this
 		case Choose:
 			this := &ir.ChooseStmt{}
-			cl := treatIfList(s.Leaf["leaf"])
+			cl := treatIfList(s.Leaf[fldz.Leaf])
 			for _, c := range cl {
 				i := &ir.ConditionBranch{}
 				i.Expr = expr(c.Expr)
@@ -194,10 +194,10 @@ func internalize(m *Module) (ret *ir.Module) {
 				}
 				this.Cond = append(this.Cond, i)
 			}
-			if s.Leaf["expression"] != nil {
-				this.Expr = expr(treatExpr(s.Leaf["expression"]))
+			if s.Leaf[fldz.Expression] != nil {
+				this.Expr = expr(treatExpr(s.Leaf[fldz.Expression]))
 			}
-			sl := treatElse(s.Leaf["else"])
+			sl := treatElse(s.Leaf[fldz.Else])
 			if sl != nil {
 				e := &ir.ElseBranch{}
 				for _, s := range sl {
@@ -217,7 +217,7 @@ func internalize(m *Module) (ret *ir.Module) {
 			c := &ir.Const{}
 			c.Name = k
 			c.Expr = expr(v.Expr)
-			m.that(v.Guid, c)
+			m.that(v.Uuid, c)
 			im[k] = c
 		}
 		return
@@ -229,7 +229,7 @@ func internalize(m *Module) (ret *ir.Module) {
 			i.Name = k
 			i.Type = types.TypMap[v.Type]
 			i.Modifier = modifiers.ModMap[v.Modifier]
-			m.that(v.Guid, i)
+			m.that(v.Uuid, i)
 			im[k] = i
 		}
 		return
@@ -246,7 +246,7 @@ func internalize(m *Module) (ret *ir.Module) {
 			for _, s := range v.Seq {
 				p.Seq = append(p.Seq, stmt(s))
 			}
-			m.that(v.Guid, p)
+			m.that(v.Uuid, p)
 			im[k] = p
 		}
 		return
