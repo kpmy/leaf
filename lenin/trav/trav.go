@@ -25,7 +25,6 @@ type anyData interface {
 	String() string
 	read() interface{}
 	write(interface{})
-	null()
 }
 
 type direct struct {
@@ -46,13 +45,18 @@ func (d *direct) null() {
 }
 
 type indirect struct {
-	sel ir.Selector
-	ctx *context
-	x   interface{}
+	sel  ir.Selector
+	ctx  *context
+	stor *storage
+	x    interface{}
 }
 
 func (i *indirect) String() string {
-	return fmt.Sprint("@", i.x)
+	if i.sel != nil {
+		return fmt.Sprint("@", i.sel)
+	} else {
+		return fmt.Sprint("@", i.x)
+	}
 }
 
 func (d *indirect) doSel(in, out *value, end func(*value) *value) {
@@ -61,11 +65,13 @@ func (d *indirect) doSel(in, out *value, end func(*value) *value) {
 
 func (d *indirect) read() (ret interface{}) {
 	if d.sel != nil {
-		fmt.Println("indirect")
+		//fmt.Println("indirect")
+		d.stor.lock = &lock{}
 		d.doSel(nil, nil, func(v *value) *value {
-			fmt.Println(v)
-			panic(0)
+			ret = v
+			return nil
 		})
+		d.stor.lock = nil
 		return
 	} else {
 		return d.x
@@ -75,7 +81,11 @@ func (d *indirect) read() (ret interface{}) {
 func (d *indirect) write(x interface{}) {
 	assert.For(x != nil, 20)
 	if d.sel != nil {
-		panic(0)
+		d.stor.lock = &lock{}
+		d.doSel(nil, nil, func(v *value) *value {
+			return &value{typ: v.typ, val: x}
+		})
+		d.stor.lock = nil
 	} else {
 		d.x = x
 	}
@@ -94,7 +104,8 @@ type storage struct {
 	link   interface{}
 	schema map[string]*ir.Variable
 	data   map[string]anyData
-	lock   map[string]*lock
+	lock   *lock
+	prev   *storage
 }
 
 type lock struct{}
@@ -127,6 +138,7 @@ func (s *storeStack) mtop() *ir.Module {
 
 func (s *storeStack) push(st *storage) {
 	assert.For(st != nil, 20)
+	st.prev = s.top()
 	s.sl.PushFront(st)
 }
 
@@ -190,10 +202,12 @@ func (s *storage) alloc(vl map[string]*ir.Variable) {
 	s.schema = vl
 	s.data = make(map[string]anyData)
 	for _, v := range s.schema {
+
 		init := func(val interface{}) anyData {
+			assert.For(val != nil, 20)
 			switch v.Modifier {
 			case modifiers.Full:
-				return &indirect{x: val}
+				return &indirect{x: val, stor: s}
 			case modifiers.Semi, modifiers.None:
 				return &direct{x: val}
 			default:
@@ -201,6 +215,7 @@ func (s *storage) alloc(vl map[string]*ir.Variable) {
 			}
 			panic(0)
 		}
+
 		switch v.Type {
 		case types.INTEGER:
 			s.data[v.Name] = init(NewInt(0))
@@ -213,7 +228,7 @@ func (s *storage) alloc(vl map[string]*ir.Variable) {
 		case types.STRING:
 			s.data[v.Name] = init("")
 		case types.ATOM:
-			s.data[v.Name] = init(nil)
+			s.data[v.Name] = init(Atom(""))
 		case types.REAL:
 			s.data[v.Name] = init(NewRat(0.0))
 		case types.COMPLEX:
@@ -246,24 +261,25 @@ func (s *storeStack) obj(o *ir.Variable, fn func(*value) *value) {
 	find := func(s *storage) (ret bool) {
 		if data, ok := s.data[o.Name]; ok {
 			assert.For(data != nil, 20)
-			panic("добавить лок")
 			nv := fn(&value{typ: o.Type, val: data.read()})
 			if nv != nil {
 				assert.For(nv.typ == o.Type, 40, "provided ", nv.typ, " != expected ", o.Type)
 				s.data[o.Name].write(nv.val)
 				fmt.Println("touch", o.Name, nv.val)
-			} else {
-				if o.Type == types.ATOM {
-					s.data[o.Name].null()
-				}
 			}
 			ret = true
 		}
 		return
 	}
 	found := false
-	if local := s.top(); local != nil {
-		found = find(local)
+	for local := s.top(); local != nil; {
+		if local.lock != nil {
+			//fmt.Println("locked, try prev")
+			local = local.prev
+		} else {
+			found = find(local)
+			break
+		}
 	}
 	if !found {
 		mod := s.mtop()
@@ -477,7 +493,7 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 			}
 		case *ir.SelectVar:
 			chain = append(chain, func(in, out *value, l ...hs) (ret *value) {
-				fmt.Println("select var ", s.Var, in, out)
+				//fmt.Println("select var ", s.Var, in, out)
 				ctx.data.obj(s.Var, func(val *value) *value {
 					ret = first(in, val, l...)
 					return ret

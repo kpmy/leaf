@@ -242,6 +242,12 @@ func (p *pr) factor(b *exprBuilder) {
 		val.Type = types.TRILEAN
 		b.factor(val)
 		p.next()
+	case scanner.Inf:
+		val := &ir.ConstExpr{}
+		val.Type = types.REAL
+		val.Value = types.INF
+		b.factor(val)
+		p.next()
 	case scanner.Im:
 		p.next()
 		p.factor(b)
@@ -689,7 +695,7 @@ func (p *pr) procDecl(b *blockBuilder) {
 	p.next()
 	p.st.push()
 	this := p.st.this()
-	p.block(this)
+	p.block(this, scanner.Proc)
 	p.expect(scanner.Begin, "BEGIN expected", scanner.Separator, scanner.Delimiter)
 	p.next()
 	b.decl(ret.Name, ret)
@@ -699,6 +705,16 @@ func (p *pr) procDecl(b *blockBuilder) {
 	ret.ConstDecl = this.cm
 	ret.VarDecl = this.vm
 	ret.ProcDecl = this.pm
+	ret.Infix = this.in
+	expect := modifiers.Full
+	for i, v := range ret.Infix {
+		if v.Modifier != expect {
+			p.mark("wrong infix declared")
+		}
+		if i == 0 {
+			expect = modifiers.Semi
+		}
+	}
 	p.expect(scanner.End, "no END", scanner.Delimiter, scanner.Separator)
 	p.next()
 	p.expect(scanner.Ident, "procedure name expected", scanner.Separator)
@@ -709,7 +725,8 @@ func (p *pr) procDecl(b *blockBuilder) {
 	p.next()
 }
 
-func (p *pr) block(bl *block) {
+func (p *pr) block(bl *block, typ scanner.Symbol) {
+	assert.For(typ == scanner.Module || typ == scanner.Proc, 20, "unknown block type ", typ)
 	for p.await(scanner.Const, scanner.Delimiter, scanner.Separator) {
 		b := &constBuilder{sc: bl}
 		p.constDecl(b)
@@ -717,6 +734,35 @@ func (p *pr) block(bl *block) {
 	for p.await(scanner.Var, scanner.Delimiter, scanner.Separator) {
 		b := &varBuilder{sc: bl}
 		p.varDecl(b)
+	}
+	if typ == scanner.Proc { //infix description, pre- and post-conditions, etc
+		for stop := false; !stop; {
+			p.pass(scanner.Delimiter, scanner.Separator)
+			switch p.sym.Code {
+			case scanner.Infix:
+				p.next()
+				for stop := false; !stop; {
+					if p.await(scanner.Ident, scanner.Separator) {
+						obj := bl.vm[p.ident()]
+						if obj == nil {
+							p.mark("unknown identifier")
+						}
+						bl.in = append(bl.in, obj)
+						fmt.Println(p.ident())
+						p.next()
+						if p.await(scanner.Comma, scanner.Separator) {
+							p.next()
+						} else {
+							stop = true
+						}
+					} else {
+						p.mark("identifier expected")
+					}
+				}
+			default:
+				stop = true
+			}
+		}
 	}
 	for p.await(scanner.Proc, scanner.Delimiter, scanner.Separator) {
 		b := &blockBuilder{sc: bl}
@@ -739,7 +785,7 @@ func (p *pr) Module() (ret *ir.Module, err error) {
 	p.pass(scanner.Separator, scanner.Delimiter)
 	p.st.push()
 	top := p.st.this()
-	p.block(top)
+	p.block(top, scanner.Module)
 	p.st.pop()
 	p.top.ConstDecl = top.cm
 	p.top.VarDecl = top.vm

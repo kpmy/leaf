@@ -91,11 +91,11 @@ func (v *value) toTril() (ret tri.Trit) {
 	return
 }
 
-func (v *value) toAtom() (ret *Atom) {
+func (v *value) toAtom() (ret Atom) {
 	assert.For(v.typ == types.ATOM, 20)
 	switch x := v.val.(type) {
 	case Atom:
-		ret = &x
+		ret = x
 	case nil: //do nothing
 	default:
 		halt.As(100, "wrong atom ", reflect.TypeOf(x))

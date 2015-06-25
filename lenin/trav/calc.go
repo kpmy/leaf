@@ -259,28 +259,28 @@ func b_t_t_(fn func(tri.Trit, tri.Trit) bool) func(tri.Trit, *value) bool {
 	}
 }
 
-func b_a_(fn func(*Atom, *value) bool) func(*value, *value) bool {
+func b_a_(fn func(Atom, *value) bool) func(*value, *value) bool {
 	return func(l *value, r *value) bool {
 		la := l.toAtom()
 		return fn(la, r)
 	}
 }
 
-func b_a_a_(fn func(*Atom, *Atom) bool) func(*Atom, *value) bool {
-	return func(la *Atom, r *value) bool {
+func b_a_a_(fn func(Atom, Atom) bool) func(Atom, *value) bool {
+	return func(la Atom, r *value) bool {
 		ra := r.toAtom()
 		return fn(la, ra)
 	}
 }
 
-func b_a_t_(fn func(*Atom, tri.Trit) bool) func(*Atom, *value) bool {
-	return func(la *Atom, r *value) bool {
+func b_a_t_(fn func(Atom, tri.Trit) bool) func(Atom, *value) bool {
+	return func(la Atom, r *value) bool {
 		rt := r.toTril()
 		return fn(la, rt)
 	}
 }
 
-func b_t_a_(fn func(tri.Trit, *Atom) bool) func(tri.Trit, *value) bool {
+func b_t_a_(fn func(tri.Trit, Atom) bool) func(tri.Trit, *value) bool {
 	return func(lt tri.Trit, r *value) bool {
 		ra := r.toAtom()
 		return fn(lt, ra)
@@ -672,44 +672,44 @@ func dyABT() {
 		return lb
 	}))))
 
-	putDyadic(types.ATOM, types.ATOM, operation.Neq, b_(b_a_(b_a_a_(func(la *Atom, ra *Atom) bool {
+	putDyadic(types.ATOM, types.ATOM, operation.Neq, b_(b_a_(b_a_a_(func(la Atom, ra Atom) bool {
 		neq := true
-		if la == nil && ra == nil {
+		if la == "" && ra == "" {
 			neq = false
-		} else if la != nil && ra != nil {
-			neq = *la != *ra
+		} else if la != "" && ra != "" {
+			neq = la != ra
 		}
 		return neq
 	}))))
 
-	putDyadic(types.ATOM, types.ATOM, operation.Eq, b_(b_a_(b_a_a_(func(la *Atom, ra *Atom) bool {
+	putDyadic(types.ATOM, types.ATOM, operation.Eq, b_(b_a_(b_a_a_(func(la Atom, ra Atom) bool {
 		eq := false
-		if la == nil && ra == nil {
+		if la == "" && ra == "" {
 			eq = true
-		} else if la != nil && ra != nil {
-			eq = *la == *ra
+		} else if la != "" && ra != "" {
+			eq = la == ra
 		}
 		return eq
 	}))))
 
-	putDyadic(types.ATOM, types.TRILEAN, operation.Eq, b_(b_a_(b_a_t_(func(la *Atom, rt tri.Trit) bool {
+	putDyadic(types.ATOM, types.TRILEAN, operation.Eq, b_(b_a_(b_a_t_(func(la Atom, rt tri.Trit) bool {
 		assert.For(tri.Nil(rt), 40, "NIL comparision only")
-		return la == nil
+		return la == ""
 	}))))
 
-	putDyadic(types.TRILEAN, types.ATOM, operation.Eq, b_(b_t_(b_t_a_(func(lt tri.Trit, ra *Atom) bool {
+	putDyadic(types.TRILEAN, types.ATOM, operation.Eq, b_(b_t_(b_t_a_(func(lt tri.Trit, ra Atom) bool {
 		assert.For(tri.Nil(lt), 40, "NIL comparision only")
-		return ra == nil
+		return ra == ""
 	}))))
 
-	putDyadic(types.ATOM, types.TRILEAN, operation.Neq, b_(b_a_(b_a_t_(func(la *Atom, rt tri.Trit) bool {
+	putDyadic(types.ATOM, types.TRILEAN, operation.Neq, b_(b_a_(b_a_t_(func(la Atom, rt tri.Trit) bool {
 		assert.For(tri.Nil(rt), 40, "NIL comparision only")
-		return la != nil
+		return la != ""
 	}))))
 
-	putDyadic(types.TRILEAN, types.ATOM, operation.Neq, b_(b_t_(b_t_a_(func(lt tri.Trit, ra *Atom) bool {
+	putDyadic(types.TRILEAN, types.ATOM, operation.Neq, b_(b_t_(b_t_a_(func(lt tri.Trit, ra Atom) bool {
 		assert.For(tri.Nil(lt), 40, "NIL comparision only")
-		return ra != nil
+		return ra != ""
 	}))))
 }
 

@@ -24,7 +24,6 @@ const (
 	Becomes
 	Number
 	UpTo
-
 	Lbrak
 	Rbrak
 	Colon
@@ -81,6 +80,7 @@ const (
 	Repeat
 	Until
 	Else
+	Inf
 	True
 	False
 	Nil
@@ -89,6 +89,7 @@ const (
 	By
 	Choose
 	Opt
+	Infix
 )
 
 var keyTab map[string]Symbol
@@ -124,11 +125,13 @@ func init() {
 		"TRUE":      True,
 		"FALSE":     False,
 		"NIL":       Nil,
+		"INF":       Inf,
 		"WITH":      With,
 		"FOR":       For,
 		"BY":        By,
 		"CHOOSE":    Choose,
-		"OR":        Opt}
+		"OR":        Opt,
+		"INFIX":     Infix}
 }
 
 func keyByTab(s Symbol) (ret string) {
@@ -142,7 +145,7 @@ func keyByTab(s Symbol) (ret string) {
 
 func (s Symbol) String() (ret string) {
 	switch s {
-	case Module, End, Do, While, Elsif, Import, Const, Type, Of, To, This, In, Out, Io, Pre, Post, Proc, Var, Begin, Close, Match, If, Case, Then, Repeat, Until, Else, True, False, Nil, With, For, By, Choose, Opt:
+	case Module, End, Do, While, Elsif, Import, Const, Type, Of, To, This, In, Out, Io, Pre, Post, Proc, Var, Begin, Close, Match, If, Case, Then, Repeat, Until, Else, True, False, Nil, Inf, With, For, By, Choose, Opt, Infix:
 		ret = keyByTab(s)
 	case Null:
 		ret = "null"

@@ -352,3 +352,31 @@ BEGIN
 	i := 4
 	Do(x: i + 4,  y: i ^ i)
 END TestParams.
+
+MODULE TestVarPar
+	VAR
+		z TRILEAN
+
+	PROCEDURE Do0
+		VAR i INTEGER
+
+		PROCEDURE Do
+			VAR i- INTEGER
+			VAR x+ TRILEAN
+		BEGIN
+			IF i > 0 THEN x := TRUE
+			ELSIF i < 0 THEN x := FALSE
+			ELSE x := NIL END
+		END Do
+
+	BEGIN
+		i:=-1
+		WHILE i<=1 DO
+			Do(x:: z, i: i)
+			i := i + 1
+		END;
+	END Do0
+
+BEGIN
+	Do0
+END TestVarPar.

@@ -16,6 +16,7 @@ type block struct {
 	cm        map[string]*ir.Const
 	vm        map[string]*ir.Variable
 	pm        map[string]*ir.Procedure
+	in        []*ir.Variable
 }
 
 func (b *block) init() {

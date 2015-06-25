@@ -4,6 +4,8 @@ import (
 	"strconv"
 )
 
+const INF = "inf"
+
 type Type int
 
 const (

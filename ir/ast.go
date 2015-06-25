@@ -26,6 +26,7 @@ type Procedure struct {
 	ConstDecl map[string]*Const
 	VarDecl   map[string]*Variable
 	ProcDecl  map[string]*Procedure
+	Infix     []*Variable
 	Seq       []Statement
 }
 
