@@ -29,12 +29,14 @@ type Var struct {
 }
 
 type Const struct {
-	Uuid string
-	Expr *Expression `yaml:"expression"`
+	Uuid     string
+	Modifier string
+	Expr     *Expression `yaml:"expression"`
 }
 
 type Proc struct {
 	Uuid      string
+	Modifier  string
 	ConstDecl map[string]*Const `yaml:"constant,omitempty"`
 	VarDecl   map[string]*Var   `yaml:"variable,omitempty"`
 	ProcDecl  map[string]*Proc  `yaml:"procedure,omitempty"`

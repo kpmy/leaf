@@ -6,6 +6,19 @@ import (
 	"leaf/ir/types"
 )
 
+type Import struct {
+	Name      string
+	ConstDecl map[string]*Const
+	VarDecl   map[string]*Variable
+	ProcDecl  map[string]*Procedure
+}
+
+func (i *Import) Init() {
+	i.ConstDecl = make(map[string]*Const)
+	i.VarDecl = make(map[string]*Variable)
+	i.ProcDecl = make(map[string]*Procedure)
+}
+
 type Module struct {
 	Name      string
 	ConstDecl map[string]*Const
@@ -29,6 +42,7 @@ type Procedure struct {
 	Infix     []*Variable
 	Seq       []Statement
 	Pre, Post []Expression
+	Modifier  modifiers.Modifier
 }
 
 func (p *Procedure) Init() {
@@ -38,8 +52,9 @@ func (p *Procedure) Init() {
 }
 
 type Const struct {
-	Name string
-	Expr Expression
+	Name     string
+	Expr     Expression
+	Modifier modifiers.Modifier
 }
 
 type Variable struct {

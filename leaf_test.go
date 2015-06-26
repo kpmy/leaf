@@ -4,8 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"leaf/ir"
-	"leaf/ir/target"
+	code "leaf/ir/target"
 	_ "leaf/ir/target/yt/z"
+	"leaf/lead"
+	def "leaf/lead/target"
+	_ "leaf/lead/target/tt"
 	"leaf/leap"
 	"leaf/lenin"
 	_ "leaf/lenin/trav"
@@ -59,7 +62,11 @@ func TestParser(t *testing.T) {
 				ir, _ := p.Module()
 				if t, err := os.Create(mname + ".li"); err == nil {
 					defer t.Close()
-					target.New(ir, t)
+					code.New(ir, t)
+				}
+				if t, err := os.Create(mname + ".ld"); err == nil {
+					defer t.Close()
+					def.New(ir, t)
 				}
 			}
 		}
@@ -74,10 +81,10 @@ func TestAST(t *testing.T) {
 		if _, err = os.Stat(sname); err == nil {
 			if f, err := os.Open(sname); err == nil {
 				defer f.Close()
-				ir := target.Old(f)
+				ir := code.Old(f)
 				if t, err := os.Create(mname + ".lio"); err == nil {
 					defer t.Close()
-					target.New(ir, t)
+					code.New(ir, t)
 				}
 			}
 		}
@@ -114,13 +121,21 @@ func TestCollection(t *testing.T) {
 					var ast *ir.Module
 					if ast, err = p.Module(); err == nil {
 						if t, err := os.Create(ast.Name + ".li"); err == nil {
-							target.New(ast, t)
+							code.New(ast, t)
 							t.Close()
 						}
 						if t, err := os.Open(ast.Name + ".li"); err == nil {
 							defer t.Close()
-							ast := target.Old(t)
+							ast := code.Old(t)
 							lenin.Do(ast)
+						}
+						if t, err := os.Create(ast.Name + ".ld"); err == nil {
+							def.New(ast, t)
+							t.Close()
+						}
+						if d, err := os.Open(ast.Name + ".ld"); err == nil {
+							p := lead.ConnectTo(scanner.ConnectTo(bufio.NewReader(d)))
+							p.Import()
 						}
 					}
 				}

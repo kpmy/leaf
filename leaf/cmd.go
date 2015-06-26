@@ -33,10 +33,7 @@ func main() {
 		p := leap.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)))
 		ir, _ := p.Module()
 		if d, err := os.Open(name + ".ld"); err == nil {
-			d.Close()
-		}
-		if d, err := os.Create(name + ".ld"); err == nil {
-			def.New(ir, d)
+			log.Println("definition already exists")
 			d.Close()
 		}
 		if t, err := os.Create(name + ".li"); err == nil {
@@ -45,6 +42,10 @@ func main() {
 		}
 		if z, err := os.Open(name + ".li"); err == nil {
 			ir := code.Old(z)
+			if d, err := os.Create(name + ".ld"); err == nil {
+				def.New(ir, d)
+				d.Close()
+			}
 			lenin.Do(ir)
 		}
 		log.Println(name, "end.")

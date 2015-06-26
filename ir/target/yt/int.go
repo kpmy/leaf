@@ -250,6 +250,7 @@ func internalize(m *Module) (ret *ir.Module) {
 		for k, v := range cm {
 			c := &ir.Const{}
 			c.Name = k
+			c.Modifier = modifiers.ModMap[v.Modifier]
 			c.Expr = expr(v.Expr)
 			m.that(v.Uuid, c)
 			im[k] = c
@@ -277,6 +278,7 @@ func internalize(m *Module) (ret *ir.Module) {
 			p.ConstDecl = cdecl(v.ConstDecl)
 			p.VarDecl = vdecl(v.VarDecl)
 			p.ProcDecl = pdecl(v.ProcDecl)
+			p.Modifier = modifiers.ModMap[v.Modifier]
 			for _, v := range v.Infix {
 				p.Infix = append(p.Infix, m.that(v).(*ir.Variable))
 			}

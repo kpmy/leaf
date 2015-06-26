@@ -182,6 +182,7 @@ func externalize(mod *ir.Module) (ret *Module) {
 		for _, _v := range cm {
 			c := &Const{}
 			c.Uuid = ret.this(_v)
+			c.Modifier = _v.Modifier.String()
 			var e ir.Expression
 			switch v := _v.Expr.(type) {
 			case ir.EvaluatedExpression:
@@ -215,6 +216,7 @@ func externalize(mod *ir.Module) (ret *Module) {
 		for _, v := range pm {
 			i := &Proc{}
 			i.Uuid = ret.this(v)
+			i.Modifier = v.Modifier.String()
 			i.ConstDecl = cdecl(v.ConstDecl)
 			i.VarDecl = vdecl(v.VarDecl)
 			i.ProcDecl = pdecl(v.ProcDecl)

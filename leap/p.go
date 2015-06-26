@@ -1,26 +1,24 @@
 package leap
 
 import (
-	"fmt"
 	"github.com/kpmy/ypk/assert"
 	"leaf/ir"
 	"leaf/ir/modifiers"
-	"leaf/ir/operation"
 	"leaf/ir/types"
-	scanner "leaf/lss"
-	"strconv"
+	"leaf/lead"
+	"leaf/lss"
 )
 
 type Type struct {
 	typ types.Type
 }
 
-var entries map[scanner.Foreign]interface{}
-var idents map[string]scanner.Foreign
-var mods map[scanner.Symbol]modifiers.Modifier
+var entries map[lss.Foreign]interface{}
+var idents map[string]lss.Foreign
+var mods map[lss.Symbol]modifiers.Modifier
 
 const (
-	none scanner.Foreign = iota
+	none lss.Foreign = iota
 	integer
 	comp
 	flo //for real, real is builtin go function O_o
@@ -32,7 +30,7 @@ const (
 )
 
 func init() {
-	idents = map[string]scanner.Foreign{"INTEGER": integer,
+	idents = map[string]lss.Foreign{"INTEGER": integer,
 		"BOOLEAN": boolean,
 		"TRILEAN": trilean,
 		"CHAR":    char,
@@ -41,7 +39,7 @@ func init() {
 		"REAL":    flo,
 		"COMPLEX": comp}
 
-	entries = map[scanner.Foreign]interface{}{integer: Type{typ: types.INTEGER},
+	entries = map[lss.Foreign]interface{}{integer: Type{typ: types.INTEGER},
 		boolean: Type{typ: types.BOOLEAN},
 		trilean: Type{typ: types.TRILEAN},
 		char:    Type{typ: types.CHAR},
@@ -50,46 +48,18 @@ func init() {
 		flo:     Type{typ: types.REAL},
 		comp:    Type{typ: types.COMPLEX}}
 
-	mods = map[scanner.Symbol]modifiers.Modifier{scanner.Minus: modifiers.Semi, scanner.Plus: modifiers.Full}
+	mods = map[lss.Symbol]modifiers.Modifier{lss.Minus: modifiers.Semi, lss.Plus: modifiers.Full}
+
+	lead.ConnectTo = leadp
 }
 
 type Parser interface {
 	Module() (*ir.Module, error)
 }
 
-type idgen struct {
-	next int
-}
-
-func (i *idgen) nextID() (ret int) {
-	ret = i.next
-	i.next++
-	return
-}
-
 type pr struct {
-	sc   scanner.Scanner
-	sym  scanner.Sym
-	done bool
+	common
 	target
-	idgen
-}
-
-func (p *pr) mark(msg ...interface{}) {
-	str, pos := p.sc.Pos()
-	panic(fmt.Sprint("parser: ", "at pos ", str, " ", pos, " ", fmt.Sprint(msg...)))
-}
-
-func (p *pr) next() scanner.Sym {
-	p.done = true
-	if p.sym.Code != scanner.Null {
-		//		fmt.Print("this ")
-		//		fmt.Print("`" + fmt.Sprint(p.sym) + "`")
-	}
-	p.sym = p.sc.Get()
-	//fmt.Print(" next ")
-	//fmt.Println("`" + fmt.Sprint(p.sym) + "`")
-	return p.sym
 }
 
 func (p *pr) init() {
@@ -99,317 +69,27 @@ func (p *pr) init() {
 	p.next()
 }
 
-//expect is the most powerful step forward runner, breaks the compilation if unexpected sym found
-func (p *pr) expect(sym scanner.Symbol, msg string, skip ...scanner.Symbol) {
-	assert.For(p.done, 20)
-	if !p.await(sym, skip...) {
-		p.mark(msg)
-	}
-	p.done = false
-}
-
-//await runs for the sym through skip list, but may not find the sym
-func (p *pr) await(sym scanner.Symbol, skip ...scanner.Symbol) bool {
-	assert.For(p.done, 20)
-	skipped := func() (ret bool) {
-		for _, v := range skip {
-			if v == p.sym.Code {
-				ret = true
-			}
-		}
-		return
-	}
-
-	for sym != p.sym.Code && skipped() && p.sc.Error() == nil {
-		p.next()
-	}
-	p.done = p.sym.Code != sym
-	return p.sym.Code == sym
-}
-
-//pass runs through skip list
-func (p *pr) pass(skip ...scanner.Symbol) {
-	skipped := func() (ret bool) {
-		for _, v := range skip {
-			if v == p.sym.Code {
-				ret = true
-			}
-		}
-		return
-	}
-	for skipped() && p.sc.Error() == nil {
-		p.next()
-	}
-}
-
-//run runs to the first sym through any other sym
-func (p *pr) run(sym scanner.Symbol) {
-	if p.sym.Code != sym {
-		for p.sc.Error() == nil && p.next().Code != sym {
-			if p.sc.Error() != nil {
-				p.mark("not found")
-				break
-			}
-		}
-	}
-}
-
-func (p *pr) ident() string {
-	assert.For(p.sym.Code == scanner.Ident, 20, "identifier expected")
-	//добавить валидацию идентификаторов
-	return p.sym.Str
-}
-
-func (p *pr) is(sym scanner.Symbol) bool {
-	return p.sym.Code == sym
-}
-
-func (p *pr) number() (t types.Type, v interface{}) {
-	assert.For(p.is(scanner.Number), 20, "number expected here")
-	switch p.sym.NumberOpts.Modifier {
-	case "":
-		if p.sym.NumberOpts.Period {
-			t, v = types.REAL, p.sym.Str
-		} else {
-			//x, err := strconv.Atoi(p.sym.Str)
-			//assert.For(err == nil, 40)
-			t, v = types.INTEGER, p.sym.Str
-		}
-	case "U":
-		if p.sym.NumberOpts.Period {
-			p.mark("hex integer value expected")
-		}
-		//fmt.Println(p.sym)
-		if r, err := strconv.ParseUint(p.sym.Str, 16, 64); err == nil {
-			t = types.CHAR
-			v = rune(r)
-		} else {
-			p.mark("error while reading integer")
-		}
-	default:
-		p.mark("unknown number format `", p.sym.NumberOpts.Modifier, "`")
-	}
-	return
-}
-
-func (p *pr) selector(b *selBuilder) {
-	for stop := false; !stop; {
-		p.pass(scanner.Separator)
-		switch p.sym.Code {
-		case scanner.Lbrak:
-			p.next()
-			this := &ir.SelectIndex{}
-			expr := &exprBuilder{sc: b.sc}
-			p.expression(expr)
-			this.Expr = expr
-			b.join(this)
-			p.expect(scanner.Rbrak, "no ] found", scanner.Separator)
-			p.next()
-		default:
-			stop = true
-		}
-	}
-}
-
-func (p *pr) factor(b *exprBuilder) {
-	switch p.sym.Code {
-	case scanner.String:
-		val := &ir.ConstExpr{}
-		if len(p.sym.Str) == 1 && p.sym.StringOpts.Apos { //do it symbol
-			val.Type = types.CHAR
-			val.Value = rune(p.sym.Str[0])
-			b.factor(val)
-			p.next()
-		} else { //do string later
-			val.Type = types.STRING
-			val.Value = p.sym.Str
-			b.factor(val)
-			p.next()
-		}
-	case scanner.Number:
-		val := &ir.ConstExpr{}
-		val.Type, val.Value = p.number()
-		b.factor(val)
-		p.next()
-	case scanner.True, scanner.False:
-		val := &ir.ConstExpr{}
-		val.Type = types.BOOLEAN
-		val.Value = (p.sym.Code == scanner.True)
-		b.factor(val)
-		p.next()
-	case scanner.Nil:
-		val := &ir.ConstExpr{}
-		val.Type = types.TRILEAN
-		b.factor(val)
-		p.next()
-	case scanner.Inf:
-		val := &ir.ConstExpr{}
-		val.Type = types.REAL
-		val.Value = types.INF
-		b.factor(val)
-		p.next()
-	case scanner.Im:
-		p.next()
-		p.factor(b)
-		p.pass(scanner.Separator)
-		b.factor(&ir.Monadic{Op: operation.Im})
-	case scanner.Not:
-		p.next()
-		p.factor(b)
-		p.pass(scanner.Separator)
-		b.factor(&ir.Monadic{Op: operation.Not})
-	case scanner.Ident:
-		e := b.as(p.ident())
-		p.next()
-		sel := &selBuilder{sc: b.sc}
-		p.selector(sel)
-		b.factor(sel.appy(e))
-	case scanner.Lparen:
-		p.next()
-		expr := &exprBuilder{sc: b.sc}
-		p.expression(expr)
-		b.factor(expr)
-		p.expect(scanner.Rparen, ") expected", scanner.Separator)
-		p.next()
-	default:
-		p.mark("not implemented for ", p.sym)
-	}
-}
-
-func (p *pr) cpx(b *exprBuilder) {
-	p.factor(b)
-	p.pass(scanner.Separator)
-	switch p.sym.Code {
-	case scanner.Ncmp, scanner.Pcmp:
-		op := p.sym.Code
-		p.next()
-		p.pass(scanner.Separator)
-		if p.sym.Code != scanner.Im {
-			p.factor(b)
-		} else {
-			p.mark("imaginary operator not expected")
-		}
-		b.power(&ir.Dyadic{Op: operation.Map(op)})
-
-	}
-}
-
-func (p *pr) power(b *exprBuilder) {
-	p.cpx(b)
-	for stop := false; !stop; {
-		p.pass(scanner.Separator)
-		switch p.sym.Code {
-		case scanner.Arrow:
-			op := p.sym.Code
-			p.next()
-			p.pass(scanner.Separator)
-			p.cpx(b)
-			b.power(&ir.Dyadic{Op: operation.Map(op)})
-		default:
-			stop = true
-		}
-	}
-}
-
-func (p *pr) product(b *exprBuilder) {
-	p.power(b)
-	for stop := false; !stop; {
-		p.pass(scanner.Separator)
-		switch p.sym.Code {
-		case scanner.Times, scanner.Div, scanner.Mod, scanner.Divide, scanner.And:
-			op := p.sym.Code
-			p.next()
-			p.pass(scanner.Separator)
-			p.power(b)
-			b.product(&ir.Dyadic{Op: operation.Map(op)})
-		default:
-			stop = true
-		}
-	}
-}
-
-func (p *pr) quantum(b *exprBuilder) {
-	if p.is(scanner.Minus) {
-		p.next()
-		p.pass(scanner.Separator)
-		p.product(b)
-		b.product(&ir.Monadic{Op: operation.Neg})
-	} else if p.is(scanner.Plus) {
-		p.next()
-		p.pass(scanner.Separator)
-		p.product(b)
-	} else {
-		p.pass(scanner.Separator)
-		p.product(b)
-	}
-	for stop := false; !stop; {
-		p.pass(scanner.Separator)
-		switch p.sym.Code {
-		case scanner.Plus, scanner.Minus, scanner.Or:
-			op := p.sym.Code
-			p.next()
-			p.pass(scanner.Separator)
-			p.product(b)
-			b.quantum(&ir.Dyadic{Op: operation.Map(op)})
-		default:
-			stop = true
-		}
-	}
-}
-
-func (p *pr) expression(b *exprBuilder) {
-	p.quantum(b)
-	p.pass(scanner.Separator)
-	switch p.sym.Code {
-	case scanner.Equal, scanner.Nequal, scanner.Geq, scanner.Leq, scanner.Gtr, scanner.Lss:
-		op := p.sym.Code
-		p.next()
-		p.pass(scanner.Separator)
-		p.quantum(b)
-		b.expr(&ir.Dyadic{Op: operation.Map(op)})
-	case scanner.Infixate:
-		p.next()
-		p.expect(scanner.Ident, "identifier expected")
-		id := p.ident()
-		p.next()
-		limit := 1
-		for stop := false; !stop; {
-			if !p.await(scanner.Delimiter, scanner.Separator) {
-				p.quantum(b)
-				limit++
-			} else {
-				stop = true
-				p.next()
-			}
-		}
-		if limit < 2 {
-			p.mark("expected two or more args")
-		}
-		b.expr(b.infix(id, limit))
-	}
-}
-
 func (p *pr) constDecl(b *constBuilder) {
-	assert.For(p.sym.Code == scanner.Const, 20, "CONST block expected")
+	assert.For(p.sym.Code == lss.Const, 20, "CONST block expected")
 	p.next()
 	for {
-		if p.await(scanner.Ident, scanner.Delimiter, scanner.Separator) {
+		if p.await(lss.Ident, lss.Delimiter, lss.Separator) {
 			id := p.ident()
 			if c, free := b.this(id); c != nil || !free {
 				p.mark("identifier already exists")
 			}
 			p.next()
 			obj := &ir.Const{Name: id}
-			if p.await(scanner.Plus) {
+			if p.await(lss.Plus) {
 				obj.Modifier = mods[p.sym.Code]
 				p.next()
 			}
-			if p.await(scanner.Equal, scanner.Separator) { //const expression
+			if p.await(lss.Equal, lss.Separator) { //const expression
 				p.next()
-				p.pass(scanner.Separator)
+				p.pass(lss.Separator)
 				obj.Expr = &exprBuilder{sc: b.sc}
 				p.expression(obj.Expr.(*exprBuilder))
-			} else if p.is(scanner.Delimiter) { //ATOM
+			} else if p.is(lss.Delimiter) { //ATOM
 				obj.Expr = &ir.AtomExpr{Value: id}
 				p.next()
 			} else {
@@ -422,8 +102,8 @@ func (p *pr) constDecl(b *constBuilder) {
 	}
 }
 
-func (p *pr) typ(consume func(t types.Type)) {
-	assert.For(p.sym.Code == scanner.Ident, 20, "type identifier expected here")
+func (p *common) typ(consume func(t types.Type)) {
+	assert.For(p.sym.Code == lss.Ident, 20, "type identifier expected here")
 	id := p.ident()
 	if t, ok := entries[p.sym.User].(Type); ok {
 		switch t.typ {
@@ -445,10 +125,10 @@ func (p *pr) typ(consume func(t types.Type)) {
 }
 
 func (p *pr) varDecl(b *varBuilder) {
-	assert.For(p.sym.Code == scanner.Var, 20, "VAR block expected")
+	assert.For(p.sym.Code == lss.Var, 20, "VAR block expected")
 	p.next()
 	for {
-		if p.await(scanner.Ident, scanner.Delimiter, scanner.Separator) {
+		if p.await(lss.Ident, lss.Delimiter, lss.Separator) {
 			var vl []*ir.Variable
 			for {
 				obj := &ir.Variable{}
@@ -460,18 +140,18 @@ func (p *pr) varDecl(b *varBuilder) {
 				vl = append(vl, obj)
 				b.decl(obj.Name, obj)
 				p.next()
-				if p.await(scanner.Minus) || p.is(scanner.Plus) {
+				if p.await(lss.Minus) || p.is(lss.Plus) {
 					obj.Modifier = mods[p.sym.Code]
 					p.next()
 				}
-				if p.await(scanner.Comma, scanner.Separator) {
+				if p.await(lss.Comma, lss.Separator) {
 					p.next()
-					p.pass(scanner.Separator)
+					p.pass(lss.Separator)
 				} else {
 					break
 				}
 			}
-			p.expect(scanner.Ident, "type identifier expected", scanner.Separator)
+			p.expect(lss.Ident, "type identifier expected", lss.Separator)
 			p.typ(func(t types.Type) {
 				for _, obj := range vl {
 					obj.Type = t
@@ -481,61 +161,60 @@ func (p *pr) varDecl(b *varBuilder) {
 			break
 		}
 	}
-
 }
 
 func (p *pr) stmtSeq(b *blockBuilder) {
 	for stop := false; !stop; {
-		p.pass(scanner.Separator, scanner.Delimiter)
+		p.pass(lss.Separator, lss.Delimiter)
 		switch p.sym.Code {
-		case scanner.Ident:
+		case lss.Ident:
 			if id := p.ident(); b.isObj(id) {
 				obj := b.obj(id)
 				p.next()
-				p.pass(scanner.Separator)
+				p.pass(lss.Separator)
 				sel := &selBuilder{sc: b.sc}
 				p.selector(sel)
 				sel.head(obj)
-				if p.is(scanner.Becomes) {
+				if p.is(lss.Becomes) {
 					stmt := &ir.AssignStmt{}
 					p.next()
-					p.pass(scanner.Separator)
+					p.pass(lss.Separator)
 					expr := &exprBuilder{sc: b.sc}
 					p.expression(expr)
 					stmt.Sel = sel
 					stmt.Expr = expr
 					b.put(stmt)
-					//p.expect(scanner.Delimiter, "delimiter expected", scanner.Separator)
+					//p.expect(lss.Delimiter, "delimiter expected", lss.Separator)
 				} else {
 					p.mark("illegal statement")
 				}
 			} else {
 				p.next()
 				var param []*forwardParam
-				if p.await(scanner.Lparen, scanner.Separator, scanner.Delimiter) {
+				if p.await(lss.Lparen, lss.Separator, lss.Delimiter) {
 					p.next()
 					for {
-						p.expect(scanner.Ident, "identifier expected", scanner.Separator, scanner.Delimiter)
+						p.expect(lss.Ident, "identifier expected", lss.Separator, lss.Delimiter)
 						id := p.ident()
 						p.next()
-						if p.await(scanner.Colon, scanner.Separator) {
+						if p.await(lss.Colon, lss.Separator) {
 							par := &forwardParam{name: id}
 							p.next()
 							e := &exprBuilder{sc: b.sc}
 							p.expression(e)
 							par.expr = e
 							param = append(param, par)
-						} else if p.is(scanner.Square) {
+						} else if p.is(lss.Square) {
 							par := &forwardParam{name: id}
 							p.next()
-							p.expect(scanner.Ident, "ident expected", scanner.Separator)
+							p.expect(lss.Ident, "ident expected", lss.Separator)
 							id := p.ident()
 							if !b.isObj(id) {
 								p.mark("not an object")
 							}
 							obj := b.obj(id)
 							p.next()
-							p.pass(scanner.Separator)
+							p.pass(lss.Separator)
 							sel := &selBuilder{sc: b.sc}
 							p.selector(sel)
 							sel.head(obj)
@@ -544,50 +223,50 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 						} else {
 							p.mark("colon expected")
 						}
-						if p.await(scanner.Comma, scanner.Separator, scanner.Delimiter) {
+						if p.await(lss.Comma, lss.Separator, lss.Delimiter) {
 							p.next()
 						} else {
 							break
 						}
 					}
-					p.expect(scanner.Rparen, "no ) found", scanner.Separator, scanner.Delimiter)
+					p.expect(lss.Rparen, "no ) found", lss.Separator, lss.Delimiter)
 					p.next()
 				}
 				stmt := b.call(id, param)
 				b.put(stmt)
 			}
-		case scanner.If:
+		case lss.If:
 			stmt := &ir.IfStmt{}
 			first := true
 			for stop := false; !stop; {
 				switch p.sym.Code {
-				case scanner.If, scanner.Elsif:
-					if p.is(scanner.If) && !first {
+				case lss.If, lss.Elsif:
+					if p.is(lss.If) && !first {
 						p.mark("ELSIF expected")
 					}
 					first = false
 					p.next()
-					p.pass(scanner.Separator)
+					p.pass(lss.Separator)
 					expr := &exprBuilder{sc: b.sc}
 					p.expression(expr)
-					p.expect(scanner.Then, "THEN not found", scanner.Separator)
+					p.expect(lss.Then, "THEN not found", lss.Separator)
 					p.next()
 					st := &blockBuilder{sc: b.sc}
 					p.stmtSeq(st)
-					p.pass(scanner.Separator, scanner.Delimiter)
+					p.pass(lss.Separator, lss.Delimiter)
 					br := &ir.ConditionBranch{}
 					br.Expr = expr
 					br.Seq = st.seq
 					stmt.Cond = append(stmt.Cond, br)
-				case scanner.Else:
+				case lss.Else:
 					p.next()
 					st := &blockBuilder{sc: b.sc}
 					p.stmtSeq(st)
-					p.pass(scanner.Separator, scanner.Delimiter)
+					p.pass(lss.Separator, lss.Delimiter)
 					br := &ir.ElseBranch{}
 					br.Seq = st.seq
 					stmt.Else = br
-				case scanner.End:
+				case lss.End:
 					p.next()
 					stop = true
 				default:
@@ -595,30 +274,30 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 				}
 			}
 			b.put(stmt)
-		case scanner.While:
+		case lss.While:
 			stmt := &ir.WhileStmt{}
 			first := true
 			for stop := false; !stop; {
 				switch p.sym.Code {
-				case scanner.While, scanner.Elsif:
-					if p.is(scanner.While) && !first {
+				case lss.While, lss.Elsif:
+					if p.is(lss.While) && !first {
 						p.mark("ELSIF expected")
 					}
 					first = false
 					p.next()
-					p.pass(scanner.Separator)
+					p.pass(lss.Separator)
 					expr := &exprBuilder{sc: b.sc}
 					p.expression(expr)
-					p.expect(scanner.Do, "DO not found", scanner.Separator)
+					p.expect(lss.Do, "DO not found", lss.Separator)
 					p.next()
 					st := &blockBuilder{sc: b.sc}
 					p.stmtSeq(st)
-					p.pass(scanner.Separator, scanner.Delimiter)
+					p.pass(lss.Separator, lss.Delimiter)
 					br := &ir.ConditionBranch{}
 					br.Expr = expr
 					br.Seq = st.seq
 					stmt.Cond = append(stmt.Cond, br)
-				case scanner.End:
+				case lss.End:
 					p.next()
 					stop = true
 				default:
@@ -626,52 +305,52 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 				}
 			}
 			b.put(stmt)
-		case scanner.Repeat:
+		case lss.Repeat:
 			p.next()
 			stmt := &ir.RepeatStmt{}
 			br := &ir.ConditionBranch{}
 			st := &blockBuilder{sc: b.sc}
-			p.pass(scanner.Separator, scanner.Delimiter)
+			p.pass(lss.Separator, lss.Delimiter)
 			p.stmtSeq(st)
-			p.expect(scanner.Until, "UNTIL expected", scanner.Separator, scanner.Delimiter)
+			p.expect(lss.Until, "UNTIL expected", lss.Separator, lss.Delimiter)
 			p.next()
 			expr := &exprBuilder{sc: b.sc}
 			p.expression(expr)
-			p.expect(scanner.Delimiter, "delimiter expected", scanner.Separator)
+			p.expect(lss.Delimiter, "delimiter expected", lss.Separator)
 			p.next()
 			br.Expr = expr
 			br.Seq = st.seq
 			stmt.Cond = br
 			b.put(stmt)
-		case scanner.Choose:
+		case lss.Choose:
 			p.next()
 			stmt := &ir.ChooseStmt{}
-			if !p.await(scanner.Of, scanner.Separator, scanner.Delimiter) {
+			if !p.await(lss.Of, lss.Separator, lss.Delimiter) {
 				expr := &exprBuilder{sc: b.sc}
 				p.expression(expr)
 				stmt.Expr = expr
 				p.next()
-				p.expect(scanner.Of, "OF expected", scanner.Separator, scanner.Delimiter)
+				p.expect(lss.Of, "OF expected", lss.Separator, lss.Delimiter)
 			}
 			first := true
 			for stop := false; !stop; {
 				switch p.sym.Code {
-				case scanner.Of, scanner.Opt:
-					if p.is(scanner.Of) && !first {
+				case lss.Of, lss.Opt:
+					if p.is(lss.Of) && !first {
 						p.mark("ELSIF expected")
 					}
 					first = false
 					p.next()
-					p.pass(scanner.Separator, scanner.Delimiter)
+					p.pass(lss.Separator, lss.Delimiter)
 					var bunch []ir.Expression
 					for {
 						expr := &exprBuilder{sc: b.sc}
 						p.expression(expr)
 						bunch = append(bunch, expr)
-						if p.await(scanner.Colon, scanner.Separator) {
+						if p.await(lss.Colon, lss.Separator) {
 							p.next()
 							break
-						} else if !p.is(scanner.Comma) {
+						} else if !p.is(lss.Comma) {
 							p.mark("comma expected")
 						} else {
 							p.next()
@@ -679,22 +358,22 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 					}
 					st := &blockBuilder{sc: b.sc}
 					p.stmtSeq(st)
-					p.pass(scanner.Separator, scanner.Delimiter)
+					p.pass(lss.Separator, lss.Delimiter)
 					for _, e := range bunch {
 						br := &ir.ConditionBranch{}
 						br.Expr = e
 						br.Seq = st.seq
 						stmt.Cond = append(stmt.Cond, br)
 					}
-				case scanner.Else:
+				case lss.Else:
 					p.next()
 					st := &blockBuilder{sc: b.sc}
 					p.stmtSeq(st)
-					p.pass(scanner.Separator, scanner.Delimiter)
+					p.pass(lss.Separator, lss.Delimiter)
 					br := &ir.ElseBranch{}
 					br.Seq = st.seq
 					stmt.Else = br
-				case scanner.End:
+				case lss.End:
 					stop = true
 					p.next()
 				default:
@@ -709,21 +388,21 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 }
 
 func (p *pr) procDecl(b *blockBuilder) {
-	assert.For(p.is(scanner.Proc), 20, "PROCEDURE expected here")
+	assert.For(p.is(lss.Proc), 20, "PROCEDURE expected here")
 	ret := &ir.Procedure{}
 	ret.Init()
 	p.next()
-	p.expect(scanner.Ident, "procedure name expected", scanner.Separator)
+	p.expect(lss.Ident, "procedure name expected", lss.Separator)
 	ret.Name = p.ident()
 	p.next()
-	if p.await(scanner.Plus) {
+	if p.await(lss.Plus) {
 		ret.Modifier = mods[p.sym.Code]
 		p.next()
 	}
 	p.st.push()
 	this := p.st.this()
-	p.block(this, scanner.Proc)
-	p.expect(scanner.Begin, "BEGIN expected", scanner.Separator, scanner.Delimiter)
+	p.block(this, lss.Proc)
+	p.expect(lss.Begin, "BEGIN expected", lss.Separator, lss.Delimiter)
 	p.next()
 	b.decl(ret.Name, ret)
 	proc := &blockBuilder{sc: this}
@@ -746,9 +425,9 @@ func (p *pr) procDecl(b *blockBuilder) {
 			}
 		}
 	}
-	p.expect(scanner.End, "no END", scanner.Delimiter, scanner.Separator)
+	p.expect(lss.End, "no END", lss.Delimiter, lss.Separator)
 	p.next()
-	p.expect(scanner.Ident, "procedure name expected", scanner.Separator)
+	p.expect(lss.Ident, "procedure name expected", lss.Separator)
 	if p.ident() != ret.Name {
 		p.mark("procedure name does not match")
 	}
@@ -756,66 +435,66 @@ func (p *pr) procDecl(b *blockBuilder) {
 	p.next()
 }
 
-func (p *pr) block(bl *block, typ scanner.Symbol) {
-	assert.For(typ == scanner.Module || typ == scanner.Proc, 20, "unknown block type ", typ)
-	for p.await(scanner.Const, scanner.Delimiter, scanner.Separator) {
+func (p *pr) block(bl *block, typ lss.Symbol) {
+	assert.For(typ == lss.Module || typ == lss.Proc, 20, "unknown block type ", typ)
+	for p.await(lss.Const, lss.Delimiter, lss.Separator) {
 		b := &constBuilder{sc: bl}
 		p.constDecl(b)
 	}
-	for p.await(scanner.Var, scanner.Delimiter, scanner.Separator) {
+	for p.await(lss.Var, lss.Delimiter, lss.Separator) {
 		b := &varBuilder{sc: bl}
 		p.varDecl(b)
 	}
-	if typ == scanner.Proc { //infix description, pre- and post-conditions, etc
+	if typ == lss.Proc { //infix description, pre- and post-conditions, etc
 		for stop := false; !stop; {
-			p.pass(scanner.Delimiter, scanner.Separator)
+			p.pass(lss.Delimiter, lss.Separator)
 			switch p.sym.Code {
-			case scanner.Infix:
+			case lss.Infix:
 				p.next()
 				for stop := false; !stop; {
-					if p.await(scanner.Ident, scanner.Separator) {
+					if p.await(lss.Ident, lss.Separator) {
 						obj := bl.vm[p.ident()]
 						if obj == nil {
 							p.mark("unknown identifier")
 						}
 						bl.in = append(bl.in, obj)
 						p.next()
-						if p.await(scanner.Delimiter, scanner.Separator) {
+						if p.await(lss.Delimiter, lss.Separator) {
 							p.next()
 							stop = true
 						}
-					} else if p.is(scanner.Delimiter) {
+					} else if p.is(lss.Delimiter) {
 						stop = true
 						p.next()
 					} else {
 						p.mark("identifier expected", p.sym.Code)
 					}
 				}
-			case scanner.Pre:
+			case lss.Pre:
 				p.next()
 				expr := &exprBuilder{sc: bl}
 				p.expression(expr)
 				bl.pre = append(bl.pre, expr)
-				p.expect(scanner.Delimiter, "delimiter expected", scanner.Separator)
-			case scanner.Post:
+				p.expect(lss.Delimiter, "delimiter expected", lss.Separator)
+			case lss.Post:
 				p.next()
 				expr := &exprBuilder{sc: bl}
 				p.expression(expr)
 				bl.post = append(bl.post, expr)
-				p.expect(scanner.Delimiter, "delimiter expected", scanner.Separator)
+				p.expect(lss.Delimiter, "delimiter expected", lss.Separator)
 			default:
 				stop = true
 			}
 		}
 	}
-	for p.await(scanner.Proc, scanner.Delimiter, scanner.Separator) {
+	for p.await(lss.Proc, lss.Delimiter, lss.Separator) {
 		b := &blockBuilder{sc: bl}
 		p.procDecl(b)
 	}
 }
 
 func (p *pr) Module() (ret *ir.Module, err error) {
-	if !p.await(scanner.Module, scanner.Delimiter, scanner.Separator) {
+	if !p.await(lss.Module, lss.Delimiter, lss.Separator) {
 		if p.sc.Error() != nil {
 			return nil, p.sc.Error()
 		} else {
@@ -823,46 +502,47 @@ func (p *pr) Module() (ret *ir.Module, err error) {
 		}
 	}
 	p.next()
-	p.expect(scanner.Ident, "module name expected", scanner.Separator)
+	p.expect(lss.Ident, "module name expected", lss.Separator)
 	p.target.init(p.ident())
 	p.next()
-	p.pass(scanner.Separator, scanner.Delimiter)
+	p.pass(lss.Separator, lss.Delimiter)
 	p.st.push()
 	top := p.st.this()
-	p.block(top, scanner.Module)
+	p.block(top, lss.Module)
 	p.st.pop()
 	p.top.ConstDecl = top.cm
 	p.top.VarDecl = top.vm
 	p.top.ProcDecl = top.pm
-	if p.await(scanner.Begin, scanner.Delimiter, scanner.Separator) {
+	if p.await(lss.Begin, lss.Delimiter, lss.Separator) {
 		p.next()
 		b := &blockBuilder{sc: top}
 		p.stmtSeq(b)
 		p.top.BeginSeq = b.seq
 	}
-	if p.await(scanner.Close, scanner.Delimiter, scanner.Separator) {
+	if p.await(lss.Close, lss.Delimiter, lss.Separator) {
 		p.next()
 		b := &blockBuilder{sc: top}
 		p.stmtSeq(b)
 		p.top.CloseSeq = b.seq
 	}
-	//p.run(scanner.End)
-	p.expect(scanner.End, "no END", scanner.Delimiter, scanner.Separator)
+	//p.run(lss.End)
+	p.expect(lss.End, "no END", lss.Delimiter, lss.Separator)
 	p.next()
-	p.expect(scanner.Ident, "module name expected", scanner.Separator)
+	p.expect(lss.Ident, "module name expected", lss.Separator)
 	if p.ident() != p.top.Name {
 		p.mark("module name does not match")
 	}
 	p.next()
-	p.expect(scanner.Period, "end of module expected")
+	p.expect(lss.Period, "end of module expected")
 	ret = p.top
 	return
 }
 
-func ConnectTo(s scanner.Scanner) Parser {
+func ConnectTo(s lss.Scanner) Parser {
 	assert.For(s != nil, 20)
-	s.Init(scanner.Module, scanner.End, scanner.Do, scanner.While, scanner.Elsif, scanner.Import, scanner.Const, scanner.Of, scanner.Pre, scanner.Post, scanner.Proc, scanner.Var, scanner.Begin, scanner.Close, scanner.If, scanner.Then, scanner.Repeat, scanner.Until, scanner.Else, scanner.True, scanner.False, scanner.Nil, scanner.Inf, scanner.Choose, scanner.Opt, scanner.Infix)
-	ret := &pr{sc: s}
+	s.Init(lss.Module, lss.End, lss.Do, lss.While, lss.Elsif, lss.Import, lss.Const, lss.Of, lss.Pre, lss.Post, lss.Proc, lss.Var, lss.Begin, lss.Close, lss.If, lss.Then, lss.Repeat, lss.Until, lss.Else, lss.True, lss.False, lss.Nil, lss.Inf, lss.Choose, lss.Opt, lss.Infix)
+	ret := &pr{}
+	ret.sc = s
 	ret.init()
 	return ret
 }

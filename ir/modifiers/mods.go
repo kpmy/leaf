@@ -1,6 +1,7 @@
 package modifiers
 
 import (
+	"leaf/lss"
 	"strconv"
 )
 
@@ -15,6 +16,19 @@ const (
 )
 
 var ModMap map[string]Modifier
+
+func (m Modifier) Sym() lss.Symbol {
+	switch m {
+	case None:
+		return lss.Null
+	case Semi:
+		return lss.Minus
+	case Full:
+		return lss.Plus
+	default:
+		return lss.Null
+	}
+}
 
 func (m Modifier) String() string {
 	switch m {

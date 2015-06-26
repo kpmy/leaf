@@ -388,14 +388,14 @@ MODULE TestInfix
 
 	PROCEDURE Add3
 		VAR i-, j-, k- INTEGER; r+ REAL;
-		INFIX r, i, j, k
+		INFIX r i j k
 	BEGIN
 		r := i + j + k
 	END Add3
 
 	PROCEDURE Add2
 		VAR i-, j- REAL; r+ REAL;
-		INFIX r, i, j
+		INFIX r i j
 	BEGIN
 		r := i + j
 	END Add2

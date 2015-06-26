@@ -81,6 +81,15 @@ func (s *stack) this() (ret *block) {
 	return
 }
 
+type imported struct {
+	top *ir.Import
+}
+
+func (i *imported) init(mod string) {
+	i.top = &ir.Import{Name: mod}
+	i.top.Init()
+}
+
 type target struct {
 	top *ir.Module
 	st  *stack

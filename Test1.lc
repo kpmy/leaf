@@ -1,0 +1,27 @@
+MODULE TestDefinition
+	CONST
+		aT+
+		x+ = 1
+		z+ = x + 0.4
+
+	VAR
+		len+ INTEGER
+		count- INTEGER
+
+	PROCEDURE Do+
+		VAR x, i INTEGER
+		VAR count- INTEGER
+		VAR result+ INTEGER
+	BEGIN
+	END Do
+
+	PROCEDURE Do2+
+		VAR x+, i-, j- INTEGER
+		INFIX x i j
+		PRE i # 0
+		POST j > 0
+		PRE j # 0
+		POST x # 0
+	BEGIN
+	END Do2
+END TestDefinition.
