@@ -400,6 +400,10 @@ func (p *pr) constDecl(b *constBuilder) {
 			}
 			p.next()
 			obj := &ir.Const{Name: id}
+			if p.await(scanner.Plus) {
+				obj.Modifier = mods[p.sym.Code]
+				p.next()
+			}
 			if p.await(scanner.Equal, scanner.Separator) { //const expression
 				p.next()
 				p.pass(scanner.Separator)
@@ -712,6 +716,10 @@ func (p *pr) procDecl(b *blockBuilder) {
 	p.expect(scanner.Ident, "procedure name expected", scanner.Separator)
 	ret.Name = p.ident()
 	p.next()
+	if p.await(scanner.Plus) {
+		ret.Modifier = mods[p.sym.Code]
+		p.next()
+	}
 	p.st.push()
 	this := p.st.this()
 	p.block(this, scanner.Proc)
@@ -772,13 +780,15 @@ func (p *pr) block(bl *block, typ scanner.Symbol) {
 						}
 						bl.in = append(bl.in, obj)
 						p.next()
-						if p.await(scanner.Comma, scanner.Separator) {
+						if p.await(scanner.Delimiter, scanner.Separator) {
 							p.next()
-						} else {
 							stop = true
 						}
+					} else if p.is(scanner.Delimiter) {
+						stop = true
+						p.next()
 					} else {
-						p.mark("identifier expected")
+						p.mark("identifier expected", p.sym.Code)
 					}
 				}
 			case scanner.Pre:
