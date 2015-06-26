@@ -420,7 +420,11 @@ func (b *blockBuilder) call(id string, pl []*forwardParam) ir.Statement {
 		var param []*ir.Parameter
 		for _, par := range pl {
 			x := &ir.Parameter{}
-			x.Var = p.VarDecl[par.name]
+			if len(p.VarDecl) > 0 {
+				x.Var = p.VarDecl[par.name]
+			} else { //shortcut for recursion
+				x.Var = b.sc.vm[par.name]
+			}
 			assert.For(x.Var != nil, 30)
 			assert.For((par.expr != nil) != (par.link != nil), 31)
 			if par.expr != nil {

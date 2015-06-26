@@ -403,3 +403,22 @@ BEGIN
 	z := 1 \Add3 4 (8 + 33)
 	z := 1.0 \Add2 z
 END TestInfix.
+
+MODULE TestRecursion
+
+	VAR i INTEGER
+
+	PROCEDURE Do
+		VAR res+, max- INTEGER
+		VAR tmp INTEGER
+	BEGIN
+		IF max > 0 THEN
+			Do(res:: tmp, max: max-1)
+		END
+		res := res + max + tmp
+	END Do
+
+BEGIN
+	i:=10
+	Do(res:: i, max: 5)
+END TestRecursion.

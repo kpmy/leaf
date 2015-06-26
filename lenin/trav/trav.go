@@ -28,35 +28,43 @@ type anyData interface {
 }
 
 type direct struct {
-	x interface{}
+	____x interface{}
 }
 
 func (d *direct) String() string {
-	return fmt.Sprint(d.x)
+	return fmt.Sprint(d.____x)
 }
 
-func (d *direct) read() interface{} { return d.x }
+func (d *direct) set(x interface{}) {
+	_, fake := x.(*value)
+	assert.For(!fake, 21)
+	d.____x = x
+}
+
+func (d *direct) read() interface{} { return d.____x }
 func (d *direct) write(x interface{}) {
 	assert.For(x != nil, 20)
-	d.x = x
-}
-func (d *direct) null() {
-	d.x = nil
+	d.set(x)
 }
 
 type indirect struct {
-	sel  ir.Selector
-	ctx  *context
-	stor *storage
-	x    interface{}
+	sel   ir.Selector
+	ctx   *context
+	stor  *storage
+	____x interface{}
 }
 
 func (i *indirect) String() string {
 	if i.sel != nil {
 		return fmt.Sprint("@", i.sel)
 	} else {
-		return fmt.Sprint("@", i.x)
+		return fmt.Sprint("@", i.____x)
 	}
+}
+func (d *indirect) set(x interface{}) {
+	_, fake := x.(*value)
+	assert.For(!fake, 21)
+	d.____x = x
 }
 
 func (d *indirect) doSel(in, out *value, end func(*value) *value) {
@@ -68,18 +76,22 @@ func (d *indirect) read() (ret interface{}) {
 		//fmt.Println("indirect")
 		d.stor.lock = &lock{}
 		d.doSel(nil, nil, func(v *value) *value {
-			ret = v
+			ret = v.val
 			return nil
 		})
 		d.stor.lock = nil
+		_, fake := ret.(*value)
+		assert.For(!fake, 21)
 		return
 	} else {
-		return d.x
+		return d.____x
 	}
 }
 
 func (d *indirect) write(x interface{}) {
 	assert.For(x != nil, 20)
+	_, fake := x.(*value)
+	assert.For(!fake, 21)
 	if d.sel != nil {
 		d.stor.lock = &lock{}
 		d.doSel(nil, nil, func(v *value) *value {
@@ -87,15 +99,7 @@ func (d *indirect) write(x interface{}) {
 		})
 		d.stor.lock = nil
 	} else {
-		d.x = x
-	}
-}
-
-func (d *indirect) null() {
-	if d.sel != nil {
-		panic(0)
-	} else {
-		d.x = nil
+		d.set(x)
 	}
 }
 
@@ -205,16 +209,21 @@ func (s *storage) alloc(vl map[string]*ir.Variable) {
 	s.data = make(map[string]anyData)
 	for _, v := range s.schema {
 
-		init := func(val interface{}) anyData {
+		init := func(val interface{}) (ret anyData) {
 			assert.For(val != nil, 20)
 			switch v.Modifier {
 			case modifiers.Full:
-				return &indirect{x: val, stor: s}
+				x := &indirect{stor: s}
+				x.set(val)
+				ret = x
 			case modifiers.Semi, modifiers.None:
-				return &direct{x: val}
+				x := &direct{}
+				x.set(val)
+				ret = x
 			default:
 				halt.As(100, "wrong modifier ", v.Modifier)
 			}
+			return
 			panic(0)
 		}
 
@@ -301,6 +310,8 @@ func (s *exprStack) init() {
 
 func (s *exprStack) push(v *value) {
 	assert.For(v != nil, 20)
+	_, fake := v.val.(*value)
+	assert.For(!fake, 21)
 	s.vl.PushFront(v)
 }
 

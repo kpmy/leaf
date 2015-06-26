@@ -152,7 +152,11 @@ func internalize(m *Module) (ret *ir.Module) {
 						this.Proc = x
 						for _, par := range pl {
 							x := &ir.Parameter{}
-							x.Expr = expr(par.Expr)
+							if par.Expr != nil {
+								x.Expr = expr(par.Expr)
+							} else {
+								x.Sel = sel(par.Sel)
+							}
 							x.Var = m.that(par.Uuid).(*ir.Variable)
 							this.Par = append(this.Par, x)
 						}
