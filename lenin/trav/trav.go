@@ -722,8 +722,18 @@ func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 				halt.As(100, "unknown par ", reflect.TypeOf(v))
 			}
 		}
+		for i, e := range this.Pre {
+			ctx.expr(e, types.BOOLEAN)
+			val := ctx.pop()
+			assert.For(val.toBool(), 20+i)
+		}
 		for _, v := range this.Seq {
 			ctx.do(v)
+		}
+		for i, e := range this.Post {
+			ctx.expr(e, types.BOOLEAN)
+			val := ctx.pop()
+			assert.For(val.toBool(), 60+i)
 		}
 		ret = ctx.data.dealloc(this)
 	case ir.Statement:

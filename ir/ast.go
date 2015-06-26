@@ -28,6 +28,7 @@ type Procedure struct {
 	ProcDecl  map[string]*Procedure
 	Infix     []*Variable
 	Seq       []Statement
+	Pre, Post []Expression
 }
 
 func (p *Procedure) Init() {

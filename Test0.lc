@@ -1,6 +1,7 @@
 (* evil no caps ;) *)
 module TestEvil
-var i integer
+	var i integer
+begin
 end TestEvil.
 
 (* empty module *)
@@ -422,3 +423,18 @@ BEGIN
 	i:=10
 	Do(res:: i, max: 5)
 END TestRecursion.
+
+MODULE TestPrecondition
+
+	PROCEDURE Do
+		VAR x-, y- INTEGER
+		PRE x # 0
+		PRE (x > 0) & (y>0)
+		POST x < y
+	BEGIN
+		IF x >= y THEN x := x - y END
+	END Do
+
+BEGIN
+	Do(x: 4, y: 3)
+END TestPrecondition.

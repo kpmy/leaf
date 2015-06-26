@@ -720,18 +720,22 @@ func (p *pr) procDecl(b *blockBuilder) {
 	b.decl(ret.Name, ret)
 	proc := &blockBuilder{sc: this}
 	p.stmtSeq(proc)
-	ret.Seq = proc.seq
-	ret.ConstDecl = this.cm
-	ret.VarDecl = this.vm
-	ret.ProcDecl = this.pm
-	ret.Infix = this.in
-	expect := modifiers.Full
-	for i, v := range ret.Infix {
-		if v.Modifier != expect {
-			p.mark("wrong infix declared")
-		}
-		if i == 0 {
-			expect = modifiers.Semi
+	{
+		ret.Seq = proc.seq
+		ret.ConstDecl = this.cm
+		ret.VarDecl = this.vm
+		ret.ProcDecl = this.pm
+		ret.Infix = this.in
+		ret.Pre = this.pre
+		ret.Post = this.post
+		expect := modifiers.Full
+		for i, v := range ret.Infix {
+			if v.Modifier != expect {
+				p.mark("wrong infix declared")
+			}
+			if i == 0 {
+				expect = modifiers.Semi
+			}
 		}
 	}
 	p.expect(scanner.End, "no END", scanner.Delimiter, scanner.Separator)
@@ -777,6 +781,18 @@ func (p *pr) block(bl *block, typ scanner.Symbol) {
 						p.mark("identifier expected")
 					}
 				}
+			case scanner.Pre:
+				p.next()
+				expr := &exprBuilder{sc: bl}
+				p.expression(expr)
+				bl.pre = append(bl.pre, expr)
+				p.expect(scanner.Delimiter, "delimiter expected", scanner.Separator)
+			case scanner.Post:
+				p.next()
+				expr := &exprBuilder{sc: bl}
+				p.expression(expr)
+				bl.post = append(bl.post, expr)
+				p.expect(scanner.Delimiter, "delimiter expected", scanner.Separator)
 			default:
 				stop = true
 			}

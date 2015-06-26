@@ -280,6 +280,12 @@ func internalize(m *Module) (ret *ir.Module) {
 			for _, v := range v.Infix {
 				p.Infix = append(p.Infix, m.that(v).(*ir.Variable))
 			}
+			for _, e := range v.Pre {
+				p.Pre = append(p.Pre, expr(e))
+			}
+			for _, e := range v.Post {
+				p.Post = append(p.Post, expr(e))
+			}
 			for _, s := range v.Seq {
 				p.Seq = append(p.Seq, stmt(s))
 			}

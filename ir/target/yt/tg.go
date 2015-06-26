@@ -40,6 +40,8 @@ type Proc struct {
 	ProcDecl  map[string]*Proc  `yaml:"procedure,omitempty"`
 	Infix     []string          `yaml:"infix,omitempty"`
 	Seq       []*Statement      `yaml:"sequence,omitempty"`
+	Pre       []*Expression     `yaml:"precondition,omitempty"`
+	Post      []*Expression     `yaml:"postcondition,omitempty"`
 }
 
 type Selector struct {

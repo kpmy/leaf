@@ -221,6 +221,12 @@ func externalize(mod *ir.Module) (ret *Module) {
 			for _, v := range v.Infix {
 				i.Infix = append(i.Infix, ret.this(v))
 			}
+			for _, e := range v.Pre {
+				i.Pre = append(i.Pre, expr(e.(ir.EvaluatedExpression).Eval()))
+			}
+			for _, e := range v.Post {
+				i.Post = append(i.Post, expr(e.(ir.EvaluatedExpression).Eval()))
+			}
 			for _, s := range v.Seq {
 				i.Seq = append(i.Seq, stmt(s))
 			}
