@@ -7,7 +7,7 @@ import (
 	"leaf/ir/modifiers"
 	"leaf/ir/operation"
 	"leaf/ir/types"
-	"leaf/leap/scanner"
+	scanner "leaf/lss"
 	"strconv"
 )
 
@@ -851,6 +851,7 @@ func (p *pr) Module() (ret *ir.Module, err error) {
 
 func ConnectTo(s scanner.Scanner) Parser {
 	assert.For(s != nil, 20)
+	s.Init(scanner.Module, scanner.End, scanner.Do, scanner.While, scanner.Elsif, scanner.Import, scanner.Const, scanner.Of, scanner.Pre, scanner.Post, scanner.Proc, scanner.Var, scanner.Begin, scanner.Close, scanner.If, scanner.Then, scanner.Repeat, scanner.Until, scanner.Else, scanner.True, scanner.False, scanner.Nil, scanner.Inf, scanner.Choose, scanner.Opt, scanner.Infix)
 	ret := &pr{sc: s}
 	ret.init()
 	return ret

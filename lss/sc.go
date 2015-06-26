@@ -1,4 +1,4 @@
-package scanner
+package lss
 
 import (
 	"fmt"
@@ -16,13 +16,15 @@ type Foreign int
 
 const (
 	Null = iota
+
+	Ident
+	String
+	Number
+
 	Period
 	Delimiter
 	Separator
-	Ident
-	String
 	Becomes
-	Number
 	UpTo
 	Lbrak
 	Rbrak
@@ -54,6 +56,12 @@ const (
 	Pcmp
 	Infixate
 
+	Inf
+	True
+	False
+	Nil
+
+	Definition
 	Module
 	End
 	Do
@@ -61,92 +69,26 @@ const (
 	Elsif
 	Import
 	Const
-	Type
 	Of
-	To
-	This
-	In
-	Out
-	Io
 	Pre
 	Post
 	Proc
 	Var
 	Begin
 	Close
-	Match
-	Case
 	If
 	Then
 	Repeat
 	Until
 	Else
-	Inf
-	True
-	False
-	Nil
-	With
-	For
-	By
 	Choose
 	Opt
 	Infix
 )
 
-var keyTab map[string]Symbol
-
-func init() {
-	keyTab = map[string]Symbol{"MODULE": Module,
-		"END":       End,
-		"DO":        Do,
-		"WHILE":     While,
-		"ELSIF":     Elsif,
-		"IMPORT":    Import,
-		"CONST":     Const,
-		"TYPE":      Type,
-		"OF":        Of,
-		"TO":        To,
-		"THIS":      This,
-		"IN":        In,
-		"OUT":       Out,
-		"IO":        Io,
-		"PRE":       Pre,
-		"POST":      Post,
-		"PROCEDURE": Proc,
-		"VAR":       Var,
-		"BEGIN":     Begin,
-		"CLOSE":     Close,
-		"MATCH":     Match,
-		"CASE":      Case,
-		"IF":        If,
-		"THEN":      Then,
-		"REPEAT":    Repeat,
-		"UNTIL":     Until,
-		"ELSE":      Else,
-		"TRUE":      True,
-		"FALSE":     False,
-		"NIL":       Nil,
-		"INF":       Inf,
-		"WITH":      With,
-		"FOR":       For,
-		"BY":        By,
-		"CHOOSE":    Choose,
-		"OR":        Opt,
-		"INFIX":     Infix}
-}
-
-func keyByTab(s Symbol) (ret string) {
-	for k, v := range keyTab {
-		if v == s {
-			ret = k
-		}
-	}
-	return
-}
-
 func (s Symbol) String() (ret string) {
 	switch s {
-	case Module, End, Do, While, Elsif, Import, Const, Type, Of, To, This, In, Out, Io, Pre, Post, Proc, Var, Begin, Close, Match, If, Case, Then, Repeat, Until, Else, True, False, Nil, Inf, With, For, By, Choose, Opt, Infix:
+	case Definition, Module, End, Do, While, Elsif, Import, Const, Of, Pre, Post, Proc, Var, Begin, Close, If, Then, Repeat, Until, Else, True, False, Nil, Inf, Choose, Opt, Infix:
 		ret = keyByTab(s)
 	case Null:
 		ret = "null"
@@ -262,6 +204,7 @@ func (v Sym) String() (ret string) {
 }
 
 type Scanner interface {
+	Init(head Symbol, use ...Symbol)
 	Get() Sym
 	Error() error
 	Register(Foreign, string)
@@ -270,7 +213,6 @@ type Scanner interface {
 
 func ConnectTo(r io.RuneReader) Scanner {
 	ret := &sc{rd: r}
-	ret.init()
 	return ret
 }
 
@@ -282,7 +224,9 @@ type sc struct {
 	ch         rune
 	evil       *bool //evil mode without capitalized keywords, true if "module" found first
 	foreignTab map[string]Foreign
-	lines      struct {
+	useTab     []Symbol
+
+	lines struct {
 		count int
 		last  int
 		crlf  bool
@@ -346,9 +290,9 @@ func (s *sc) ident() (sym Sym) {
 		if s.evil == nil {
 			x := true
 			s.evil = &x
-			if keyTab[key] == Null && keyTab[strings.ToUpper(key)] == Module {
+			if keyTab[key] == Null && keyTab[strings.ToUpper(key)] == s.useTab[0] {
 				*s.evil = true
-			} else if keyTab[key] == Module {
+			} else if keyTab[key] == s.useTab[0] {
 				*s.evil = false
 			}
 		}
@@ -356,6 +300,18 @@ func (s *sc) ident() (sym Sym) {
 			if sym.Code = keyTab[key]; sym.Code == Null {
 				sym.Code = Ident
 				sym.User = s.foreignTab[key]
+			} else if sym.Code != Null {
+				ok := false
+				for _, u := range s.useTab {
+					if u == sym.Code {
+						ok = true
+						break
+					}
+				}
+				if !ok {
+					sym.Code = Ident
+					sym.User = s.foreignTab[key]
+				}
 			}
 		}
 		if s.evil != nil {
@@ -616,8 +572,10 @@ func (s *sc) Get() (sym Sym) {
 	return
 }
 
-func (s *sc) init() {
+func (s *sc) Init(head Symbol, use ...Symbol) {
 	s.pos = 0
 	s.foreignTab = make(map[string]Foreign)
+	s.useTab = append(s.useTab, head)
+	s.useTab = append(s.useTab, use...)
 	s.next()
 }

@@ -7,9 +7,9 @@ import (
 	"leaf/ir/target"
 	_ "leaf/ir/target/yt/z"
 	"leaf/leap"
-	"leaf/leap/scanner"
 	"leaf/lenin"
 	_ "leaf/lenin/trav"
+	scanner "leaf/lss"
 	"log"
 	"os"
 	"strconv"
@@ -20,6 +20,7 @@ func TestScanner(t *testing.T) {
 	if f, err := os.Open("test-scanner.lf"); err == nil {
 		defer f.Close()
 		sc := scanner.ConnectTo(bufio.NewReader(f))
+		sc.Init(scanner.Module)
 		buf := make([]scanner.Sym, 0)
 		for sc.Error() == nil {
 			buf = append(buf, sc.Get())
