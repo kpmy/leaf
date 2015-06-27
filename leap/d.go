@@ -1,7 +1,6 @@
 package leap
 
 import (
-	"fmt"
 	"github.com/kpmy/ypk/assert"
 	"leaf/ir"
 	"leaf/ir/modifiers"
@@ -21,6 +20,49 @@ func (p *pd) init() {
 	}
 	p.next()
 }
+
+type ic struct {
+	this *ir.Const
+}
+
+func (i *ic) Name() string { return i.this.Name }
+
+func (i *ic) Expr() ir.Expression { return i.this.Expr }
+
+type iv struct {
+	this *ir.Variable
+}
+
+func (i *iv) Name() string { return i.this.Name }
+
+func (i *iv) Type() types.Type { return i.this.Type }
+
+func (i *iv) Modifier() modifiers.Modifier { return i.this.Modifier }
+
+type ip struct {
+	this *ir.Procedure
+}
+
+func (i *ip) Name() string { return i.this.Name }
+
+func (i *ip) VarDecl() map[string]ir.ImportVariable {
+	vm := make(map[string]ir.ImportVariable)
+	for k, v := range i.this.VarDecl {
+		vm[k] = &iv{this: v}
+	}
+	return vm
+}
+
+func (i *ip) Infix() []ir.ImportVariable {
+	var vl []ir.ImportVariable
+	for _, v := range i.this.Infix {
+		vl = append(vl, &iv{this: v})
+	}
+	return vl
+}
+
+func (i *ip) Pre() []ir.Expression  { return i.this.Pre }
+func (i *ip) Post() []ir.Expression { return i.this.Post }
 
 func (p *pd) constDecl(b *constBuilder) {
 	assert.For(p.sym.Code == lss.Const, 20, "CONST block expected")
@@ -206,10 +248,15 @@ func (p *pd) Import() (*ir.Import, error) {
 	top := &block{}
 	top.init()
 	p.block(top, lss.Definition)
-	p.top.ConstDecl = top.cm
-	p.top.VarDecl = top.vm
-	p.top.ProcDecl = top.pm
-	fmt.Println(top.cm, top.vm, top.pm)
+	for k, v := range top.cm {
+		p.top.ConstDecl[k] = &ic{this: v}
+	}
+	for k, v := range top.vm {
+		p.top.VarDecl[k] = &iv{this: v}
+	}
+	for k, v := range top.pm {
+		p.top.ProcDecl[k] = &ip{this: v}
+	}
 	p.expect(lss.End, "no END", lss.Delimiter, lss.Separator)
 	p.next()
 	p.expect(lss.Ident, "module name expected", lss.Separator)
