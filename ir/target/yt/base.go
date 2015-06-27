@@ -24,8 +24,8 @@ type Expression struct {
 
 type Var struct {
 	Uuid     string
-	Type     string
-	Modifier string
+	Type     string `yaml:"type,omitempty"`
+	Modifier string `yaml:"modifier,omitempty"`
 }
 
 type Const struct {

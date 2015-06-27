@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"flag"
 	"github.com/kpmy/ypk/assert"
+	"leaf/ir"
 	code "leaf/ir/target"
 	_ "leaf/ir/target/yt/z"
+	"leaf/lead"
 	def "leaf/lead/target"
 	_ "leaf/lead/target/tt"
 	"leaf/leap"
@@ -22,6 +24,21 @@ func init() {
 	flag.StringVar(&name, "i", "Simple0", "-i name.ext")
 }
 
+func resolve(name string) (ret *ir.Import, err error) {
+	if d, err := os.Open(name + ".ld"); err == nil {
+		p := lead.ConnectTo(scanner.ConnectTo(bufio.NewReader(d)))
+		ret, _ = p.Import()
+	}
+	return
+}
+func load(name string) (ret *ir.Module, err error) {
+	if t, err := os.Open(name + ".li"); err == nil {
+		defer t.Close()
+		ret = code.Old(t)
+	}
+	return
+}
+
 func main() {
 	log.Println("Leaf compiler, pk, 20150529")
 	flag.Parse()
@@ -30,7 +47,7 @@ func main() {
 	log.Println(name, "running...")
 	if f, err := os.Open(sname); err == nil {
 		defer f.Close()
-		p := leap.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)))
+		p := leap.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)), resolve)
 		ir, _ := p.Module()
 		if d, err := os.Open(name + ".ld"); err == nil {
 			log.Println("definition already exists")
@@ -46,7 +63,7 @@ func main() {
 				def.New(ir, d)
 				d.Close()
 			}
-			lenin.Do(ir)
+			lenin.Do(ir, load)
 		}
 		log.Println(name, "end.")
 	} else {
