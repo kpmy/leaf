@@ -25,3 +25,25 @@ MODULE TestDefinition
 	BEGIN
 	END Do2
 END TestDefinition.
+
+MODULE TestService
+
+	CONST au+ = 149597870700
+
+	VAR x+ INTEGER
+
+	PROCEDURE Calc+
+		VAR n- INTEGER; res+ INTEGER
+	BEGIN
+		res := au * n
+	END Calc
+
+END TestService.
+
+MODULE TestClient
+
+	IMPORT TestService Service := TestService
+
+BEGIN
+	Service.x := 5 * TestService.au
+END TestClient.

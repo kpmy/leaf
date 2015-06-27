@@ -11,9 +11,10 @@ import (
 )
 
 type common struct {
-	sc   lss.Scanner
-	sym  lss.Sym
-	done bool
+	sc    lss.Scanner
+	sym   lss.Sym
+	done  bool
+	debug bool
 }
 
 func (p *common) mark(msg ...interface{}) {
@@ -29,7 +30,9 @@ func (p *common) next() lss.Sym {
 	}
 	p.sym = p.sc.Get()
 	//fmt.Print(" next ")
-	//fmt.Println("`" + fmt.Sprint(p.sym) + "`")
+	if p.debug {
+		fmt.Println("`" + fmt.Sprint(p.sym) + "`")
+	}
 	return p.sym
 }
 
@@ -92,6 +95,19 @@ func (p *common) ident() string {
 	assert.For(p.sym.Code == lss.Ident, 20, "identifier expected")
 	//добавить валидацию идентификаторов
 	return p.sym.Str
+}
+
+func (p *common) qualident(b *block) (id string, mod bool) {
+	assert.For(p.is(lss.Ident), 20, "identifier expected here")
+	id = p.ident()
+	imp := b.imp(id)
+	p.next()
+	if p.is(lss.Period) && imp != nil {
+		mod = true
+		p.next()
+		p.expect(lss.Ident, "identifier expected")
+	}
+	return
 }
 
 func (p *common) is(sym lss.Symbol) bool {
@@ -193,8 +209,18 @@ func (p *common) factor(b *exprBuilder) {
 		p.pass(lss.Separator)
 		b.factor(&ir.Monadic{Op: operation.Not})
 	case lss.Ident:
-		e := b.as(p.ident())
-		p.next()
+		mid, mod := p.qualident(b.sc)
+		id := ""
+		var e ir.Expression
+		if mod {
+			id = p.ident()
+			e = b.asImp(mid, id)
+			p.next()
+		} else {
+			id = mid
+			mid = ""
+			e = b.as(id)
+		}
 		sel := &selBuilder{sc: b.sc}
 		p.selector(sel)
 		b.factor(sel.appy(e))

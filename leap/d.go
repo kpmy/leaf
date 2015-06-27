@@ -29,6 +29,8 @@ func (i *ic) Name() string { return i.this.Name }
 
 func (i *ic) Expr() ir.Expression { return i.this.Expr }
 
+func (i *ic) This() *ir.Const { return i.this }
+
 type iv struct {
 	this *ir.Variable
 }
@@ -38,6 +40,8 @@ func (i *iv) Name() string { return i.this.Name }
 func (i *iv) Type() types.Type { return i.this.Type }
 
 func (i *iv) Modifier() modifiers.Modifier { return i.this.Modifier }
+
+func (i *iv) This() *ir.Variable { return i.this }
 
 type ip struct {
 	this *ir.Procedure
@@ -63,7 +67,7 @@ func (i *ip) Infix() []ir.ImportVariable {
 
 func (i *ip) Pre() []ir.Expression  { return i.this.Pre }
 func (i *ip) Post() []ir.Expression { return i.this.Post }
-
+func (i *ip) This() *ir.Procedure   { return i.this }
 func (p *pd) constDecl(b *constBuilder) {
 	assert.For(p.sym.Code == lss.Const, 20, "CONST block expected")
 	p.next()

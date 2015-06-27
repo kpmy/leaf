@@ -29,4 +29,5 @@ type SelType string
 const (
 	SelVar SelType = "variable"
 	SelIdx SelType = "index"
+	SelMod SelType = "module"
 )

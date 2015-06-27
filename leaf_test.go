@@ -19,6 +19,21 @@ import (
 	"testing"
 )
 
+func resolve(name string) (ret *ir.Import, err error) {
+	if d, err := os.Open(name + ".ld"); err == nil {
+		p := lead.ConnectTo(scanner.ConnectTo(bufio.NewReader(d)))
+		ret, _ = p.Import()
+	}
+	return
+}
+func load(name string) (ret *ir.Module, err error) {
+	if t, err := os.Open(name + ".li"); err == nil {
+		defer t.Close()
+		ret = code.Old(t)
+	}
+	return
+}
+
 func TestScanner(t *testing.T) {
 	if f, err := os.Open("test-scanner.lf"); err == nil {
 		defer f.Close()
@@ -58,7 +73,7 @@ func TestParser(t *testing.T) {
 		if _, err = os.Stat(sname); err == nil {
 			if f, err := os.Open(sname); err == nil {
 				defer f.Close()
-				p := leap.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)))
+				p := leap.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)), resolve)
 				ir, _ := p.Module()
 				if t, err := os.Create(mname + ".li"); err == nil {
 					defer t.Close()
@@ -99,9 +114,9 @@ func TestInterp(t *testing.T) {
 		if _, err = os.Stat(sname); err == nil {
 			if f, err := os.Open(sname); err == nil {
 				defer f.Close()
-				p := leap.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)))
+				p := leap.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)), resolve)
 				ir, _ := p.Module()
-				lenin.Do(ir)
+				lenin.Do(ir, load)
 			}
 		}
 	}
@@ -117,7 +132,8 @@ func TestCollection(t *testing.T) {
 				defer f.Close()
 				rd := bufio.NewReader(f)
 				for err == nil {
-					p := leap.ConnectTo(scanner.ConnectTo(rd))
+					fmt.Println()
+					p := leap.ConnectTo(scanner.ConnectTo(rd), resolve)
 					var ast *ir.Module
 					if ast, err = p.Module(); err == nil {
 						if t, err := os.Create(ast.Name + ".li"); err == nil {
@@ -127,7 +143,7 @@ func TestCollection(t *testing.T) {
 						if t, err := os.Open(ast.Name + ".li"); err == nil {
 							defer t.Close()
 							ast := code.Old(t)
-							lenin.Do(ast)
+							lenin.Do(ast, load)
 						}
 						if t, err := os.Create(ast.Name + ".ld"); err == nil {
 							def.New(ast, t)

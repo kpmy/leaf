@@ -268,7 +268,7 @@ func (st *storeStack) ref(o *ir.Variable, sel ir.Selector) {
 	assert.For(found, 60)
 }
 
-func (s *storeStack) obj(o *ir.Variable, fn func(*value) *value) {
+func (s *storeStack) inner(o *ir.Variable, fn func(*value) *value) {
 	find := func(s *storage) (ret bool) {
 		if data, ok := s.data[o.Name]; ok {
 			assert.For(data != nil, 20)
@@ -298,6 +298,30 @@ func (s *storeStack) obj(o *ir.Variable, fn func(*value) *value) {
 		found = find(s.store[mod.Name])
 	}
 	assert.For(found, 60)
+}
+
+func (s *storeStack) outer(st *storage, o *ir.Variable, fn func(*value) *value) {
+	find := func(s *storage) (ret bool) {
+		if data, ok := s.data[o.Name]; ok {
+			assert.For(data != nil, 20)
+			nv := fn(&value{typ: o.Type, val: data.read()})
+			if nv != nil {
+				assert.For(compTypes(nv.typ, o.Type), 40, "provided ", nv.typ, " != expected ", o.Type)
+				nv = conv(nv, o.Type)
+				s.data[o.Name].write(nv.val)
+				fmt.Println("touch", o.Name, nv.val)
+			}
+			ret = true
+		}
+		return
+	}
+	if st != nil {
+		found := find(st)
+		assert.For(found, 60)
+	} else {
+		s.inner(o, fn)
+		return
+	}
 }
 
 type exprStack struct {
@@ -347,7 +371,7 @@ func (ctx *context) expr(_e ir.Expression, typ types.Type) {
 				halt.As(100, "unknown target type ", typ)
 			}
 		case *ir.VariableExpr:
-			ctx.data.obj(this.Obj, func(v *value) *value {
+			ctx.data.inner(this.Obj, func(v *value) *value {
 				ctx.push(v)
 				return nil
 			})
@@ -520,7 +544,7 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 			return nil
 		}
 	}
-
+	var tgt *storage
 	var ssel func(ir.Selector) []hs
 	ssel = func(_s ir.Selector) (chain []hs) {
 		switch s := _s.(type) {
@@ -528,10 +552,17 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 			for _, v := range s.Chain() {
 				chain = append(chain, ssel(v)...)
 			}
+		case *ir.SelectMod:
+			chain = append(chain, func(in, out *value, l ...hs) (ret *value) {
+				tgt = ctx.data.store[s.Mod]
+				return first(in, out, l...)
+			})
 		case *ir.SelectVar:
 			chain = append(chain, func(in, out *value, l ...hs) (ret *value) {
 				//fmt.Println("select var ", s.Var, in, out)
-				ctx.data.obj(s.Var, func(val *value) *value {
+				scope := tgt
+				tgt = nil
+				ctx.data.outer(scope, s.Var, func(val *value) *value {
 					ret = first(in, val, l...)
 					return ret
 				})
@@ -690,11 +721,27 @@ func (ctx *context) stmt(_s ir.Statement) {
 		halt.As(100, "unknown statement ", reflect.TypeOf(this))
 	}
 }
+func (ctx *context) imp(i *ir.Import) {
+	ms := ctx.data.store[i.Name]
+	for _, x := range i.ConstDecl {
+		c := x.This()
+		mc := ms.root.ConstDecl[x.Name()]
+		c.Expr = mc.Expr
+	}
+	for _, x := range i.VarDecl {
+		v := x.This()
+		mv := ms.root.VarDecl[x.Name()]
+		v.Type = mv.Type
+	}
+}
 
 func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 	//	fmt.Println("do", reflect.TypeOf(_t))
 	switch this := _t.(type) {
 	case *ir.Module:
+		for _, i := range this.ImportSeq {
+			ctx.imp(i)
+		}
 		ctx.data.alloc(this)
 		if len(this.BeginSeq) > 0 {
 			for _, v := range this.BeginSeq {
@@ -714,7 +761,7 @@ func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 			switch v := _v.(type) {
 			case *param:
 				if v.val != nil {
-					ctx.data.obj(v.obj, func(*value) *value { return v.val })
+					ctx.data.inner(v.obj, func(*value) *value { return v.val })
 				} else {
 					ctx.data.ref(v.obj, v.sel)
 				}
@@ -766,8 +813,32 @@ func connectTo(m ...*ir.Module) (ret *context) {
 	return
 }
 
-func run(m *ir.Module) {
-	connectTo(m).run()
+func run(m *ir.Module, ld lenin.Loader) {
+
+	cache := make(map[string]*ir.Module)
+	var ml []string
+	var do func(m *ir.Module)
+	do = func(m *ir.Module) {
+		ml = append(ml, m.Name)
+		for _, v := range m.ImportSeq {
+			if cache[v.Name] == nil {
+				x, _ := ld(v.Name)
+				assert.For(x != nil, 40)
+				cache[v.Name] = x
+				do(x)
+			}
+		}
+	}
+	cache[m.Name] = m
+	do(m)
+	var mm []*ir.Module
+	for i := len(ml) - 1; i >= 0; i-- {
+		if v := cache[ml[i]]; v != nil {
+			mm = append(mm, v)
+			delete(cache, ml[i])
+		}
+	}
+	connectTo(mm...).run()
 }
 
 func init() {

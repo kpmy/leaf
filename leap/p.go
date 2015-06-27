@@ -57,9 +57,20 @@ type Parser interface {
 	Module() (*ir.Module, error)
 }
 
+type Resolver func(name string) (*ir.Import, error)
+
 type pr struct {
 	common
 	target
+	resolver Resolver
+}
+
+func (p *pr) resolve(name string) (ret *ir.Import) {
+	ret, _ = p.resolver(name)
+	if ret == nil {
+		p.mark("unresolved import")
+	}
+	return
 }
 
 func (p *pr) init() {
@@ -168,13 +179,35 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 		p.pass(lss.Separator, lss.Delimiter)
 		switch p.sym.Code {
 		case lss.Ident:
-			if id := p.ident(); b.isObj(id) {
-				obj := b.obj(id)
+			mid, mod := p.qualident(b.sc)
+			id := ""
+			var sel *selBuilder
+			if mod {
+				sel = &selBuilder{sc: b.sc}
+				imp := b.sc.im[mid]
+				sel.join(&ir.SelectMod{Mod: imp.Name})
+				id = p.ident()
+				obj := b.impObj(mid, id)
+				if obj != nil {
+					sel.join(obj)
+				} else {
+					sel = nil
+				}
 				p.next()
+			} else {
+				sel = &selBuilder{sc: b.sc}
+				id = mid
+				mid = ""
+				obj := b.obj(id)
+				if obj != nil {
+					sel.join(obj)
+				} else {
+					sel = nil
+				}
+			}
+			if sel != nil {
 				p.pass(lss.Separator)
-				sel := &selBuilder{sc: b.sc}
 				p.selector(sel)
-				sel.head(obj)
 				if p.is(lss.Becomes) {
 					stmt := &ir.AssignStmt{}
 					p.next()
@@ -186,10 +219,9 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 					b.put(stmt)
 					//p.expect(lss.Delimiter, "delimiter expected", lss.Separator)
 				} else {
-					p.mark("illegal statement")
+					p.mark("illegal statement ", p.sym.Code)
 				}
 			} else {
-				p.next()
 				var param []*forwardParam
 				if p.await(lss.Lparen, lss.Separator, lss.Delimiter) {
 					p.next()
@@ -209,7 +241,7 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 							p.next()
 							p.expect(lss.Ident, "ident expected", lss.Separator)
 							id := p.ident()
-							if !b.isObj(id) {
+							if b.obj(id) == nil {
 								p.mark("not an object")
 							}
 							obj := b.obj(id)
@@ -232,7 +264,7 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 					p.expect(lss.Rparen, "no ) found", lss.Separator, lss.Delimiter)
 					p.next()
 				}
-				stmt := b.call(id, param)
+				stmt := b.call(mid, id, param)
 				b.put(stmt)
 			}
 		case lss.If:
@@ -437,6 +469,45 @@ func (p *pr) procDecl(b *blockBuilder) {
 
 func (p *pr) block(bl *block, typ lss.Symbol) {
 	assert.For(typ == lss.Module || typ == lss.Proc, 20, "unknown block type ", typ)
+	if typ == lss.Module {
+		cache := make(map[string]*ir.Import)
+		for p.await(lss.Import, lss.Delimiter, lss.Separator) {
+			p.next()
+			for stop := false; !stop; {
+				if p.await(lss.Ident, lss.Delimiter, lss.Separator) {
+					name := ""
+					alias := ""
+					id := p.ident()
+					p.next()
+					if p.await(lss.Becomes, lss.Separator) {
+						p.next()
+						p.expect(lss.Ident, "ident expected", lss.Separator)
+						name = p.ident()
+						alias = id
+						p.next()
+					} else {
+						name = id
+						alias = id
+					}
+					var i *ir.Import
+					if i = bl.im[alias]; i == nil {
+						if i = cache[name]; i == nil {
+							i = p.resolve(name)
+							cache[name] = i
+							bl.il = append(bl.il, i)
+						}
+						bl.im[alias] = i
+					} else {
+						p.mark("import module already exists")
+					}
+				} else if len(cache) > 0 {
+					stop = true
+				} else {
+					p.mark("nothing to import")
+				}
+			}
+		}
+	}
 	for p.await(lss.Const, lss.Delimiter, lss.Separator) {
 		b := &constBuilder{sc: bl}
 		p.constDecl(b)
@@ -513,6 +584,7 @@ func (p *pr) Module() (ret *ir.Module, err error) {
 	p.top.ConstDecl = top.cm
 	p.top.VarDecl = top.vm
 	p.top.ProcDecl = top.pm
+	p.top.ImportSeq = top.il
 	if p.await(lss.Begin, lss.Delimiter, lss.Separator) {
 		p.next()
 		b := &blockBuilder{sc: top}
@@ -538,11 +610,12 @@ func (p *pr) Module() (ret *ir.Module, err error) {
 	return
 }
 
-func ConnectTo(s lss.Scanner) Parser {
+func ConnectTo(s lss.Scanner, rs Resolver) Parser {
 	assert.For(s != nil, 20)
 	s.Init(lss.Module, lss.End, lss.Do, lss.While, lss.Elsif, lss.Import, lss.Const, lss.Of, lss.Pre, lss.Post, lss.Proc, lss.Var, lss.Begin, lss.Close, lss.If, lss.Then, lss.Repeat, lss.Until, lss.Else, lss.True, lss.False, lss.Nil, lss.Inf, lss.Choose, lss.Opt, lss.Infix)
-	ret := &pr{}
+	ret := &pr{resolver: rs}
 	ret.sc = s
+	ret.debug = false
 	ret.init()
 	return ret
 }

@@ -30,13 +30,13 @@ type Var struct {
 
 type Const struct {
 	Uuid     string
-	Modifier string
-	Expr     *Expression `yaml:"expression"`
+	Modifier string      `yaml:"modifier,omitempty"`
+	Expr     *Expression `yaml:"expression,omitempty"`
 }
 
 type Proc struct {
 	Uuid      string
-	Modifier  string
+	Modifier  string            `yaml:"modifier,omitempty"`
 	ConstDecl map[string]*Const `yaml:"constant,omitempty"`
 	VarDecl   map[string]*Var   `yaml:"variable,omitempty"`
 	ProcDecl  map[string]*Proc  `yaml:"procedure,omitempty"`
@@ -68,8 +68,15 @@ type Module struct {
 	ProcDecl  map[string]*Proc  `yaml:"procedure,omitempty"`
 	BeginSeq  []*Statement      `yaml:"begin,omitempty"`
 	CloseSeq  []*Statement      `yaml:"close,omitempty"`
+	ImpSeq    []*Import         `yaml:"import,omitempty"`
+	id        map[interface{}]string
+}
 
-	id map[interface{}]string
+type Import struct {
+	Name      string
+	ConstDecl map[string]*Const `yaml:"constant,omitempty"`
+	VarDecl   map[string]*Var   `yaml:"variable,omitempty"`
+	ProcDecl  map[string]*Proc  `yaml:"procedure,omitempty"`
 }
 
 func (m *Module) init() {
@@ -77,6 +84,12 @@ func (m *Module) init() {
 	m.ConstDecl = make(map[string]*Const)
 	m.VarDecl = make(map[string]*Var)
 	m.ProcDecl = make(map[string]*Proc)
+}
+
+func (i *Import) init() {
+	i.ConstDecl = make(map[string]*Const)
+	i.VarDecl = make(map[string]*Var)
+	i.ProcDecl = make(map[string]*Proc)
 }
 
 func (m *Module) this(item interface{}) (ret string) {

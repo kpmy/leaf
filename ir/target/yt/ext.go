@@ -14,8 +14,9 @@ func externalize(mod *ir.Module) (ret *Module) {
 	ret.Name = mod.Name
 
 	var expr func(ir.Expression) *Expression
-	var sel func(s ir.Selector) []*Selector
-	var stmt func(_s ir.Statement) (st *Statement)
+	var sel func(ir.Selector) []*Selector
+	var stmt func(ir.Statement) *Statement
+	var imp func(*ir.Import) *Import
 
 	expr = func(_e ir.Expression) (ex *Expression) {
 		ex = &Expression{}
@@ -79,6 +80,10 @@ func externalize(mod *ir.Module) (ret *Module) {
 		case *ir.SelectIndex:
 			x.Type = SelIdx
 			x.Leaf[fldz.Expression] = expr(s.Expr.(ir.EvaluatedExpression).Eval())
+			sl = append(sl, x)
+		case *ir.SelectMod:
+			x.Type = SelMod
+			x.Leaf[fldz.Module] = s.Mod
 			sl = append(sl, x)
 		default:
 			halt.As(100, "unknown selector ", reflect.TypeOf(s))
@@ -177,6 +182,7 @@ func externalize(mod *ir.Module) (ret *Module) {
 		}
 		return
 	}
+
 	cdecl := func(cm map[string]*ir.Const) (m map[string]*Const) {
 		m = make(map[string]*Const)
 		for _, _v := range cm {
@@ -236,7 +242,33 @@ func externalize(mod *ir.Module) (ret *Module) {
 		}
 		return
 	}
+
+	imp = func(i *ir.Import) (imp *Import) {
+		imp = &Import{}
+		imp.init()
+		imp.Name = i.Name
+		for k, v := range i.ConstDecl {
+			c := &Const{}
+			c.Uuid = ret.this(v.This())
+			imp.ConstDecl[k] = c
+		}
+		for k, v := range i.VarDecl {
+			iv := &Var{}
+			iv.Uuid = ret.this(v.This())
+			imp.VarDecl[k] = iv
+		}
+		for k, v := range i.ProcDecl {
+			p := &Proc{}
+			p.Uuid = ret.this(v.This())
+			imp.ProcDecl[k] = p
+		}
+		return imp
+	}
+
 	{
+		for _, v := range mod.ImportSeq {
+			ret.ImpSeq = append(ret.ImpSeq, imp(v))
+		}
 		ret.ConstDecl = cdecl(mod.ConstDecl)
 		ret.VarDecl = vdecl(mod.VarDecl)
 		ret.ProcDecl = pdecl(mod.ProcDecl)

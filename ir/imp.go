@@ -24,15 +24,18 @@ type ImportProcedure interface {
 	Infix() []ImportVariable
 	Pre() []Expression
 	Post() []Expression
+	This() *Procedure
 }
 
 type ImportConst interface {
 	Name() string
 	Expr() Expression
+	This() *Const
 }
 
 type ImportVariable interface {
 	Name() string
 	Type() types.Type
 	Modifier() modifiers.Modifier
+	This() *Variable
 }

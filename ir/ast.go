@@ -8,6 +8,7 @@ import (
 
 type Module struct {
 	Name      string
+	ImportSeq []*Import
 	ConstDecl map[string]*Const
 	VarDecl   map[string]*Variable
 	ProcDecl  map[string]*Procedure
@@ -64,6 +65,12 @@ type SelectVar struct {
 }
 
 func (s *SelectVar) Select() {}
+
+type SelectMod struct {
+	Mod string
+}
+
+func (s *SelectMod) Select() {}
 
 type Expression interface {
 	Self()

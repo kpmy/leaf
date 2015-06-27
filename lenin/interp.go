@@ -8,10 +8,12 @@ import (
 	"leaf/ir"
 )
 
-var Run func(*ir.Module)
+type Loader func(string) (*ir.Module, error)
 
-func Do(m *ir.Module) {
+var Run func(*ir.Module, Loader)
+
+func Do(m *ir.Module, ld Loader) {
 	assert.For(Run != nil, 0)
 	assert.For(m != nil, 20)
-	Run(m)
+	Run(m, ld)
 }

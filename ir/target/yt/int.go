@@ -118,6 +118,10 @@ func internalize(m *Module) (ret *ir.Module) {
 				this := &ir.SelectIndex{}
 				this.Expr = expr(treatExpr(s.Leaf[fldz.Expression]))
 				ds.put(this)
+			case SelMod:
+				this := &ir.SelectMod{}
+				this.Mod = s.Leaf[fldz.Module].(string)
+				ds.put(this)
 			default:
 				halt.As(100, "unknown type ", s.Type)
 			}
@@ -296,10 +300,43 @@ func internalize(m *Module) (ret *ir.Module) {
 		}
 		return
 	}
+	imp := func(il *Import) (i *ir.Import) {
+		i = &ir.Import{}
+		i.Init()
+		i.Name = il.Name
+		for k, v := range il.ConstDecl {
+			c := &ic{}
+			c.this = &ir.Const{}
+			c.this.Name = k
+			c.this.Modifier = modifiers.ModMap[v.Modifier]
+			m.that(v.Uuid, c.this)
+			i.ConstDecl[k] = c
+		}
+		for k, v := range il.VarDecl {
+			iv := &iv{}
+			iv.this = &ir.Variable{}
+			iv.this.Name = k
+			iv.this.Modifier = modifiers.ModMap[v.Modifier]
+			m.that(v.Uuid, iv.this)
+			i.VarDecl[k] = iv
+		}
+		for k, v := range il.ProcDecl {
+			p := &ip{}
+			p.this = &ir.Procedure{}
+			p.this.Name = k
+			p.this.Modifier = modifiers.ModMap[v.Modifier]
+			m.that(v.Uuid, p.this)
+			i.ProcDecl[k] = p
+		}
+		return
+	}
 	{
 		ret.ConstDecl = cdecl(m.ConstDecl)
 		ret.VarDecl = vdecl(m.VarDecl)
 		ret.ProcDecl = pdecl(m.ProcDecl)
+		for _, v := range m.ImpSeq {
+			ret.ImportSeq = append(ret.ImportSeq, imp(v))
+		}
 		for _, v := range m.BeginSeq {
 			ret.BeginSeq = append(ret.BeginSeq, stmt(v))
 		}

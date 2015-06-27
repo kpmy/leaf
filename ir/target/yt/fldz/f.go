@@ -20,4 +20,5 @@ const (
 	Block      = "block"
 	UUID       = "uuid"
 	Length     = "length"
+	Module     = "module"
 )

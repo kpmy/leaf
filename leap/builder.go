@@ -18,12 +18,24 @@ type block struct {
 	pm        map[string]*ir.Procedure
 	in        []*ir.Variable
 	pre, post []ir.Expression
+	il        []*ir.Import
+	im        map[string]*ir.Import
 }
 
 func (b *block) init() {
 	b.cm = make(map[string]*ir.Const)
 	b.vm = make(map[string]*ir.Variable)
 	b.pm = make(map[string]*ir.Procedure)
+
+	b.im = make(map[string]*ir.Import)
+}
+
+func (b *block) imp(id string) (imp *ir.Import) {
+	imp = b.im[id]
+	if imp == nil && b.parent != nil {
+		imp = b.parent.imp(id)
+	}
+	return
 }
 
 func (b *block) this(id string) interface{} {
@@ -376,6 +388,21 @@ func (e *exprBuilder) expr(expr ir.Expression) {
 	e.stack = append(e.stack, &exprItem{e: expr, priority: low})
 }
 
+func (e *exprBuilder) asImp(mid, id string) (ret ir.Expression) {
+	imp := e.sc.imp(mid)
+	assert.For(imp != nil, 40)
+	if x := imp.ConstDecl[id]; x != nil {
+		c := x.This()
+		ret = &ir.NamedConstExpr{Named: c}
+	} else if x := imp.VarDecl[id]; x != nil {
+		v := x.This()
+		ret = &ir.VariableExpr{Obj: v}
+	} else {
+		halt.As(100, "unknown import ", mid, ".", id)
+	}
+	return
+}
+
 func (e *exprBuilder) as(id string) ir.Expression {
 	if x := e.sc.find(id); x != nil {
 		switch v := x.(type) {
@@ -411,21 +438,30 @@ type blockBuilder struct {
 	seq []ir.Statement
 }
 
-func (b *blockBuilder) isObj(id string) bool {
-	x := b.sc.find(id)
-	_, ok := x.(*ir.Procedure)
-	return x != nil && !ok
-}
-
-func (b *blockBuilder) obj(id string) ir.Selector {
-	_v := b.sc.find(id)
-	assert.For(_v != nil, 30, id)
-	v, ok := _v.(*ir.Variable)
-	assert.For(ok, 31, id)
+func (b *blockBuilder) impObj(mid, id string) ir.Selector {
+	imp := b.sc.imp(mid)
+	assert.For(imp != nil, 40)
+	var v *ir.Variable
+	if x := imp.VarDecl[id]; x != nil {
+		v = x.This()
+	} else {
+		halt.As(100, "unknown import ", mid, ".", id)
+	}
 	return &ir.SelectVar{Var: v}
 }
 
-func (b *blockBuilder) call(id string, pl []*forwardParam) ir.Statement {
+func (b *blockBuilder) obj(id string) (ret ir.Selector) {
+	_v := b.sc.find(id)
+	if _v != nil {
+		v, ok := _v.(*ir.Variable)
+		if ok {
+			ret = &ir.SelectVar{Var: v}
+		}
+	}
+	return
+}
+
+func (b *blockBuilder) call(mid, id string, pl []*forwardParam) ir.Statement {
 	if p, _ := b.sc.find(id).(*ir.Procedure); p != nil {
 		var param []*ir.Parameter
 		for _, par := range pl {
