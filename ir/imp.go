@@ -7,6 +7,7 @@ import (
 
 type Import struct {
 	Name      string
+	ImportSeq []*Import
 	ConstDecl map[string]ImportConst
 	VarDecl   map[string]ImportVariable
 	ProcDecl  map[string]ImportProcedure

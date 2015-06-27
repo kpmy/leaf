@@ -12,6 +12,7 @@ import (
 type pd struct {
 	common
 	imported
+	resolver lead.Resolver
 }
 
 func (p *pd) init() {
@@ -68,6 +69,15 @@ func (i *ip) Infix() []ir.ImportVariable {
 func (i *ip) Pre() []ir.Expression  { return i.this.Pre }
 func (i *ip) Post() []ir.Expression { return i.this.Post }
 func (i *ip) This() *ir.Procedure   { return i.this }
+
+func (p *pd) resolve(name string) (ret *ir.Import) {
+	ret, _ = p.resolver(name)
+	if ret == nil {
+		p.mark("unresolved import")
+	}
+	return
+}
+
 func (p *pd) constDecl(b *constBuilder) {
 	assert.For(p.sym.Code == lss.Const, 20, "CONST block expected")
 	p.next()
@@ -178,6 +188,45 @@ func (p *pd) procDecl(b *blockBuilder) {
 
 func (p *pd) block(bl *block, typ lss.Symbol) {
 	assert.For(typ == lss.Definition || typ == lss.Proc, 20, "unknown block type ", typ)
+	if typ == lss.Definition {
+		cache := make(map[string]*ir.Import)
+		for p.await(lss.Import, lss.Delimiter, lss.Separator) {
+			p.next()
+			for stop := false; !stop; {
+				if p.await(lss.Ident, lss.Delimiter, lss.Separator) {
+					name := ""
+					alias := ""
+					id := p.ident()
+					p.next()
+					if p.await(lss.Becomes, lss.Separator) {
+						p.next()
+						p.expect(lss.Ident, "ident expected", lss.Separator)
+						name = p.ident()
+						alias = id
+						p.next()
+					} else {
+						name = id
+						alias = id
+					}
+					var i *ir.Import
+					if i = bl.im[alias]; i == nil {
+						if i = cache[name]; i == nil {
+							i = p.resolve(name)
+							cache[name] = i
+							bl.il = append(bl.il, i)
+						}
+						bl.im[alias] = i
+					} else {
+						p.mark("import module already exists")
+					}
+				} else if len(cache) > 0 {
+					stop = true
+				} else {
+					p.mark("nothing to import")
+				}
+			}
+		}
+	}
 	for p.await(lss.Const, lss.Delimiter, lss.Separator) {
 		b := &constBuilder{sc: bl}
 		p.constDecl(b)
@@ -261,6 +310,7 @@ func (p *pd) Import() (*ir.Import, error) {
 	for k, v := range top.pm {
 		p.top.ProcDecl[k] = &ip{this: v}
 	}
+	p.top.ImportSeq = top.il
 	p.expect(lss.End, "no END", lss.Delimiter, lss.Separator)
 	p.next()
 	p.expect(lss.Ident, "module name expected", lss.Separator)
@@ -272,10 +322,10 @@ func (p *pd) Import() (*ir.Import, error) {
 	return p.top, nil
 }
 
-func leadp(s lss.Scanner) lead.Parser {
+func leadp(s lss.Scanner, rs lead.Resolver) lead.Parser {
 	assert.For(s != nil, 20)
 	s.Init(lss.Definition, lss.End, lss.Import, lss.Const, lss.Pre, lss.Post, lss.Proc, lss.Var, lss.True, lss.False, lss.Nil, lss.Inf, lss.Choose, lss.Opt, lss.Infix)
-	ret := &pd{}
+	ret := &pd{resolver: rs}
 	ret.sc = s
 	ret.init()
 	return ret

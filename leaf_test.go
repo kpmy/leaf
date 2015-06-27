@@ -21,7 +21,7 @@ import (
 
 func resolve(name string) (ret *ir.Import, err error) {
 	if d, err := os.Open(name + ".ld"); err == nil {
-		p := lead.ConnectTo(scanner.ConnectTo(bufio.NewReader(d)))
+		p := lead.ConnectTo(scanner.ConnectTo(bufio.NewReader(d)), resolve)
 		ret, _ = p.Import()
 	}
 	return
@@ -150,7 +150,7 @@ func TestCollection(t *testing.T) {
 							t.Close()
 						}
 						if d, err := os.Open(ast.Name + ".ld"); err == nil {
-							p := lead.ConnectTo(scanner.ConnectTo(bufio.NewReader(d)))
+							p := lead.ConnectTo(scanner.ConnectTo(bufio.NewReader(d)), resolve)
 							p.Import()
 						}
 					}

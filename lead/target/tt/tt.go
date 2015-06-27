@@ -161,6 +161,15 @@ func (g *generator) pdecl(pd map[string]*ir.Procedure) {
 func (g *generator) module() {
 	g.ln("DEFINITION ", g.m.Name)
 	g.ln()
+	if len(g.m.ImportSeq) > 0 {
+		g.tab()
+		g.str("IMPORT")
+		for _, i := range g.m.ImportSeq {
+			g.str(" ", i.Name)
+		}
+		g.ln()
+		g.ln()
+	}
 	if len(g.m.ConstDecl) > 0 {
 		g.cdecl(g.m.ConstDecl)
 	}
