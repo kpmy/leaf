@@ -847,14 +847,16 @@ func connectTo(m ...*ir.Module) (ret *context) {
 	return
 }
 
-func run(m *ir.Module, ld lenin.Loader) {
+func run(main *ir.Module, ld lenin.Loader) {
 
 	cache := make(map[string]*ir.Module)
 	var ml []string
 	var do func(m *ir.Module)
 	do = func(m *ir.Module) {
+
 		ml = append(ml, m.Name)
 		for _, v := range m.ImportSeq {
+			assert.For(main.Name != v.Name, 30, "cyclic import from ", v.Name)
 			if cache[v.Name] == nil {
 				x, _ := ld(v.Name)
 				assert.For(x != nil, 40)
@@ -863,8 +865,8 @@ func run(m *ir.Module, ld lenin.Loader) {
 			}
 		}
 	}
-	cache[m.Name] = m
-	do(m)
+	cache[main.Name] = main
+	do(main)
 	var mm []*ir.Module
 	for i := len(ml) - 1; i >= 0; i-- {
 		if v := cache[ml[i]]; v != nil {

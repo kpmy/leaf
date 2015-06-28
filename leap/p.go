@@ -496,10 +496,23 @@ func (p *pr) block(bl *block, typ lss.Symbol) {
 					}
 					var i *ir.Import
 					if i = bl.im[alias]; i == nil {
+						if name == p.target.top.Name {
+							p.mark("module cannot import itself")
+						}
 						if i = cache[name]; i == nil {
 							i = p.resolve(name)
 							cache[name] = i
 							bl.il = append(bl.il, i)
+						}
+						var noCycle func(*ir.Import)
+						noCycle = func(i *ir.Import) {
+							for _, x := range i.ImportSeq {
+								if x.Name == p.target.top.Name {
+									p.mark("cyclic import from", x.Name)
+								} else {
+									noCycle(i)
+								}
+							}
 						}
 						bl.im[alias] = i
 					} else {
