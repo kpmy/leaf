@@ -151,6 +151,7 @@ type Dyadic struct {
 func (d *Dyadic) Self() {}
 
 type Infix struct {
+	Mod  string
 	Proc *Procedure
 	Args []Expression
 	Len  int

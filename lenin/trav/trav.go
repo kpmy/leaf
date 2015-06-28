@@ -531,7 +531,15 @@ func (ctx *context) expr(_e ir.Expression, typ types.Type) {
 				//fmt.Println(par.Name, vl[i].val)
 				pl = append(pl, p)
 			}
+			if this.Mod != "" {
+				top := ctx.data.store[this.Mod]
+				ctx.data.mpush(top.root)
+			}
 			if x, _ := ctx.do(this.Proc, pl...).(*storage); x != nil {
+				if this.Mod != "" {
+					top := ctx.data.mpop()
+					assert.For(top.Name == this.Mod, 60)
+				}
 				out := this.Proc.Infix[0]
 				val := x.data[out.Name]
 				assert.For(val != nil, 40)

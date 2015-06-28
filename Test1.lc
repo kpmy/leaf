@@ -51,6 +51,20 @@ MODULE TestService
 		hidden := "init"
 	END Init
 
+	PROCEDURE Do+
+		VAR x-, y-, z+ INTEGER
+		INFIX z x y
+	BEGIN
+		z := (x + y) * au
+	END Do
+
+	PROCEDURE Do0+
+		VAR x-, z+ INTEGER
+		INFIX z x
+	BEGIN
+		z := x * au
+	END Do0
+
 END TestService.
 
 MODULE TestClient
@@ -58,7 +72,7 @@ MODULE TestClient
 	IMPORT TestService Service := TestService
 
 	VAR
-		x INTEGER
+		x, z INTEGER
 		hidden, res STRING
 BEGIN
 	Service.Init
@@ -71,4 +85,6 @@ CLOSE
 	Service.x := Service.x + TestService.x + 5 *Service.au
 	Service.Calc(n: 5, res:: x)
 	Service.Calc(n: 10, res:: Service.x)
+	z:= 6 \Service.Do 4
+	z:= \TestService.Do0 4
 END TestClient.

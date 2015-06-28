@@ -57,6 +57,7 @@ func externalize(mod *ir.Module) (ret *Module) {
 		case *ir.Infix:
 			ex.Type = Infix
 			ex.Leaf[fldz.Length] = e.Len
+			ex.Leaf[fldz.Module] = e.Mod
 			var ops []*Expression
 			for _, o := range e.Args {
 				ops = append(ops, expr(o))

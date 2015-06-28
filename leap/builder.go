@@ -365,7 +365,7 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 }
 
 func (e *exprBuilder) factor(expr ir.Expression) {
-	//fmt.Println("factor ", reflect.TypeOf(expr), expr)
+	//	fmt.Println("factor ", reflect.TypeOf(expr), expr)
 	e.stack = append(e.stack, &exprItem{e: expr, priority: highest})
 }
 
@@ -420,14 +420,26 @@ func (e *exprBuilder) as(id string) ir.Expression {
 	panic(0)
 }
 
-func (b *exprBuilder) infix(id string, num int) ir.Expression {
-	if p, _ := b.sc.find(id).(*ir.Procedure); p != nil {
-		assert.For(len(p.Infix)-1 == num, 20)
-		i := &ir.Infix{Proc: p, Len: num}
-		return i
+func (b *exprBuilder) infix(mid, id string, num int) ir.Expression {
+	var p *ir.Procedure
+	mod := ""
+	if mid != "" {
+		imp := b.sc.im[mid]
+		if x := imp.ProcDecl[id]; x != nil {
+			p = x.This()
+			mod = imp.Name
+		} else {
+			halt.As(100, "unknown import ", mid, ".", id)
+		}
 	} else {
-		return &forwardInfix{name: id, sc: b.sc, args: num}
+		if p, _ = b.sc.find(id).(*ir.Procedure); p == nil {
+			return &forwardInfix{name: id, sc: b.sc, args: num}
+		}
 	}
+	assert.For(p != nil, 40)
+	assert.For(len(p.Infix)-1 == num, 20, len(p.Infix), num)
+	i := &ir.Infix{Mod: mod, Proc: p, Len: num}
+	return i
 }
 
 type blockBuilder struct {

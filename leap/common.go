@@ -239,6 +239,32 @@ func (p *common) factor(b *exprBuilder) {
 		b.factor(expr)
 		p.expect(lss.Rparen, ") expected", lss.Separator)
 		p.next()
+	case lss.Infixate:
+		p.next()
+		p.expect(lss.Ident, "identifier expected")
+		mid, mod := p.qualident(b.sc)
+		id := ""
+		if mod {
+			id = p.ident()
+			p.next()
+		} else {
+			id = mid
+			mid = ""
+		}
+		limit := 0
+		for stop := false; !stop; {
+			if !p.await(lss.Delimiter, lss.Separator) {
+				p.factor(b)
+				limit++
+			} else {
+				stop = true
+				p.next()
+			}
+		}
+		if limit > 1 {
+			p.mark("expected one arg")
+		}
+		b.factor(b.infix(mid, id, limit))
 	default:
 		p.mark("not implemented for ", p.sym)
 	}
@@ -338,8 +364,15 @@ func (p *common) expression(b *exprBuilder) {
 	case lss.Infixate:
 		p.next()
 		p.expect(lss.Ident, "identifier expected")
-		id := p.ident()
-		p.next()
+		mid, mod := p.qualident(b.sc)
+		id := ""
+		if mod {
+			id = p.ident()
+			p.next()
+		} else {
+			id = mid
+			mid = ""
+		}
 		limit := 1
 		for stop := false; !stop; {
 			if !p.await(lss.Delimiter, lss.Separator) {
@@ -353,6 +386,6 @@ func (p *common) expression(b *exprBuilder) {
 		if limit < 2 {
 			p.mark("expected two or more args")
 		}
-		b.expr(b.infix(id, limit))
+		b.expr(b.infix(mid, id, limit))
 	}
 }

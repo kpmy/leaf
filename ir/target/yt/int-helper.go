@@ -150,6 +150,7 @@ func treatExpr(_m interface{}) (ret *Expression) {
 		ret.Leaf[fldz.Procedure] = leaf[fldz.Procedure]
 		ret.Leaf[fldz.Length] = leaf[fldz.Length]
 		ret.Leaf[fldz.Operand] = leaf[fldz.Operand]
+		ret.Leaf[fldz.Module] = leaf[fldz.Module]
 	default:
 		halt.As(100, "unexpected ", ret.Type, " ", _m)
 	}
