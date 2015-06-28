@@ -21,4 +21,6 @@ const (
 	UUID       = "uuid"
 	Length     = "length"
 	Module     = "module"
+	Before     = "before"
+	After      = "after"
 )

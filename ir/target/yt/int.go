@@ -71,7 +71,12 @@ func internalize(m *Module) (ret *ir.Module) {
 		case SelExpr:
 			this := &ir.SelectExpr{}
 			this.Base = expr(treatExpr(e.Leaf[fldz.Base]))
-			this.Sel = sel(treatSelList(e.Leaf[fldz.Selector]))
+			if e.Leaf[fldz.Before] != nil {
+				this.Before = sel(treatSelList(e.Leaf[fldz.Before]))
+			}
+			if e.Leaf[fldz.After] != nil {
+				this.After = sel(treatSelList(e.Leaf[fldz.After]))
+			}
 			d.e = this
 		case Infix:
 			this := &ir.Infix{}
@@ -134,6 +139,7 @@ func internalize(m *Module) (ret *ir.Module) {
 		case Call:
 			d := &dumbCall{}
 			this := &ir.CallStmt{}
+			this.Mod = s.Leaf[fldz.Module].(string)
 			_n := m.that(s.Leaf[fldz.Procedure].(string))
 			pl := treatParList(s.Leaf[fldz.Parameter])
 			if n, ok := _n.(*ir.Procedure); ok {
@@ -323,10 +329,17 @@ func internalize(m *Module) (ret *ir.Module) {
 		for k, v := range il.ProcDecl {
 			p := &ip{}
 			p.this = &ir.Procedure{}
+			p.this.VarDecl = make(map[string]*ir.Variable)
 			p.this.Name = k
 			p.this.Modifier = modifiers.ModMap[v.Modifier]
 			m.that(v.Uuid, p.this)
 			i.ProcDecl[k] = p
+			for k, x := range v.VarDecl {
+				this := &ir.Variable{}
+				this.Name = k
+				m.that(x.Uuid, this)
+				p.this.VarDecl[k] = this
+			}
 		}
 		return
 	}

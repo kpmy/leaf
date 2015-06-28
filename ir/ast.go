@@ -104,6 +104,7 @@ type ConstExpr struct {
 func (c *ConstExpr) Self() {}
 
 type CallStmt struct {
+	Mod  string
 	Proc *Procedure
 	Par  []*Parameter
 }
@@ -158,8 +159,8 @@ type Infix struct {
 func (i *Infix) Self() {}
 
 type SelectExpr struct {
-	Base Expression
-	Sel  Selector
+	Base          Expression
+	Before, After Selector
 }
 
 func (s *SelectExpr) Self() {}

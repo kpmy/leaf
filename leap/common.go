@@ -211,19 +211,27 @@ func (p *common) factor(b *exprBuilder) {
 	case lss.Ident:
 		mid, mod := p.qualident(b.sc)
 		id := ""
+		var before ir.Selector
 		var e ir.Expression
+		var after *selBuilder
 		if mod {
 			id = p.ident()
 			e = b.asImp(mid, id)
+			if _, ok := e.(*ir.NamedConstExpr); !ok {
+				base := &selBuilder{sc: b.sc}
+				imp := b.sc.im[mid]
+				base.join(&ir.SelectMod{Mod: imp.Name})
+				before = base
+			}
 			p.next()
 		} else {
 			id = mid
 			mid = ""
 			e = b.as(id)
 		}
-		sel := &selBuilder{sc: b.sc}
-		p.selector(sel)
-		b.factor(sel.appy(e))
+		after = &selBuilder{sc: b.sc}
+		p.selector(after)
+		b.factor(after.apply(before, e))
 	case lss.Lparen:
 		p.next()
 		expr := &exprBuilder{sc: b.sc}

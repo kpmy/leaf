@@ -144,7 +144,8 @@ func treatExpr(_m interface{}) (ret *Expression) {
 		ret.Leaf[fldz.Operation] = leaf[fldz.Operation]
 	case SelExpr:
 		ret.Leaf[fldz.Base] = leaf[fldz.Base]
-		ret.Leaf[fldz.Selector] = leaf[fldz.Selector]
+		ret.Leaf[fldz.Before] = leaf[fldz.Before]
+		ret.Leaf[fldz.After] = leaf[fldz.After]
 	case Infix:
 		ret.Leaf[fldz.Procedure] = leaf[fldz.Procedure]
 		ret.Leaf[fldz.Length] = leaf[fldz.Length]
@@ -173,6 +174,7 @@ func treatStmt(_m interface{}) (ret *Statement) {
 	case Call:
 		ret.Leaf[fldz.Parameter] = leaf[fldz.Parameter]
 		ret.Leaf[fldz.Procedure] = leaf[fldz.Procedure]
+		ret.Leaf[fldz.Module] = leaf[fldz.Module]
 	case Assign:
 		ret.Leaf[fldz.Selector] = leaf[fldz.Selector]
 		ret.Leaf[fldz.Expression] = leaf[fldz.Expression]

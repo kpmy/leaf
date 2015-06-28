@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"fmt"
 	"github.com/kpmy/ypk/assert"
+	"github.com/kpmy/ypk/fn"
 	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
 	"leaf/ir/modifiers"
@@ -419,10 +420,6 @@ func (e *exprBuilder) as(id string) ir.Expression {
 	panic(0)
 }
 
-func (b *exprBuilder) selector(sel ir.Selector) ir.Expression {
-	return &ir.SelectExpr{Sel: sel}
-}
-
 func (b *exprBuilder) infix(id string, num int) ir.Expression {
 	if p, _ := b.sc.find(id).(*ir.Procedure); p != nil {
 		assert.For(len(p.Infix)-1 == num, 20)
@@ -444,10 +441,10 @@ func (b *blockBuilder) impObj(mid, id string) ir.Selector {
 	var v *ir.Variable
 	if x := imp.VarDecl[id]; x != nil {
 		v = x.This()
-	} else {
-		halt.As(100, "unknown import ", mid, ".", id)
+		return &ir.SelectVar{Var: v}
+
 	}
-	return &ir.SelectVar{Var: v}
+	return nil
 }
 
 func (b *blockBuilder) obj(id string) (ret ir.Selector) {
@@ -462,30 +459,43 @@ func (b *blockBuilder) obj(id string) (ret ir.Selector) {
 }
 
 func (b *blockBuilder) call(mid, id string, pl []*forwardParam) ir.Statement {
-	if p, _ := b.sc.find(id).(*ir.Procedure); p != nil {
-		var param []*ir.Parameter
-		for _, par := range pl {
-			x := &ir.Parameter{}
-			if len(p.VarDecl) > 0 {
-				x.Var = p.VarDecl[par.name]
-			} else { //shortcut for recursion
-				x.Var = b.sc.vm[par.name]
-			}
-			assert.For(x.Var != nil, 30)
-			assert.For((par.expr != nil) != (par.link != nil), 31)
-			if par.expr != nil {
-				assert.For(x.Var.Modifier == modifiers.Semi, 32)
-				x.Expr = par.expr
-			} else {
-				assert.For(x.Var.Modifier == modifiers.Full, 33)
-				x.Sel = par.link
-			}
-			param = append(param, x)
+	var p *ir.Procedure
+	mod := ""
+	if mid != "" {
+		imp := b.sc.im[mid]
+		if x := imp.ProcDecl[id]; x != nil {
+			p = x.This()
+			mod = imp.Name
+		} else {
+			halt.As(100, "unknown import ", mid, ".", id)
 		}
-		return &ir.CallStmt{Proc: p, Par: param}
 	} else {
-		return &forwardCall{sc: b.sc, name: id, param: pl}
+		if p, _ = b.sc.find(id).(*ir.Procedure); p == nil {
+			return &forwardCall{sc: b.sc, name: id, param: pl}
+		}
 	}
+	assert.For(p != nil, 40)
+	var param []*ir.Parameter
+	for _, par := range pl {
+		x := &ir.Parameter{}
+		if len(p.VarDecl) > 0 {
+			x.Var = p.VarDecl[par.name]
+		} else { //shortcut for recursion
+			x.Var = b.sc.vm[par.name]
+		}
+		assert.For(x.Var != nil, 30)
+		assert.For((par.expr != nil) != (par.link != nil), 31)
+		if par.expr != nil {
+			assert.For(x.Var.Modifier == modifiers.Semi, 32)
+			x.Expr = par.expr
+		} else {
+			assert.For(x.Var.Modifier == modifiers.Full, 33)
+			x.Sel = par.link
+		}
+		param = append(param, x)
+	}
+	return &ir.CallStmt{Mod: mod, Proc: p, Par: param}
+
 }
 
 func (b *blockBuilder) put(s ir.Statement) {
@@ -515,11 +525,18 @@ func (s *selBuilder) join(obj ir.Selector) {
 	s.chain = append(s.chain, obj)
 }
 
-func (s *selBuilder) appy(expr ir.Expression) ir.Expression {
-	if len(s.chain) > 0 {
-		ret := &ir.SelectExpr{}
+func (s *selBuilder) apply(before ir.Selector, expr ir.Expression) ir.Expression {
+	if x, ok := before.(*selBuilder); ok {
+		if len(x.chain) == 0 {
+			before = nil
+		}
+	}
+	if len(s.chain) > 0 || !fn.IsNil(before) {
+		ret := &ir.SelectExpr{Before: before}
 		ret.Base = expr
-		ret.Sel = s
+		if len(s.chain) > 0 {
+			ret.After = s
+		}
 		return ret
 	} else {
 		return expr

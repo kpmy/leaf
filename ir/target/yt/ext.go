@@ -2,6 +2,7 @@ package yt
 
 import (
 	"github.com/kpmy/ypk/assert"
+	"github.com/kpmy/ypk/fn"
 	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
 	"leaf/ir/target/yt/fldz"
@@ -47,7 +48,12 @@ func externalize(mod *ir.Module) (ret *Module) {
 		case *ir.SelectExpr:
 			ex.Type = SelExpr
 			ex.Leaf[fldz.Base] = expr(e.Base)
-			ex.Leaf[fldz.Selector] = sel(e.Sel)
+			if !fn.IsNil(e.Before) {
+				ex.Leaf[fldz.Before] = sel(e.Before)
+			}
+			if !fn.IsNil(e.After) {
+				ex.Leaf[fldz.After] = sel(e.After)
+			}
 		case *ir.Infix:
 			ex.Type = Infix
 			ex.Leaf[fldz.Length] = e.Len
@@ -98,6 +104,7 @@ func externalize(mod *ir.Module) (ret *Module) {
 			return stmt(s.Fwd())
 		case *ir.CallStmt:
 			st.Type = Call
+			st.Leaf[fldz.Module] = s.Mod
 			st.Leaf[fldz.Procedure] = ret.this(s.Proc)
 			var lp []*Param
 			for _, p := range s.Par {
@@ -259,8 +266,14 @@ func externalize(mod *ir.Module) (ret *Module) {
 		}
 		for k, v := range i.ProcDecl {
 			p := &Proc{}
+			p.init()
 			p.Uuid = ret.this(v.This())
 			imp.ProcDecl[k] = p
+			for k, x := range v.VarDecl() {
+				v := &Var{}
+				v.Uuid = ret.this(x.This())
+				p.VarDecl[k] = v
+			}
 		}
 		return imp
 	}

@@ -30,7 +30,9 @@ MODULE TestService
 
 	CONST au+ = 149597870700
 
-	VAR x+ INTEGER
+	VAR
+		x+ INTEGER
+		hidden- STRING
 
 	PROCEDURE Calc+
 		VAR n- INTEGER; res+ INTEGER
@@ -38,12 +40,35 @@ MODULE TestService
 		res := au * n
 	END Calc
 
+	PROCEDURE Get+
+		VAR res+ STRING
+	BEGIN
+		res := res + "got it"
+	END Get
+
+	PROCEDURE Init+
+	BEGIN
+		hidden := "init"
+	END Init
+
 END TestService.
 
 MODULE TestClient
 
 	IMPORT TestService Service := TestService
 
+	VAR
+		x INTEGER
+		hidden, res STRING
 BEGIN
+	Service.Init
+	x:=0
+	WHILE x<4 DO hidden := hidden + Service.hidden[x]; x := x+1 END
+	res := "give me that... "
+	Service.Get(res:: res)
+CLOSE
 	Service.x := 5 * TestService.au
+	Service.x := Service.x + TestService.x + 5 *Service.au
+	Service.Calc(n: 5, res:: x)
+	Service.Calc(n: 10, res:: Service.x)
 END TestClient.

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/kpmy/trigo"
 	"github.com/kpmy/ypk/assert"
+	"github.com/kpmy/ypk/fn"
 	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
 	"leaf/ir/modifiers"
@@ -19,6 +20,7 @@ type context struct {
 	data *storeStack
 	exprStack
 	load []*ir.Module
+	tgt  *storage
 }
 
 type anyData interface {
@@ -138,6 +140,16 @@ func (s *storeStack) mtop() *ir.Module {
 		return s.ml.Front().Value.(*ir.Module)
 	}
 	return nil
+}
+
+func (s *storeStack) mpop() (ret *ir.Module) {
+	if s.ml.Len() > 0 {
+		el := s.ml.Front()
+		ret = s.ml.Remove(el).(*ir.Module)
+	} else {
+		halt.As(100, "pop on empty stack")
+	}
+	return
 }
 
 func (s *storeStack) push(st *storage) {
@@ -297,7 +309,7 @@ func (s *storeStack) inner(o *ir.Variable, fn func(*value) *value) {
 		mod := s.mtop()
 		found = find(s.store[mod.Name])
 	}
-	assert.For(found, 60)
+	assert.For(found, 60, `"`, o.Name, `"`)
 }
 
 func (s *storeStack) outer(st *storage, o *ir.Variable, fn func(*value) *value) {
@@ -371,17 +383,24 @@ func (ctx *context) expr(_e ir.Expression, typ types.Type) {
 				halt.As(100, "unknown target type ", typ)
 			}
 		case *ir.VariableExpr:
-			ctx.data.inner(this.Obj, func(v *value) *value {
+			scope := ctx.tgt
+			ctx.tgt = nil
+			ctx.data.outer(scope, this.Obj, func(v *value) *value {
 				ctx.push(v)
 				return nil
 			})
 		case *ir.SelectExpr:
+			if !fn.IsNil(this.Before) {
+				ctx.sel(this.Before, nil, nil, func(v *value) *value { return nil })
+			}
 			eval(this.Base)
-			e := ctx.pop()
-			ctx.sel(this.Sel, e, nil, func(v *value) *value {
-				ctx.push(v)
-				return nil
-			})
+			if !fn.IsNil(this.After) {
+				e := ctx.pop()
+				ctx.sel(this.After, e, nil, func(v *value) *value {
+					ctx.push(v)
+					return nil
+				})
+			}
 		case *ir.Monadic:
 			eval(this.Operand)
 			v := ctx.pop()
@@ -544,7 +563,6 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 			return nil
 		}
 	}
-	var tgt *storage
 	var ssel func(ir.Selector) []hs
 	ssel = func(_s ir.Selector) (chain []hs) {
 		switch s := _s.(type) {
@@ -554,14 +572,14 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 			}
 		case *ir.SelectMod:
 			chain = append(chain, func(in, out *value, l ...hs) (ret *value) {
-				tgt = ctx.data.store[s.Mod]
+				ctx.tgt = ctx.data.store[s.Mod]
 				return first(in, out, l...)
 			})
 		case *ir.SelectVar:
 			chain = append(chain, func(in, out *value, l ...hs) (ret *value) {
 				//fmt.Println("select var ", s.Var, in, out)
-				scope := tgt
-				tgt = nil
+				scope := ctx.tgt
+				ctx.tgt = nil
 				ctx.data.outer(scope, s.Var, func(val *value) *value {
 					ret = first(in, val, l...)
 					return ret
@@ -632,7 +650,15 @@ func (ctx *context) stmt(_s ir.Statement) {
 			}
 			par = append(par, x)
 		}
+		if this.Mod != "" {
+			top := ctx.data.store[this.Mod]
+			ctx.data.mpush(top.root)
+		}
 		ctx.do(this.Proc, par...)
+		if this.Mod != "" {
+			top := ctx.data.mpop()
+			assert.For(top.Name == this.Mod, 60)
+		}
 	case *ir.AssignStmt:
 		ctx.sel(this.Sel, nil, nil, func(in *value) *value {
 			ctx.expr(this.Expr, in.typ)
@@ -732,6 +758,14 @@ func (ctx *context) imp(i *ir.Import) {
 		v := x.This()
 		mv := ms.root.VarDecl[x.Name()]
 		v.Type = mv.Type
+	}
+	for _, x := range i.ProcDecl {
+		p := x.This()
+		mp := ms.root.ProcDecl[x.Name()]
+		for k, v := range p.VarDecl {
+			*v = *mp.VarDecl[k]
+		}
+		*p = *mp
 	}
 }
 

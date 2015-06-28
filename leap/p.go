@@ -174,37 +174,42 @@ func (p *pr) varDecl(b *varBuilder) {
 	}
 }
 
+func (p *pr) qualSel(b *blockBuilder) (sel *selBuilder, mid, id string) {
+	mod := false
+	mid, mod = p.qualident(b.sc)
+	id = ""
+	if mod {
+		sel = &selBuilder{sc: b.sc}
+		imp := b.sc.im[mid]
+		sel.join(&ir.SelectMod{Mod: imp.Name})
+		id = p.ident()
+		obj := b.impObj(mid, id)
+		if obj != nil {
+			sel.join(obj)
+		} else {
+			sel = nil
+		}
+		p.next()
+	} else {
+		sel = &selBuilder{sc: b.sc}
+		id = mid
+		mid = ""
+		obj := b.obj(id)
+		if obj != nil {
+			sel.join(obj)
+		} else {
+			sel = nil
+		}
+	}
+	return
+}
+
 func (p *pr) stmtSeq(b *blockBuilder) {
 	for stop := false; !stop; {
 		p.pass(lss.Separator, lss.Delimiter)
 		switch p.sym.Code {
 		case lss.Ident:
-			mid, mod := p.qualident(b.sc)
-			id := ""
-			var sel *selBuilder
-			if mod {
-				sel = &selBuilder{sc: b.sc}
-				imp := b.sc.im[mid]
-				sel.join(&ir.SelectMod{Mod: imp.Name})
-				id = p.ident()
-				obj := b.impObj(mid, id)
-				if obj != nil {
-					sel.join(obj)
-				} else {
-					sel = nil
-				}
-				p.next()
-			} else {
-				sel = &selBuilder{sc: b.sc}
-				id = mid
-				mid = ""
-				obj := b.obj(id)
-				if obj != nil {
-					sel.join(obj)
-				} else {
-					sel = nil
-				}
-			}
+			sel, cm, id := p.qualSel(b)
 			if sel != nil {
 				p.pass(lss.Separator)
 				p.selector(sel)
@@ -240,16 +245,16 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 							par := &forwardParam{name: id}
 							p.next()
 							p.expect(lss.Ident, "ident expected", lss.Separator)
-							id := p.ident()
-							if b.obj(id) == nil {
+							sel, pm, _ := p.qualSel(b)
+							if sel == nil {
 								p.mark("not an object")
 							}
-							obj := b.obj(id)
-							p.next()
 							p.pass(lss.Separator)
-							sel := &selBuilder{sc: b.sc}
 							p.selector(sel)
-							sel.head(obj)
+							if pm == "" && cm != "" {
+								msel := &ir.SelectMod{Mod: p.target.top.Name}
+								sel.head(msel)
+							}
 							par.link = sel
 							param = append(param, par)
 						} else {
@@ -264,7 +269,7 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 					p.expect(lss.Rparen, "no ) found", lss.Separator, lss.Delimiter)
 					p.next()
 				}
-				stmt := b.call(mid, id, param)
+				stmt := b.call(cm, id, param)
 				b.put(stmt)
 			}
 		case lss.If:

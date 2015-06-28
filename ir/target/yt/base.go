@@ -46,6 +46,10 @@ type Proc struct {
 	Post      []*Expression     `yaml:"postcondition,omitempty"`
 }
 
+func (p *Proc) init() {
+	p.VarDecl = make(map[string]*Var)
+}
+
 type Selector struct {
 	Type SelType
 	Leaf map[string]interface{} `yaml:"leaf,omitempty"`
