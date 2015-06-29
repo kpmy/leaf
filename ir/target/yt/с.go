@@ -11,6 +11,7 @@ const (
 	Dyadic        ExprType = "dyadic"
 	SelExpr       ExprType = "selector"
 	Infix         ExprType = "infix"
+	InvokeInfix   ExprType = "invoke"
 )
 
 type StmtType string

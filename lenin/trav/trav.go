@@ -579,7 +579,32 @@ func (ctx *context) expr(_e ir.Expression, typ types.Type) {
 				out := this.Proc.Infix[0]
 				val := x.data[out.Name]
 				assert.For(val != nil, 40)
-				ctx.push(&value{typ: typ, val: val.read()})
+				ctx.push(&value{typ: out.Type, val: val.read()})
+			} else {
+				halt.As(100, "no result from infix")
+			}
+		case *ir.InvokeInfix:
+			assert.For(rt.StdImp.Name == this.Mod, 20)
+			proc := rt.StdImp.ProcDecl[this.Proc].This()
+			var vl []*value
+			for _, e := range this.Args {
+				eval(e)
+				val := ctx.pop()
+				vl = append(vl, val)
+			}
+			assert.For(len(vl) == len(proc.Infix)-1, 40, len(vl), len(proc.Infix))
+			var pl []interface{}
+			for i, v := range vl {
+				par := proc.Infix[i+1]
+				p := &param{obj: par, val: v}
+				//fmt.Println(par.Name, vl[i].val)
+				pl = append(pl, p)
+			}
+			if x, _ := ctx.invoke(this.Mod, this.Proc, pl...).(*storage); x != nil {
+				out := proc.Infix[0]
+				val := x.data[out.Name]
+				assert.For(val != nil, 40)
+				ctx.push(&value{typ: out.Type, val: val.read()})
 			} else {
 				halt.As(100, "no result from infix")
 			}
@@ -648,12 +673,12 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 					return first(in, out, l...)
 				} else if out != nil { //set
 					data := first(in, out, l...)
-					//fmt.Println(data)
+					fmt.Println(data)
 					switch out.typ {
 					case types.STRING:
 						buf := []rune(out.toStr())
+						fmt.Println(buf, i, buf[i])
 						buf[i] = data.toRune()
-						//fmt.Println(buf, i, buf[i])
 						in = &value{typ: types.STRING, val: string(buf)}
 					default:
 						halt.As(100, "unknown base type ", out.typ)

@@ -70,7 +70,7 @@ func (v *value) toStr() (ret string) {
 }
 
 func (v *value) toRune() (ret rune) {
-	assert.For(v.typ == types.CHAR, 20)
+	assert.For(v.typ == types.CHAR, 20, v.typ)
 	switch x := v.val.(type) {
 	case rune:
 		ret = x

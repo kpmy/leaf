@@ -146,7 +146,7 @@ func treatExpr(_m interface{}) (ret *Expression) {
 		ret.Leaf[fldz.Base] = leaf[fldz.Base]
 		ret.Leaf[fldz.Before] = leaf[fldz.Before]
 		ret.Leaf[fldz.After] = leaf[fldz.After]
-	case Infix:
+	case Infix, InvokeInfix:
 		ret.Leaf[fldz.Procedure] = leaf[fldz.Procedure]
 		ret.Leaf[fldz.Length] = leaf[fldz.Length]
 		ret.Leaf[fldz.Operand] = leaf[fldz.Operand]

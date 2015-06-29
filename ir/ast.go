@@ -167,6 +167,15 @@ type Infix struct {
 
 func (i *Infix) Self() {}
 
+type InvokeInfix struct {
+	Mod  string
+	Proc string
+	Args []Expression
+	Len  int
+}
+
+func (i *InvokeInfix) Self() {}
+
 type SelectExpr struct {
 	Base          Expression
 	Before, After Selector

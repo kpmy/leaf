@@ -1,12 +1,3 @@
 (* dummy *)
 MODULE Simple0
-VAR
-	i INTEGER
-BEGIN
-	i:=-1
-	WHILE i<10 DO
-		INC(x:: i)
-	ELSIF i<32 DO
-		INC(x:: i, n: 2)
-	END
 END Simple0.

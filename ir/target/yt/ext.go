@@ -65,6 +65,16 @@ func externalize(mod *ir.Module) (ret *Module) {
 			}
 			ex.Leaf[fldz.Operand] = ops
 			ex.Leaf[fldz.Procedure] = ret.this(e.Proc)
+		case *ir.InvokeInfix:
+			ex.Type = InvokeInfix
+			ex.Leaf[fldz.Length] = e.Len
+			ex.Leaf[fldz.Module] = e.Mod
+			var ops []*Expression
+			for _, o := range e.Args {
+				ops = append(ops, expr(o))
+			}
+			ex.Leaf[fldz.Operand] = ops
+			ex.Leaf[fldz.Procedure] = e.Proc
 		case *dumbExpr:
 			return expr(e.Eval())
 		default:

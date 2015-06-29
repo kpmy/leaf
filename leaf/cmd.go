@@ -32,6 +32,7 @@ func resolve(name string) (ret *ir.Import, err error) {
 	}
 	return
 }
+
 func load(name string) (ret *ir.Module, err error) {
 	if t, err := os.Open(name + ".li"); err == nil {
 		defer t.Close()
@@ -66,7 +67,6 @@ func main() {
 			}
 			lenin.Do(ir, load)
 		}
-		log.Println(name, "end.")
 	} else {
 		log.Fatal(err)
 	}

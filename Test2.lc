@@ -1,13 +1,16 @@
 MODULE TestStd
-
 VAR
 	i INTEGER
-
+	s STRING
 BEGIN
-	i:=0
+	i:=-1
 	WHILE i<10 DO
 		INC(x:: i)
-	ELSIF i<32 DO
+	ELSIF i<31 DO
 		INC(x:: i, n: 2)
+	ELSIF i=32 DO
+		DEC(x::i)
 	END
+	s:="a"
+	s[0] :=  \CAP s[0]
 END TestStd.

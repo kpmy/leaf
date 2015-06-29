@@ -160,6 +160,10 @@ func (e *forwardInfix) Eval() (ret ir.Expression) {
 		assert.For(len(p.Infix)-1 == e.args, 20)
 		i := &ir.Infix{Proc: p, Len: e.args}
 		return i
+	} else if p := rt.StdImp.ProcDecl[e.name]; p != nil {
+		assert.For(len(p.This().Infix)-1 == e.args, 20)
+		i := &ir.InvokeInfix{Mod: rt.StdImp.Name, Proc: p.Name(), Len: e.args}
+		return i
 	} else {
 		halt.As(100, "undefined procedure")
 	}
@@ -262,8 +266,8 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 			skip = true
 			ret = &exprItem{e: f.Eval(), priority: ret.priority}
 		} else if i, ok := ret.e.(*forwardInfix); ok {
-			skip = true
 			ret = &exprItem{e: i.Eval(), priority: ret.priority}
+			_, skip = ret.e.(*ir.Infix)
 		}
 		return
 	}
@@ -326,6 +330,29 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 			for i := len(tmp) - 1; i >= 0; i-- {
 				root.Args = append(root.Args, tmp[i])
 			}
+		case *ir.InvokeInfix:
+			ret = stack
+			ok := false
+			//fmt.Println(root.Len)
+			for i := 0; i < root.Len; i++ {
+				expr, tail := first(ret)
+				assert.For(expr != nil, 40)
+				//fmt.Println("NOW", expr, len(ret))
+				expr, ok = bypass(expr)
+				if !ok {
+					//fmt.Println("trav")
+					ret = trav(expr, tail)
+				} else {
+					ret = tail
+				}
+				root.Args = append(root.Args, expr.e)
+			}
+			//reverse
+			tmp := root.Args
+			root.Args = nil
+			for i := len(tmp) - 1; i >= 0; i-- {
+				root.Args = append(root.Args, tmp[i])
+			}
 		case nil: //do nothing
 		default:
 			halt.As(100, "unsupported type ", fmt.Sprint(reflect.TypeOf(root)))
@@ -363,6 +390,11 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 				fmt.Println(e.Op)
 			case *ir.Infix:
 				fmt.Println("infix")
+				for _, x := range e.Args {
+					eprint(x)
+				}
+			case *ir.InvokeInfix:
+				fmt.Println("invoke")
 				for _, x := range e.Args {
 					eprint(x)
 				}

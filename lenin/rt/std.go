@@ -13,9 +13,22 @@ DEFINITION STD
 	VAR
 		x+ INTEGER
 		n- INTEGER
-		PRE n >= 0
+	PRE n >= 0
 	END INC
 
+	PROCEDURE DEC
+	VAR
+		x+ INTEGER
+		n- INTEGER
+	PRE n >= 0
+	END DEC
+
+	PROCEDURE CAP
+	VAR
+		cap+ CHAR
+		x- CHAR
+	INFIX cap x
+	END CAP
 END STD.
 `
 

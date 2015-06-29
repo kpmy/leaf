@@ -106,6 +106,16 @@ func internalize(m *Module) (ret *ir.Module) {
 				halt.As(100, "unexpected nil")
 
 			}
+		case InvokeInfix:
+			this := &ir.InvokeInfix{}
+			this.Len = e.Leaf[fldz.Length].(int)
+			this.Mod = e.Leaf[fldz.Module].(string)
+			ops := treatExprList(e.Leaf[fldz.Operand])
+			for _, o := range ops {
+				this.Args = append(this.Args, expr(o))
+			}
+			this.Proc = e.Leaf[fldz.Procedure].(string)
+			d.e = this
 		default:
 			halt.As(100, "unknown type ", e.Type)
 		}
