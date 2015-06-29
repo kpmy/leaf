@@ -387,5 +387,8 @@ func (p *common) expression(b *exprBuilder) {
 			p.mark("expected two or more args")
 		}
 		b.expr(b.infix(mid, id, limit))
+	case lss.Is:
+		p.next()
+		p.mark("not implemented")
 	}
 }

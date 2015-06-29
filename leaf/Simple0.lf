@@ -1,3 +1,35 @@
 (* dummy *)
 MODULE Simple0
+	VAR
+		a, z ANY
+		x INTEGER
+		t TRILEAN
+		b BOOLEAN
+BEGIN
+	a:=NIL
+	z:=a
+	x:=0
+	a:=z
+	a:=x
+	z:=x
+	b := (a = z) & (a # z)
+	b := (a # NIL) & (a = NIL)
+	t := a IS INTEGER
+(*	CHOOSE a
+		AS REAL: a:=0.5
+		OR INTEGER: a:=55
+		OR NIL: a:=t
+	END;
+	z := 0.4
+	CHOOSE z
+		AS REAL: z:=0.5
+		OR INTEGER: z:=55
+		OR NIL: z:=t
+	END;
+	a:=NIL
+	CHOOSE a
+		AS REAL: a:=0.5
+		OR INTEGER: a:=55
+		OR NIL: a:=t
+	END; *)
 END Simple0.

@@ -26,6 +26,7 @@ const (
 	str
 	atom
 	boolean
+	any
 	trilean
 )
 
@@ -37,7 +38,8 @@ func init() {
 		"STRING":  str,
 		"ATOM":    atom,
 		"REAL":    flo,
-		"COMPLEX": comp}
+		"COMPLEX": comp,
+		"ANY":     any}
 
 	entries = map[lss.Foreign]interface{}{integer: Type{typ: types.INTEGER},
 		boolean: Type{typ: types.BOOLEAN},
@@ -46,7 +48,8 @@ func init() {
 		str:     Type{typ: types.STRING},
 		atom:    Type{typ: types.ATOM},
 		flo:     Type{typ: types.REAL},
-		comp:    Type{typ: types.COMPLEX}}
+		comp:    Type{typ: types.COMPLEX},
+		any:     Type{typ: types.ANY}}
 
 	mods = map[lss.Symbol]modifiers.Modifier{lss.Minus: modifiers.Semi, lss.Plus: modifiers.Full}
 
@@ -125,6 +128,9 @@ func (p *common) typ(consume func(t types.Type)) {
 			p.next()
 			consume(t.typ)
 		case types.ATOM, types.BOOLEAN, types.TRILEAN:
+			p.next()
+			consume(t.typ)
+		case types.ANY:
 			p.next()
 			consume(t.typ)
 		default:
@@ -630,7 +636,7 @@ func (p *pr) Module() (ret *ir.Module, err error) {
 
 func ConnectTo(s lss.Scanner, rs Resolver) Parser {
 	assert.For(s != nil, 20)
-	s.Init(lss.Module, lss.End, lss.Do, lss.While, lss.Elsif, lss.Import, lss.Const, lss.Of, lss.Pre, lss.Post, lss.Proc, lss.Var, lss.Begin, lss.Close, lss.If, lss.Then, lss.Repeat, lss.Until, lss.Else, lss.True, lss.False, lss.Nil, lss.Inf, lss.Choose, lss.Opt, lss.Infix)
+	s.Init(lss.Module, lss.End, lss.Do, lss.While, lss.Elsif, lss.Import, lss.Const, lss.Of, lss.Pre, lss.Post, lss.Proc, lss.Var, lss.Begin, lss.Close, lss.If, lss.Then, lss.Repeat, lss.Until, lss.Else, lss.True, lss.False, lss.Nil, lss.Inf, lss.Choose, lss.Opt, lss.Infix, lss.Is)
 	ret := &pr{resolver: rs}
 	ret.sc = s
 	ret.debug = false

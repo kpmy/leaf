@@ -18,6 +18,7 @@ const (
 	ATOM
 	REAL
 	COMPLEX
+	ANY
 	// leave this last
 	NONE
 )

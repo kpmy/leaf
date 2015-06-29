@@ -55,5 +55,6 @@ func init() {
 		"INF":        Inf,
 		"CHOOSE":     Choose,
 		"OR":         Opt,
-		"INFIX":      Infix}
+		"INFIX":      Infix,
+		"IS":         Is}
 }
