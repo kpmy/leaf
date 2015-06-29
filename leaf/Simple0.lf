@@ -3,7 +3,7 @@ MODULE Simple0
 VAR
 	i INTEGER
 BEGIN
-	i:=0
+	i:=-1
 	WHILE i<10 DO
 		INC(x:: i)
 	ELSIF i<32 DO

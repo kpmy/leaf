@@ -238,6 +238,7 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 							par := &forwardParam{name: id}
 							p.next()
 							e := &exprBuilder{sc: b.sc}
+							p.pass(lss.Separator)
 							p.expression(e)
 							par.expr = e
 							param = append(param, par)
@@ -249,7 +250,6 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 							if sel == nil {
 								p.mark("not an object")
 							}
-							p.pass(lss.Separator)
 							p.selector(sel)
 							if pm == "" && cm != "" {
 								msel := &ir.SelectMod{Mod: p.target.top.Name}

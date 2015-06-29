@@ -11,6 +11,7 @@ import (
 	_ "leaf/lead/target/tt"
 	"leaf/leap"
 	"leaf/lenin"
+	_ "leaf/lenin/rt/dumb"
 	_ "leaf/lenin/trav"
 	scanner "leaf/lss"
 	"log"
