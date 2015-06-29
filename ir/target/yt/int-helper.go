@@ -172,7 +172,7 @@ func treatStmt(_m interface{}) (ret *Statement) {
 	ret.Leaf = make(map[string]interface{})
 	leaf := m[fldz.Leaf].(map[interface{}]interface{})
 	switch ret.Type {
-	case Call:
+	case Call, Invoke:
 		ret.Leaf[fldz.Parameter] = leaf[fldz.Parameter]
 		ret.Leaf[fldz.Procedure] = leaf[fldz.Procedure]
 		ret.Leaf[fldz.Module] = leaf[fldz.Module]

@@ -6,6 +6,7 @@ import (
 	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
 	"leaf/ir/target/yt/fldz"
+	"leaf/lenin/rt"
 	"reflect"
 )
 
@@ -107,6 +108,22 @@ func externalize(mod *ir.Module) (ret *Module) {
 			st.Type = Call
 			st.Leaf[fldz.Module] = s.Mod
 			st.Leaf[fldz.Procedure] = ret.this(s.Proc)
+			var lp []*Param
+			for _, p := range s.Par {
+				par := &Param{}
+				par.Uuid = ret.this(p.Var)
+				if p.Expr != nil {
+					par.Expr = expr(p.Expr.(ir.EvaluatedExpression).Eval())
+				} else {
+					par.Sel = sel(p.Sel)
+				}
+				lp = append(lp, par)
+			}
+			st.Leaf[fldz.Parameter] = lp
+		case *ir.InvokeStmt:
+			st.Type = Invoke
+			st.Leaf[fldz.Module] = s.Mod
+			st.Leaf[fldz.Procedure] = s.Proc
 			var lp []*Param
 			for _, p := range s.Par {
 				par := &Param{}
@@ -250,7 +267,13 @@ func externalize(mod *ir.Module) (ret *Module) {
 		}
 		return
 	}
-
+	prepareImp := func(i *ir.Import) {
+		for _, x := range i.ProcDecl {
+			for _, v := range x.VarDecl() {
+				ret.that(x.Name()+"."+v.Name(), v.This())
+			}
+		}
+	}
 	imp = func(i *ir.Import) (imp *Import) {
 		imp = &Import{}
 		imp.init()
@@ -280,6 +303,7 @@ func externalize(mod *ir.Module) (ret *Module) {
 	}
 
 	{
+		prepareImp(rt.StdImp)
 		for _, v := range mod.ImportSeq {
 			ret.ImpSeq = append(ret.ImpSeq, imp(v))
 		}

@@ -22,6 +22,7 @@ const (
 	Repeat StmtType = "repeat"
 	Choose StmtType = "choose"
 	Call   StmtType = "call"
+	Invoke StmtType = "invoke"
 )
 
 type SelType string

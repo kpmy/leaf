@@ -8,6 +8,7 @@ import (
 	"leaf/ir/operation"
 	"leaf/ir/target/yt/fldz"
 	"leaf/ir/types"
+	"leaf/lenin/rt"
 )
 
 func internalize(m *Module) (ret *ir.Module) {
@@ -137,6 +138,22 @@ func internalize(m *Module) (ret *ir.Module) {
 	}
 	stmt = func(s *Statement) (ret ir.Statement) {
 		switch s.Type {
+		case Invoke:
+			this := &ir.InvokeStmt{}
+			this.Mod = s.Leaf[fldz.Module].(string)
+			this.Proc = s.Leaf[fldz.Procedure].(string)
+			pl := treatParList(s.Leaf[fldz.Parameter])
+			for _, par := range pl {
+				x := &ir.Parameter{}
+				if par.Expr != nil {
+					x.Expr = expr(par.Expr)
+				} else {
+					x.Sel = sel(par.Sel)
+				}
+				x.Var = m.that(par.Uuid).(*ir.Variable)
+				this.Par = append(this.Par, x)
+			}
+			ret = this
 		case Call:
 			d := &dumbCall{}
 			this := &ir.CallStmt{}
@@ -307,6 +324,13 @@ func internalize(m *Module) (ret *ir.Module) {
 		}
 		return
 	}
+	prepareImp := func(i *ir.Import) {
+		for _, x := range i.ProcDecl {
+			for _, v := range x.VarDecl() {
+				m.that(x.Name()+"."+v.Name(), v.This())
+			}
+		}
+	}
 	imp := func(il *Import) (i *ir.Import) {
 		i = &ir.Import{}
 		i.Init()
@@ -345,6 +369,7 @@ func internalize(m *Module) (ret *ir.Module) {
 		return
 	}
 	{
+		prepareImp(rt.StdImp)
 		ret.ConstDecl = cdecl(m.ConstDecl)
 		ret.VarDecl = vdecl(m.VarDecl)
 		ret.ProcDecl = pdecl(m.ProcDecl)

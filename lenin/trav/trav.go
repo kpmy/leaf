@@ -12,6 +12,7 @@ import (
 	"leaf/ir/operation"
 	"leaf/ir/types"
 	"leaf/lenin"
+	"leaf/lenin/rt"
 	"math/big"
 	"reflect"
 )
@@ -188,6 +189,11 @@ func (s *storeStack) alloc(_x interface{}) {
 		d.alloc(x.VarDecl)
 		s.push(d)
 		fmt.Println("alloc", x.Name, d.data)
+	case ir.ImportProcedure:
+		d := &storage{root: s.mtop(), link: x}
+		d.alloc(x.This().VarDecl)
+		s.push(d)
+		fmt.Println("alloc", x.Name(), d.data)
 	default:
 		halt.As(100, reflect.TypeOf(x))
 	}
@@ -202,6 +208,11 @@ func (s *storeStack) dealloc(_x interface{}) (ret *storage) {
 	case *ir.Procedure:
 		assert.For(s.top() != nil && s.top().link == x, 20)
 		fmt.Println("dealloc", x.Name, s.top().data)
+		ret = s.top()
+		s.pop()
+	case ir.ImportProcedure:
+		assert.For(s.top() != nil && s.top().link == x, 20)
+		fmt.Println("dealloc", x.Name(), s.top().data)
 		ret = s.top()
 		s.pop()
 	default:
@@ -259,6 +270,31 @@ func (s *storage) alloc(vl map[string]*ir.Variable) {
 		default:
 			halt.As(100, "unknown type ", v.Name, ": ", v.Type)
 		}
+	}
+}
+
+func (s *storage) List() (ret []*ir.Variable) {
+	for _, x := range s.schema {
+		ret = append(ret, x)
+	}
+	return
+}
+
+func (s *storage) Get(name string) interface{} {
+	if d := s.data[name]; d != nil {
+		return d.read()
+	} else {
+		halt.As(100, "object not found")
+	}
+	panic(0)
+}
+
+func (s *storage) Set(name string, x interface{}) {
+	assert.For(x != nil, 20)
+	if d := s.data[name]; d != nil {
+		d.write(x)
+	} else {
+		halt.As(100, "object not found")
 	}
 }
 
@@ -645,6 +681,20 @@ func (ctx *context) stmt(_s ir.Statement) {
 	switch this := _s.(type) {
 	case ir.WrappedStatement:
 		ctx.do(this.Fwd())
+	case *ir.InvokeStmt:
+		var par []interface{}
+		for _, p := range this.Par {
+			x := &param{}
+			x.obj = p.Var
+			if p.Expr != nil {
+				ctx.expr(p.Expr, p.Var.Type)
+				x.val = ctx.pop()
+			} else {
+				x.sel = p.Sel
+			}
+			par = append(par, x)
+		}
+		ctx.invoke(this.Mod, this.Proc, par...)
 	case *ir.CallStmt:
 		var par []interface{}
 		for _, p := range this.Par {
@@ -775,6 +825,47 @@ func (ctx *context) imp(i *ir.Import) {
 		}
 		*p = *mp
 	}
+}
+
+func (ctx *context) invoke(mod, proc string, par ...interface{}) (ret interface{}) {
+	assert.For(rt.StdImp.Name == mod, 20)
+	p := rt.StdImp.ProcDecl[proc]
+	ctx.data.alloc(p)
+	for _, _v := range par {
+		switch v := _v.(type) {
+		case *param:
+			if v.val != nil {
+				ctx.data.inner(v.obj, func(*value) *value { return v.val })
+			} else {
+				ctx.data.ref(v.obj, v.sel)
+			}
+		default:
+			halt.As(100, "unknown par ", reflect.TypeOf(v))
+		}
+	}
+	for i, e := range p.Pre() {
+		ctx.expr(e, types.BOOLEAN)
+		val := ctx.pop()
+		assert.For(val.toBool(), 20+i)
+	}
+	if p := rt.StdProc[rt.Qualident{mod, proc}]; p != nil {
+		p(ctx.data.top(), func(lt types.Type, l interface{}, op operation.Operation, rt types.Type, r interface{}, t types.Type) interface{} {
+			rv := &value{typ: rt, val: r}
+			lv := &value{typ: lt, val: l}
+			v := calcDyadic(lv, op, rv)
+			assert.For(v.typ == t, 60)
+			return v.val
+		})
+	} else {
+		halt.As(100, "unknown std procedure")
+	}
+	for i, e := range p.Post() {
+		ctx.expr(e, types.BOOLEAN)
+		val := ctx.pop()
+		assert.For(val.toBool(), 60+i)
+	}
+	ret = ctx.data.dealloc(p)
+	return
 }
 
 func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {

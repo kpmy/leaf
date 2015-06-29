@@ -111,6 +111,14 @@ type CallStmt struct {
 
 func (c *CallStmt) Do() {}
 
+type InvokeStmt struct {
+	Mod  string
+	Proc string
+	Par  []*Parameter
+}
+
+func (c *InvokeStmt) Do() {}
+
 type Parameter struct {
 	Var  *Variable
 	Sel  Selector
