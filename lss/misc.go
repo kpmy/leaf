@@ -51,10 +51,11 @@ func init() {
 		"ELSE":       Else,
 		"TRUE":       True,
 		"FALSE":      False,
-		"NIL":        Nil,
+		"NULL":       Nil,
 		"INF":        Inf,
 		"CHOOSE":     Choose,
 		"OR":         Opt,
 		"INFIX":      Infix,
-		"IS":         Is}
+		"IS":         Is,
+		"UNDEF":      Undef}
 }

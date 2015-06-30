@@ -169,6 +169,8 @@ func cval(e *ir.ConstExpr) (ret *value) {
 		} else {
 			halt.As(100, "wrong real")
 		}
+	case types.ANY:
+		ret = &value{typ: t, val: &Any{}}
 	default:
 		halt.As(100, "unknown type ", t, " for ", e)
 	}

@@ -46,7 +46,7 @@ BEGIN
 CLOSE
 	p := TRUE
 	q := FALSE
-	r := NIL
+	r := NULL
 	r:= p & ~q | r | TRUE
 END TestLogic.
 
@@ -117,10 +117,10 @@ CLOSE
 	ok := (y > cr) | (y >= cr) & (x < lf) | (x <=lf)
 	ok := (p = q) & (p # q)
 	ok := (TRUE = FALSE)
-	ok := (NIL = FALSE)
-	ok := (NIL # TRUE)
-	ok := (TRUE # NIL)
-	ok := (TRUE = NIL)
+	ok := (NULL = FALSE)
+	ok := (NULL # TRUE)
+	ok := (TRUE # NULL)
+	ok := (TRUE = NULL)
 END TestChars.
 
 (* strings and string comparision *)
@@ -161,10 +161,10 @@ BEGIN
 	a := A
 	b := B
 	ok := (a = b) & (a # b) & (a # C)
-	ok := c = NIL
-	ok := NIL = c
-	ok := NIL # c
-	ok := c # NIL
+	ok := c = UNDEF
+	ok := UNDEF = c
+	ok := UNDEF # c
+	ok := c # UNDEF
 	a := b
 	ok := (a = b)
 END TestAtom.
@@ -367,7 +367,7 @@ MODULE TestVarPar
 		BEGIN
 			IF i > 0 THEN x := TRUE
 			ELSIF i < 0 THEN x := FALSE
-			ELSE x := NIL END
+			ELSE x := NULL END
 		END Do
 
 	BEGIN

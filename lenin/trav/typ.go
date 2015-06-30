@@ -117,13 +117,7 @@ func conv(v *value, target types.Type) (ret *value) {
 		x := tri.This(b)
 		ret = &value{typ: target, val: x}
 	case target == types.ANY:
-		var x interface{}
-		if v.typ == types.TRILEAN && v.toTril() == tri.NIL {
-			// NIL literal
-			x = &Any{}
-		} else {
-			x = ThisAny(v)
-		}
+		x := ThisAny(v)
 		ret = &value{typ: target, val: x}
 	case v.typ == target:
 		ret = v

@@ -6,7 +6,7 @@ MODULE Simple0
 		t TRILEAN
 		b BOOLEAN
 BEGIN
-	a:=NIL
+	a:=UNDEF
 	t := a IS INTEGER
 	z:=a
 	x:=0
@@ -15,25 +15,25 @@ BEGIN
 	z:=x
 	b := (a = z)
 	b := (a # z)
-	b := (a # NIL)
-	b := (a = NIL)
+	b := (a # UNDEF)
+	b := (a = UNDEF)
 	t := a IS INTEGER
 	t := a IS BOOLEAN
 (*	CHOOSE a
 		AS REAL: a:=0.5
 		OR INTEGER: a:=55
-		OR NIL: a:=t
+		OR UNDEF: a:=t
 	END;
 	z := 0.4
 	CHOOSE z
 		AS REAL: z:=0.5
 		OR INTEGER: z:=55
-		OR NIL: z:=t
+		OR UNDEF: z:=t
 	END;
-	a:=NIL
+	a:=UNDEF
 	CHOOSE a
 		AS REAL: a:=0.5
 		OR INTEGER: a:=55
-		OR NIL: a:=t
+		OR UNDEF: a:=t
 	END; *)
 END Simple0.

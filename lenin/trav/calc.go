@@ -301,15 +301,15 @@ func b_a_a_(fn func(Atom, Atom) bool) func(Atom, *value) bool {
 	}
 }
 
-func b_a_t_(fn func(Atom, tri.Trit) bool) func(Atom, *value) bool {
+func b_a_z_(fn func(Atom, *Any) bool) func(Atom, *value) bool {
 	return func(la Atom, r *value) bool {
-		rt := r.toTril()
+		rt := r.toAny()
 		return fn(la, rt)
 	}
 }
 
-func b_t_a_(fn func(tri.Trit, Atom) bool) func(tri.Trit, *value) bool {
-	return func(lt tri.Trit, r *value) bool {
+func b_z_a_(fn func(*Any, Atom) bool) func(*Any, *value) bool {
+	return func(lt *Any, r *value) bool {
 		ra := r.toAtom()
 		return fn(lt, ra)
 	}
@@ -719,26 +719,6 @@ func dyABT() {
 		}
 		return eq
 	}))))
-
-	putDyadic(types.ATOM, types.TRILEAN, operation.Eq, b_(b_a_(b_a_t_(func(la Atom, rt tri.Trit) bool {
-		assert.For(tri.Nil(rt), 40, "NIL comparision only")
-		return la == ""
-	}))))
-
-	putDyadic(types.TRILEAN, types.ATOM, operation.Eq, b_(b_t_(b_t_a_(func(lt tri.Trit, ra Atom) bool {
-		assert.For(tri.Nil(lt), 40, "NIL comparision only")
-		return ra == ""
-	}))))
-
-	putDyadic(types.ATOM, types.TRILEAN, operation.Neq, b_(b_a_(b_a_t_(func(la Atom, rt tri.Trit) bool {
-		assert.For(tri.Nil(rt), 40, "NIL comparision only")
-		return la != ""
-	}))))
-
-	putDyadic(types.TRILEAN, types.ATOM, operation.Neq, b_(b_t_(b_t_a_(func(lt tri.Trit, ra Atom) bool {
-		assert.For(tri.Nil(lt), 40, "NIL comparision only")
-		return ra != ""
-	}))))
 }
 
 func dyANY() {
@@ -764,26 +744,25 @@ func dyANY() {
 		return eq
 	}))))
 
-	putDyadic(types.ANY, types.TRILEAN, operation.Eq, b_(b_z_(b_z_t_(func(la *Any, rt tri.Trit) bool {
-		assert.For(tri.Nil(rt), 40, "NIL comparision only")
-		return la.x == nil
+	putDyadic(types.ATOM, types.ANY, operation.Eq, b_(b_a_(b_a_z_(func(la Atom, ra *Any) bool {
+		assert.For(ra.x == nil, 40, "NIL comparision only")
+		return la == ""
 	}))))
 
-	putDyadic(types.TRILEAN, types.ANY, operation.Eq, b_(b_t_(b_t_z_(func(lt tri.Trit, ra *Any) bool {
-		assert.For(tri.Nil(lt), 40, "NIL comparision only")
-		return ra.x == nil
+	putDyadic(types.ANY, types.ATOM, operation.Eq, b_(b_z_(b_z_a_(func(la *Any, ra Atom) bool {
+		assert.For(la.x == nil, 40, "NIL comparision only")
+		return ra == ""
 	}))))
 
-	putDyadic(types.ANY, types.TRILEAN, operation.Neq, b_(b_z_(b_z_t_(func(la *Any, rt tri.Trit) bool {
-		assert.For(tri.Nil(rt), 40, "NIL comparision only")
-		return la.x != nil
+	putDyadic(types.ATOM, types.ANY, operation.Neq, b_(b_a_(b_a_z_(func(la Atom, ra *Any) bool {
+		assert.For(ra.x == nil, 40, "NIL comparision only")
+		return la != ""
 	}))))
 
-	putDyadic(types.TRILEAN, types.ANY, operation.Neq, b_(b_t_(b_t_z_(func(lt tri.Trit, ra *Any) bool {
-		assert.For(tri.Nil(lt), 40, "NIL comparision only")
-		return ra.x != nil
+	putDyadic(types.ANY, types.ATOM, operation.Neq, b_(b_z_(b_z_a_(func(la *Any, ra Atom) bool {
+		assert.For(la.x == nil, 40, "NIL comparision only")
+		return ra != ""
 	}))))
-
 }
 
 func init() {

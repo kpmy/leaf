@@ -192,6 +192,11 @@ func (p *common) factor(b *exprBuilder) {
 		val.Type = types.TRILEAN
 		b.factor(val)
 		p.next()
+	case lss.Undef:
+		val := &ir.ConstExpr{}
+		val.Type = types.ANY
+		b.factor(val)
+		p.next()
 	case lss.Inf:
 		val := &ir.ConstExpr{}
 		val.Type = types.REAL

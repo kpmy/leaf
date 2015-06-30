@@ -60,6 +60,7 @@ const (
 	True
 	False
 	Nil
+	Undef
 
 	Definition
 	Module

@@ -136,7 +136,7 @@ func (m *Module) that(id string, i ...interface{}) (ret interface{}) {
 
 func typeFix(e *ir.ConstExpr) {
 	switch e.Type {
-	case types.INTEGER, types.BOOLEAN, types.TRILEAN, types.CHAR, types.STRING, types.REAL:
+	case types.INTEGER, types.BOOLEAN, types.TRILEAN, types.CHAR, types.STRING, types.REAL, types.ANY:
 		//TODO later
 	default:
 		halt.As(100, "unknown constant type ", e.Type)
