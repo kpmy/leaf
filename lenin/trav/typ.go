@@ -14,6 +14,10 @@ type Any struct {
 	x   interface{}
 }
 
+func (a *Any) This() (types.Type, interface{}) {
+	return a.typ, a.x
+}
+
 func (a *Any) String() string {
 	return fmt.Sprint(a.x)
 }

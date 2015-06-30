@@ -258,12 +258,12 @@ func (p *common) factor(b *exprBuilder) {
 		}
 		limit := 0
 		for stop := false; !stop; {
-			if !p.await(lss.Delimiter, lss.Separator) {
-				p.factor(b)
-				limit++
+			p.expression(b)
+			limit++
+			if p.await(lss.Comma, lss.Separator) {
+				p.next()
 			} else {
 				stop = true
-				p.next()
 			}
 		}
 		if limit > 1 {
@@ -380,12 +380,12 @@ func (p *common) expression(b *exprBuilder) {
 		}
 		limit := 1
 		for stop := false; !stop; {
-			if !p.await(lss.Delimiter, lss.Separator) {
-				p.quantum(b)
-				limit++
+			p.quantum(b)
+			limit++
+			if p.await(lss.Comma, lss.Separator) {
+				p.next()
 			} else {
 				stop = true
-				p.next()
 			}
 		}
 		if limit < 2 {

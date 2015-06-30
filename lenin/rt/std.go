@@ -29,6 +29,20 @@ DEFINITION STD
 		x- CHAR
 	INFIX cap x
 	END CAP
+
+	PROCEDURE LEN
+	VAR
+		in- ANY
+		out+ INTEGER
+	INFIX out in
+	END LEN
+
+	PROCEDURE ODD
+	VAR
+		in- INTEGER
+		out+ BOOLEAN
+	INFIX out in
+	END ODD
 END STD.
 `
 

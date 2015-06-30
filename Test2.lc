@@ -15,6 +15,20 @@ BEGIN
 	s[0] :=  \CAP s[0]
 END TestStd.
 
+MODULE TestStd2
+	CONST s = "Hello, World!"
+	VAR i INTEGER
+	VAR x STRING
+	VAR b BOOLEAN
+BEGIN
+	i:=0
+	WHILE i < \LEN s DO
+		x := x + \CAP s[i]
+		INC(x::i)
+	END
+	b:=\ODD i
+END TestStd2.
+
 MODULE TestAny
 	VAR
 		a, z ANY

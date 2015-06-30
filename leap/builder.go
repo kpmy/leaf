@@ -165,7 +165,7 @@ func (e *forwardInfix) Eval() (ret ir.Expression) {
 		i := &ir.InvokeInfix{Mod: rt.StdImp.Name, Proc: p.Name(), Len: e.args}
 		return i
 	} else {
-		halt.As(100, "undefined procedure")
+		halt.As(100, "undefined procedure ", rt.StdImp.Name, ".", e.name)
 	}
 	panic(0)
 }

@@ -13,8 +13,14 @@ import (
 	"leaf/lenin/rt"
 	"leaf/lenin/trav"
 	"leaf/lss"
+	"math/big"
+	"reflect"
 	"unicode"
 )
+
+func bi(x int64) *big.Int {
+	return big.NewInt(x)
+}
 
 //INC x to n
 func inc(s rt.Storage, calc rt.Calc) {
@@ -44,6 +50,30 @@ func toUpper(s rt.Storage, calc rt.Calc) {
 	s.Set("cap", unicode.ToUpper(x))
 }
 
+func length(st rt.Storage, calc rt.Calc) {
+	t, x := st.Get("in").(*trav.Any).This()
+	switch t {
+	case types.STRING:
+		s := x.(string)
+		n := trav.NewInt(int64(len(s)))
+		st.Set("out", n)
+	default:
+		halt.As(100, t)
+	}
+}
+
+func odd(st rt.Storage, calc rt.Calc) {
+	_x := st.Get("in")
+	if i := _x.(*trav.Int); i != nil {
+		x := &big.Int{}
+		*x = i.Int
+		cmp := bi(0).Mod(x, bi(2)).Cmp(bi(0))
+		st.Set("out", cmp != 0)
+	} else {
+		halt.As(100, "not an integer ", reflect.TypeOf(i))
+	}
+}
+
 func init() {
 	buf := bytes.NewBufferString(rt.StdDef)
 	p := lead.ConnectTo(lss.ConnectTo(bufio.NewReader(buf)), func(string) (*ir.Import, error) {
@@ -54,4 +84,6 @@ func init() {
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "INC"}] = inc
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "DEC"}] = dec
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "CAP"}] = toUpper
+	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "LEN"}] = length
+	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "ODD"}] = odd
 }

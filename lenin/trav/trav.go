@@ -969,7 +969,7 @@ func (ctx *context) invoke(mod, proc string, par ...interface{}) (ret interface{
 			return v.val
 		})
 	} else {
-		halt.As(100, "unknown std procedure")
+		halt.As(100, "unknown std procedure ", mod, ".", proc)
 	}
 	for i, e := range p.Post() {
 		ctx.expr(e)
