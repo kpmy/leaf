@@ -273,6 +273,8 @@ func (s *storage) alloc(vl map[string]*ir.Variable) {
 			s.data[v.Name] = init(NewCmp(0.0, 0.0))
 		case types.ANY:
 			s.data[v.Name] = init(&Any{})
+		case types.LIST:
+			s.data[v.Name] = init(&List{})
 		default:
 			halt.As(100, "unknown type ", v.Name, ": ", v.Type)
 		}
@@ -695,19 +697,27 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 						buf := []rune(in.toStr())
 						//fmt.Println(buf, i, buf[i])
 						out = &value{typ: types.CHAR, val: buf[i]}
+					case types.LIST:
+						l := in.toList()
+						data := l.Get(int(i))
+						out = &value{typ: types.ANY, val: data}
 					default:
 						halt.As(100, "unknown base type ", in.typ)
 					}
 					return first(in, out, l...)
 				} else if out != nil { //set
 					data := first(in, out, l...)
-					fmt.Println(data)
+					//fmt.Println(data)
 					switch out.typ {
 					case types.STRING:
 						buf := []rune(out.toStr())
-						fmt.Println(buf, i, buf[i])
+						//fmt.Println(buf, i, buf[i])
 						buf[i] = data.toRune()
 						in = &value{typ: types.STRING, val: string(buf)}
+					case types.LIST:
+						l := out.toList()
+						l.Set(int(i), data)
+						in = &value{typ: types.LIST, val: ThisList(l)}
 					default:
 						halt.As(100, "unknown base type ", out.typ)
 					}

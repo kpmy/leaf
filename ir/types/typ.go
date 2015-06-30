@@ -19,6 +19,7 @@ const (
 	REAL
 	COMPLEX
 	ANY
+	LIST
 	// leave this last
 	NONE
 )
@@ -45,6 +46,8 @@ func (t Type) String() (ret string) {
 		return "COMPLEX"
 	case ANY:
 		return "ANY"
+	case LIST:
+		return "LIST"
 	default:
 		return strconv.Itoa(int(t))
 	}

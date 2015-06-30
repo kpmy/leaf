@@ -298,7 +298,7 @@ func (p *common) power(b *exprBuilder) {
 	for stop := false; !stop; {
 		p.pass(lss.Separator)
 		switch p.sym.Code {
-		case lss.Arrow:
+		case lss.ArrowUp:
 			op := p.sym.Code
 			p.next()
 			p.pass(lss.Separator)

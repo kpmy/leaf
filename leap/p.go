@@ -29,6 +29,7 @@ const (
 	boolean
 	any
 	trilean
+	vek
 )
 
 func init() {
@@ -40,7 +41,8 @@ func init() {
 		"ATOM":    atom,
 		"REAL":    flo,
 		"COMPLEX": comp,
-		"ANY":     any}
+		"ANY":     any,
+		"LIST":    vek}
 
 	entries = map[lss.Foreign]interface{}{integer: Type{typ: types.INTEGER},
 		boolean: Type{typ: types.BOOLEAN},
@@ -50,7 +52,8 @@ func init() {
 		atom:    Type{typ: types.ATOM},
 		flo:     Type{typ: types.REAL},
 		comp:    Type{typ: types.COMPLEX},
-		any:     Type{typ: types.ANY}}
+		any:     Type{typ: types.ANY},
+		vek:     Type{typ: types.LIST}}
 
 	mods = map[lss.Symbol]modifiers.Modifier{lss.Minus: modifiers.Semi, lss.Plus: modifiers.Full}
 
@@ -132,6 +135,9 @@ func (p *common) typ(consume func(t types.Type)) {
 			p.next()
 			consume(t.typ)
 		case types.ANY:
+			p.next()
+			consume(t.typ)
+		case types.LIST:
 			p.next()
 			consume(t.typ)
 		default:
@@ -230,6 +236,8 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 					stmt.Expr = expr
 					b.put(stmt)
 					//p.expect(lss.Delimiter, "delimiter expected", lss.Separator)
+				} else if p.is(lss.Equal) {
+					p.mark("do use := instead of =")
 				} else {
 					p.mark("illegal statement ", p.sym.Code)
 				}
@@ -249,7 +257,7 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 							p.expression(e)
 							par.expr = e
 							param = append(param, par)
-						} else if p.is(lss.Square) {
+						} else if p.is(lss.ArrowLeft) {
 							par := &forwardParam{name: id}
 							p.next()
 							p.expect(lss.Ident, "ident expected", lss.Separator)
@@ -379,13 +387,13 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 				expr := &exprBuilder{sc: b.sc}
 				p.expression(expr)
 				stmt.Expr = expr
-				p.next()
+				//p.next()
 				if p.await(lss.Of, lss.Separator, lss.Delimiter) {
 					typ = exprtest
 				} else if p.is(lss.As) {
 					typ = typetest
 				} else {
-					p.mark("OF or AS expected")
+					p.mark("OF or AS expected ", p.sym.Code)
 				}
 			}
 			first := true
@@ -394,6 +402,9 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 				case lss.As, lss.Of, lss.Opt:
 					if (p.is(lss.Of) || p.is(lss.As)) && !first {
 						p.mark("OR expected")
+					}
+					if p.is(lss.As) && typ != typetest {
+						p.mark("AS only for base expression")
 					}
 					first = false
 					p.next()

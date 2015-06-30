@@ -57,6 +57,10 @@ func length(st rt.Storage, calc rt.Calc) {
 		s := x.(string)
 		n := trav.NewInt(int64(len(s)))
 		st.Set("out", n)
+	case types.LIST:
+		l := x.(*trav.List)
+		n := trav.NewInt(int64(l.Len()))
+		st.Set("out", n)
 	default:
 		halt.As(100, t)
 	}
@@ -74,6 +78,12 @@ func odd(st rt.Storage, calc rt.Calc) {
 	}
 }
 
+func resize(st rt.Storage, calc rt.Calc) {
+	l := st.Get("list").(*trav.List)
+	n := st.Get("n").(*trav.Int)
+	l.Len(int(n.Int64()))
+}
+
 func init() {
 	buf := bytes.NewBufferString(rt.StdDef)
 	p := lead.ConnectTo(lss.ConnectTo(bufio.NewReader(buf)), func(string) (*ir.Import, error) {
@@ -86,4 +96,5 @@ func init() {
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "CAP"}] = toUpper
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "LEN"}] = length
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "ODD"}] = odd
+	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "RESIZE"}] = resize
 }

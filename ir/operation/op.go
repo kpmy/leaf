@@ -90,23 +90,23 @@ func (o Operation) String() string {
 }
 func init() {
 	ops = map[scanner.Symbol]Operation{scanner.Plus: Sum,
-		scanner.Minus:  Diff,
-		scanner.Times:  Prod,
-		scanner.Divide: Quot,
-		scanner.Div:    Div,
-		scanner.Mod:    Mod,
-		scanner.And:    And,
-		scanner.Or:     Or,
-		scanner.Not:    Not,
-		scanner.Equal:  Eq,
-		scanner.Geq:    Geq,
-		scanner.Gtr:    Gtr,
-		scanner.Nequal: Neq,
-		scanner.Lss:    Lss,
-		scanner.Leq:    Leq,
-		scanner.Arrow:  Pow,
-		scanner.Ncmp:   Ncmp,
-		scanner.Pcmp:   Pcmp}
+		scanner.Minus:   Diff,
+		scanner.Times:   Prod,
+		scanner.Divide:  Quot,
+		scanner.Div:     Div,
+		scanner.Mod:     Mod,
+		scanner.And:     And,
+		scanner.Or:      Or,
+		scanner.Not:     Not,
+		scanner.Equal:   Eq,
+		scanner.Geq:     Geq,
+		scanner.Gtr:     Gtr,
+		scanner.Nequal:  Neq,
+		scanner.Lss:     Lss,
+		scanner.Leq:     Leq,
+		scanner.ArrowUp: Pow,
+		scanner.Ncmp:    Ncmp,
+		scanner.Pcmp:    Pcmp}
 
 	OpMap = make(map[string]Operation)
 	for i := int(Undef); i < int(None); i++ {

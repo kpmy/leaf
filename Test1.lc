@@ -79,12 +79,12 @@ BEGIN
 	x:=0
 	WHILE x<4 DO hidden := hidden + Service.hidden[x]; x := x+1 END
 	res := "give me that... "
-	Service.Get(res:: res)
+	Service.Get(res<- res)
 CLOSE
 	Service.x := 5 * TestService.au
 	Service.x := Service.x + TestService.x + 5 *Service.au
-	Service.Calc(n: 5, res:: x)
-	Service.Calc(n: 10, res:: Service.x)
+	Service.Calc(n: 5, res<- x)
+	Service.Calc(n: 10, res<- Service.x)
 	z:= 6 \Service.Do 4
 	z:= \TestService.Do0 4
 END TestClient.

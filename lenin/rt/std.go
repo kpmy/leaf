@@ -43,6 +43,14 @@ DEFINITION STD
 		out+ BOOLEAN
 	INFIX out in
 	END ODD
+
+	PROCEDURE RESIZE
+	VAR
+		list+ LIST
+		n- INTEGER
+	PRE n >= 0
+	END RESIZE
+
 END STD.
 `
 

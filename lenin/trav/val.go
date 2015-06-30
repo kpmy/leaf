@@ -125,6 +125,17 @@ func (v *value) toAny() (ret *Any) {
 	return
 }
 
+func (v *value) toList() (ret *List) {
+	assert.For(v.typ == types.LIST, 20)
+	switch x := v.val.(type) {
+	case *List:
+		ret = ThisList(x)
+	default:
+		halt.As(100, "wrong list ", reflect.TypeOf(x))
+	}
+	return
+}
+
 func cval(e *ir.ConstExpr) (ret *value) {
 	t := e.Type
 	switch t {

@@ -29,7 +29,6 @@ const (
 	Lbrak
 	Rbrak
 	Colon
-	Square
 	Comma
 	Times
 	Equal
@@ -47,7 +46,8 @@ const (
 	Lss
 	Geq
 	Gtr
-	Arrow
+	ArrowUp
+	ArrowLeft
 	Div
 	Divide
 	Mod
@@ -117,8 +117,6 @@ func (s Symbol) String() (ret string) {
 		ret = "}"
 	case Colon:
 		ret = ":"
-	case Square:
-		ret = "::"
 	case Comma:
 		ret = ","
 	case Times:
@@ -149,8 +147,10 @@ func (s Symbol) String() (ret string) {
 		ret = "~"
 	case Plus:
 		ret = "+"
-	case Arrow:
+	case ArrowUp:
 		ret = "^"
+	case ArrowLeft:
+		ret = "<-"
 	case Div:
 		ret = "//"
 	case Divide:
@@ -474,9 +474,6 @@ func (s *sc) Get() (sym Sym) {
 			if ch := s.next(); ch == '=' {
 				s.next()
 				sym.Code = Becomes
-			} else if ch == ':' {
-				s.next()
-				sym.Code = Square
 			} else {
 				sym.Code = Colon
 			}
@@ -503,9 +500,12 @@ func (s *sc) Get() (sym Sym) {
 			sym.Code = Nequal
 			s.next()
 		case '<':
-			if s.next() == '=' {
+			if ch := s.next(); ch == '=' {
 				s.next()
 				sym.Code = Leq
+			} else if ch == '-' {
+				s.next()
+				sym.Code = ArrowLeft
 			} else {
 				sym.Code = Lss
 			}
@@ -542,7 +542,7 @@ func (s *sc) Get() (sym Sym) {
 			sym.Code = Rbrace
 			s.next()
 		case '^':
-			sym.Code = Arrow
+			sym.Code = ArrowUp
 			s.next()
 		case '/':
 			if s.next() == '/' {

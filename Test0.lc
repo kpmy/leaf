@@ -373,7 +373,7 @@ MODULE TestVarPar
 	BEGIN
 		i:=-1
 		WHILE i<=1 DO
-			Do(x:: z, i: i)
+			Do(x<- z, i: i)
 			i := i + 1
 		END;
 	END Do0
@@ -414,14 +414,14 @@ MODULE TestRecursion
 		VAR tmp INTEGER
 	BEGIN
 		IF max > 0 THEN
-			Do(res:: tmp, max: max-1)
+			Do(res<- tmp, max: max-1)
 		END
 		res := res + max + tmp
 	END Do
 
 BEGIN
 	i:=10
-	Do(res:: i, max: 5)
+	Do(res<- i, max: 5)
 END TestRecursion.
 
 MODULE TestPrecondition

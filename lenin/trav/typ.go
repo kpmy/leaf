@@ -9,6 +9,65 @@ import (
 	"math/big"
 )
 
+type List struct {
+	x []*Any
+}
+
+func (l *List) Len(n ...int) int {
+	if len(n) == 1 {
+		ln := n[0]
+		if ln == 0 {
+			l.x = nil
+		} else if len(l.x) > ln {
+			var tmp []*Any
+			for _, x := range l.x {
+				tmp = append(tmp, x)
+			}
+			l.x = tmp
+		} else if len(l.x) < ln {
+			for i := len(l.x); i < ln; i++ {
+				l.x = append(l.x, &Any{})
+			}
+		}
+	}
+	return len(l.x)
+}
+
+func (l *List) Set(i int, x *value) {
+	n := &Any{}
+	if x.typ == types.ANY {
+		t, d := x.toAny().This()
+		n.typ, n.x = t, d
+	} else {
+		n.typ = x.typ
+		n.x = x.val
+	}
+	l.x[i] = n
+}
+
+func (l *List) Get(i int) *Any {
+	return l.x[i]
+}
+
+func (l *List) String() (ret string) {
+	for i, x := range l.x {
+		if i > 0 {
+			ret = fmt.Sprint(ret, ", ")
+		}
+		ret = fmt.Sprint(ret, x)
+	}
+	return fmt.Sprint("[", ret, "]")
+}
+
+func ThisList(l *List) (ret *List) {
+	ret = &List{}
+	for _, i := range l.x {
+		n := &Any{typ: i.typ, x: i.x}
+		ret.x = append(ret.x, n)
+	}
+	return
+}
+
 type Any struct {
 	typ types.Type
 	x   interface{}

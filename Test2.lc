@@ -5,11 +5,11 @@ VAR
 BEGIN
 	i:=-1
 	WHILE i<10 DO
-		INC(x:: i)
+		INC(x<- i)
 	ELSIF i<31 DO
-		INC(x:: i, n: 2)
+		INC(x<- i, n: 2)
 	ELSIF i=32 DO
-		DEC(x::i)
+		DEC(x<-i)
 	END
 	s:="a"
 	s[0] :=  \CAP s[0]
@@ -24,7 +24,7 @@ BEGIN
 	i:=0
 	WHILE i < \LEN s DO
 		x := x + \CAP s[i]
-		INC(x::i)
+		INC(x<-i)
 	END
 	b:=\ODD i
 END TestStd2.
@@ -67,3 +67,38 @@ BEGIN
 		OR UNDEF: a := t
 	END;
 END TestAny.
+
+
+MODULE TestList
+	CONST s = "HELLO"
+	VAR	l LIST
+	VAR i, len INTEGER
+	VAR c CHAR
+
+	PROCEDURE Item
+		VAR l+ LIST
+		VAR idx- INTEGER
+		VAR res+ CHAR
+		VAR o ANY
+		PRE (\LEN l) > 0
+		PRE idx < \LEN l
+	BEGIN
+		o := l[idx]
+		CHOOSE o AS CHAR: res:=o OR UNDEF: res:=0U END
+	END Item
+
+BEGIN
+	RESIZE(list <- l, n: 5)
+	len := \LEN l
+	WHILE i<len DO
+		l[i] := s[i]
+		INC(x <- i)
+	END
+	i:=1
+	WHILE i<len DO
+		l[i]:=UNDEF
+		INC(x <- i)
+	END
+	Item(l <- l, idx: 0, res <- c)
+	Item(l <- l, idx: 1, res <- c)
+END TestList.

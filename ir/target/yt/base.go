@@ -100,7 +100,7 @@ func (i *Import) init() {
 
 func (m *Module) this(item interface{}) (ret string) {
 	if ret = m.id[item]; ret == "" {
-		ret = fmt.Sprintf("%X", len(m.id))
+		ret = "0" + fmt.Sprintf("%X", len(m.id)) + "H"
 		m.id[item] = ret
 	}
 	return
