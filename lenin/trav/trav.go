@@ -107,12 +107,13 @@ func (d *indirect) write(x interface{}) {
 }
 
 type storage struct {
-	root   *ir.Module
-	link   interface{}
-	schema map[string]*ir.Variable
-	data   map[string]anyData
-	lock   *lock
-	prev   *storage
+	root     *ir.Module
+	link     interface{}
+	schema   map[string]*ir.Variable
+	data     map[string]anyData
+	wrappers map[string]func(*value) *value
+	lock     *lock
+	prev     *storage
 }
 
 type lock struct{}
@@ -180,17 +181,20 @@ func (s *storeStack) alloc(_x interface{}) {
 	switch x := _x.(type) {
 	case *ir.Module:
 		d := &storage{root: x}
+		d.init()
 		d.alloc(x.VarDecl)
 		s.store[x.Name] = d
 		s.mpush(x)
 		fmt.Println("alloc", x.Name, d.data)
 	case *ir.Procedure:
 		d := &storage{root: s.mtop(), link: x}
+		d.init()
 		d.alloc(x.VarDecl)
 		s.push(d)
 		fmt.Println("alloc", x.Name, d.data)
 	case ir.ImportProcedure:
 		d := &storage{root: s.mtop(), link: x}
+		d.init()
 		d.alloc(x.This().VarDecl)
 		s.push(d)
 		fmt.Println("alloc", x.Name(), d.data)
@@ -224,14 +228,14 @@ func (s *storeStack) dealloc(_x interface{}) (ret *storage) {
 func (s *storage) init() {
 	s.schema = make(map[string]*ir.Variable)
 	s.data = make(map[string]anyData)
+	s.wrappers = make(map[string]func(*value) *value)
 }
 
 func (s *storage) alloc(vl map[string]*ir.Variable) {
 	assert.For(vl != nil, 20)
 	s.schema = vl
-	s.data = make(map[string]anyData)
 	for _, v := range s.schema {
-
+		s.wrappers[v.Name] = func(v *value) *value { return v }
 		init := func(val interface{}) (ret anyData) {
 			assert.For(val != nil, 20)
 			switch v.Modifier {
@@ -318,17 +322,46 @@ func (st *storeStack) ref(o *ir.Variable, sel ir.Selector) {
 	assert.For(found, 60)
 }
 
+func (st *storeStack) find(s *storage, o *ir.Variable, fn func(*value) *value) (ret bool) {
+	if data, ok := s.data[o.Name]; ok {
+		assert.For(data != nil, 20)
+		wr := s.wrappers[o.Name]
+		nv := fn(wr(&value{typ: o.Type, val: data.read()}))
+		if nv != nil {
+			assert.For(compTypes(nv.typ, o.Type), 40, "provided ", nv.typ, " != expected ", o.Type)
+			nv = conv(nv, o.Type)
+			s.data[o.Name].write(nv.val)
+			fmt.Println("touch", o.Name, nv.val)
+		}
+		ret = true
+	}
+	return
+}
 func (s *storeStack) inner(o *ir.Variable, fn func(*value) *value) {
+	found := false
+	for local := s.top(); local != nil; {
+		if local.lock != nil {
+			//fmt.Println("locked, try prev")
+			local = local.prev
+		} else {
+			found = s.find(local, o, fn)
+			break
+		}
+	}
+	if !found {
+		mod := s.mtop()
+		found = s.find(s.store[mod.Name], o, fn)
+	}
+	assert.For(found, 60, `"`, o.Name, `"`)
+}
+
+func (s *storeStack) wrap(id string, fn func(*value) *value) {
 	find := func(s *storage) (ret bool) {
-		if data, ok := s.data[o.Name]; ok {
-			assert.For(data != nil, 20)
-			nv := fn(&value{typ: o.Type, val: data.read()})
-			if nv != nil {
-				assert.For(compTypes(nv.typ, o.Type), 40, "provided ", nv.typ, " != expected ", o.Type)
-				nv = conv(nv, o.Type)
-				s.data[o.Name].write(nv.val)
-				fmt.Println("touch", o.Name, nv.val)
+		if _, ok := s.data[id]; ok {
+			if fn == nil {
+				fn = func(v *value) *value { return v }
 			}
+			s.wrappers[id] = fn
 			ret = true
 		}
 		return
@@ -347,26 +380,12 @@ func (s *storeStack) inner(o *ir.Variable, fn func(*value) *value) {
 		mod := s.mtop()
 		found = find(s.store[mod.Name])
 	}
-	assert.For(found, 60, `"`, o.Name, `"`)
+	assert.For(found, 60, `"`, id, `"`)
 }
 
 func (s *storeStack) outer(st *storage, o *ir.Variable, fn func(*value) *value) {
-	find := func(s *storage) (ret bool) {
-		if data, ok := s.data[o.Name]; ok {
-			assert.For(data != nil, 20)
-			nv := fn(&value{typ: o.Type, val: data.read()})
-			if nv != nil {
-				assert.For(compTypes(nv.typ, o.Type), 40, "provided ", nv.typ, " != expected ", o.Type)
-				nv = conv(nv, o.Type)
-				s.data[o.Name].write(nv.val)
-				fmt.Println("touch", o.Name, nv.val)
-			}
-			ret = true
-		}
-		return
-	}
 	if st != nil {
-		found := find(st)
+		found := s.find(st, o, fn)
 		assert.For(found, 60)
 	} else {
 		s.inner(o, fn)
@@ -801,39 +820,98 @@ func (ctx *context) stmt(_s ir.Statement) {
 			stop = val.toBool()
 		}
 	case *ir.ChooseStmt:
-		var base *ir.Dyadic
-		if this.Expr != nil {
-			base = &ir.Dyadic{}
-			base.Op = operation.Eq
-			base.Left = this.Expr
-			//base.Right is open
-		}
 		done := false
-		for _, i := range this.Cond {
-			var ex ir.Expression
-			if base != nil {
-				base.Right = i.Expr
-				ex = base
-			} else {
-				ex = i.Expr
+		if !this.TypeTest {
+			var base *ir.Dyadic
+			if this.Expr != nil {
+				base = &ir.Dyadic{}
+				base.Op = operation.Eq
+				base.Left = this.Expr
+				//base.Right is open
 			}
-			assert.For(ex != nil, 40)
-			ctx.expr(ex)
-			val := ctx.pop()
-			if val.toBool() {
-				done = true
-				for _, s := range i.Seq {
-					ctx.do(s)
+			for _, i := range this.Cond {
+				var ex ir.Expression
+				if base != nil {
+					base.Right = i.Expr
+					ex = base
+				} else {
+					ex = i.Expr
 				}
-				break
-			} else if base != nil {
-				base.Right = nil
+				assert.For(ex != nil, 40)
+				ctx.expr(ex)
+				val := ctx.pop()
+				if val.toBool() {
+					done = true
+					for _, s := range i.Seq {
+						ctx.do(s)
+					}
+					break
+				} else if base != nil {
+					base.Right = nil
+				}
+			}
+		} else {
+			e := this.Expr
+			wrap := ""
+			if ee, _ := e.(ir.EvaluatedExpression); ee != nil {
+				e = ee.Eval()
+			}
+			switch s := e.(type) {
+			case *ir.VariableExpr:
+				//it's ok
+				wrap = s.Obj.Name
+			default:
+				halt.As(100, "unsupported ", reflect.TypeOf(s))
+			}
+			ctx.expr(e)
+			base := ctx.pop()
+			for _, i := range this.Cond {
+				var ex ir.Expression
+				ex = i.Expr
+				if ee, _ := ex.(ir.EvaluatedExpression); ee != nil {
+					ex = ee.Eval()
+				}
+				//skip expression in this implementation
+				switch t := ex.(type) {
+				case *ir.TypeTest:
+					x := base.toAny()
+					if !fn.IsNil(x.x) && x.typ == t.Typ {
+						done = true
+						assert.For(wrap != "", 20)
+						ctx.data.wrap(wrap, func(v *value) *value {
+							av := v.toAny()
+							nv := &value{typ: x.typ, val: av.x}
+							return nv
+						})
+						for _, s := range i.Seq {
+							ctx.do(s)
+						}
+						ctx.data.wrap(wrap, nil)
+					}
+				case *ir.Dyadic:
+					//null expected
+					x := base.toAny()
+					if fn.IsNil(x.x) {
+						done = true
+						for _, s := range i.Seq {
+
+							ctx.do(s)
+						}
+					}
+				default:
+					halt.As(100, reflect.TypeOf(t))
+				}
+				if done {
+					break
+				}
 			}
 		}
 		if !done && this.Else != nil {
 			for _, s := range this.Else.Seq {
 				ctx.do(s)
 			}
+		} else if !done && this.TypeTest {
+			halt.As(100, "NO ELSE")
 		}
 	default:
 		halt.As(100, "unknown statement ", reflect.TypeOf(this))

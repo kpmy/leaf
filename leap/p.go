@@ -4,6 +4,7 @@ import (
 	"github.com/kpmy/ypk/assert"
 	"leaf/ir"
 	"leaf/ir/modifiers"
+	"leaf/ir/operation"
 	"leaf/ir/types"
 	"leaf/lead"
 	"leaf/lss"
@@ -117,7 +118,7 @@ func (p *pr) constDecl(b *constBuilder) {
 }
 
 func (p *common) typ(consume func(t types.Type)) {
-	assert.For(p.sym.Code == lss.Ident, 20, "type identifier expected here")
+	assert.For(p.sym.Code == lss.Ident, 20, "type identifier expected here but found ", p.sym.Code)
 	id := p.ident()
 	if t, ok := entries[p.sym.User].(Type); ok {
 		switch t.typ {
@@ -366,38 +367,73 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 			stmt.Cond = br
 			b.put(stmt)
 		case lss.Choose:
+			const (
+				free = iota
+				exprtest
+				typetest
+			)
 			p.next()
 			stmt := &ir.ChooseStmt{}
+			typ := free
 			if !p.await(lss.Of, lss.Separator, lss.Delimiter) {
 				expr := &exprBuilder{sc: b.sc}
 				p.expression(expr)
 				stmt.Expr = expr
 				p.next()
-				p.expect(lss.Of, "OF expected", lss.Separator, lss.Delimiter)
+				if p.await(lss.Of, lss.Separator, lss.Delimiter) {
+					typ = exprtest
+				} else if p.is(lss.As) {
+					typ = typetest
+				} else {
+					p.mark("OF or AS expected")
+				}
 			}
 			first := true
 			for stop := false; !stop; {
 				switch p.sym.Code {
-				case lss.Of, lss.Opt:
-					if p.is(lss.Of) && !first {
-						p.mark("ELSIF expected")
+				case lss.As, lss.Of, lss.Opt:
+					if (p.is(lss.Of) || p.is(lss.As)) && !first {
+						p.mark("OR expected")
 					}
 					first = false
 					p.next()
 					p.pass(lss.Separator, lss.Delimiter)
 					var bunch []ir.Expression
-					for {
-						expr := &exprBuilder{sc: b.sc}
-						p.expression(expr)
-						bunch = append(bunch, expr)
-						if p.await(lss.Colon, lss.Separator) {
-							p.next()
-							break
-						} else if !p.is(lss.Comma) {
-							p.mark("comma expected")
-						} else {
-							p.next()
+					if typ == free || typ == exprtest {
+						for {
+							expr := &exprBuilder{sc: b.sc}
+							p.expression(expr)
+							bunch = append(bunch, expr)
+							if p.await(lss.Colon, lss.Separator) {
+								p.next()
+								break
+							} else if !p.is(lss.Comma) {
+								p.mark("comma expected")
+							} else {
+								p.next()
+							}
 						}
+					} else if typ == typetest {
+						stmt.TypeTest = true
+						if p.is(lss.Ident) {
+							p.typ(func(t types.Type) {
+								e := &ir.TypeTest{}
+								e.Typ = t
+								e.Operand = stmt.Expr
+								bunch = append(bunch, e)
+							})
+						} else if p.is(lss.Undef) {
+							p.next()
+							e := &ir.Dyadic{}
+							e.Op = operation.Eq
+							val := &ir.ConstExpr{}
+							val.Type = types.ANY
+							e.Left = stmt.Expr
+							e.Right = val
+							bunch = append(bunch, e)
+						}
+						p.expect(lss.Colon, "colon expected", lss.Separator)
+						p.next()
 					}
 					st := &blockBuilder{sc: b.sc}
 					p.stmtSeq(st)
@@ -636,7 +672,7 @@ func (p *pr) Module() (ret *ir.Module, err error) {
 
 func ConnectTo(s lss.Scanner, rs Resolver) Parser {
 	assert.For(s != nil, 20)
-	s.Init(lss.Module, lss.End, lss.Do, lss.While, lss.Elsif, lss.Import, lss.Const, lss.Of, lss.Pre, lss.Post, lss.Proc, lss.Var, lss.Begin, lss.Close, lss.If, lss.Then, lss.Repeat, lss.Until, lss.Else, lss.True, lss.False, lss.Nil, lss.Inf, lss.Choose, lss.Opt, lss.Infix, lss.Is, lss.Undef)
+	s.Init(lss.Module, lss.End, lss.Do, lss.While, lss.Elsif, lss.Import, lss.Const, lss.Of, lss.Pre, lss.Post, lss.Proc, lss.Var, lss.Begin, lss.Close, lss.If, lss.Then, lss.Repeat, lss.Until, lss.Else, lss.True, lss.False, lss.Nil, lss.Inf, lss.Choose, lss.Opt, lss.Infix, lss.Is, lss.Undef, lss.As)
 	ret := &pr{resolver: rs}
 	ret.sc = s
 	ret.debug = false

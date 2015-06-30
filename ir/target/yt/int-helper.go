@@ -193,6 +193,7 @@ func treatStmt(_m interface{}) (ret *Statement) {
 		ret.Leaf[fldz.Expression] = leaf[fldz.Expression]
 		ret.Leaf[fldz.Leaf] = leaf[fldz.Leaf]
 		ret.Leaf[fldz.Else] = leaf[fldz.Else]
+		ret.Leaf[fldz.Type] = leaf[fldz.Type]
 	default:
 		halt.As(100, "unexpected ", ret.Type, " ", _m)
 	}

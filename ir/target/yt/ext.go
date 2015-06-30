@@ -24,6 +24,8 @@ func externalize(mod *ir.Module) (ret *Module) {
 		ex = &Expression{}
 		ex.Leaf = make(map[string]interface{})
 		switch e := _e.(type) {
+		case ir.EvaluatedExpression:
+			ex = expr(e.Eval())
 		case *ir.AtomExpr:
 			ex.Type = Atom
 			ex.Leaf[fldz.Name] = e.Value
@@ -196,13 +198,14 @@ func externalize(mod *ir.Module) (ret *Module) {
 			st.Leaf[fldz.Leaf] = c
 		case *ir.ChooseStmt:
 			st.Type = Choose
+			st.Leaf[fldz.Type] = s.TypeTest
 			if s.Expr != nil {
 				st.Leaf[fldz.Expression] = expr(s.Expr.(ir.EvaluatedExpression).Eval())
 			}
 			var brs []*Condition
 			for _, v := range s.Cond {
 				c := &Condition{}
-				c.Expr = expr(v.Expr.(ir.EvaluatedExpression).Eval())
+				c.Expr = expr(v.Expr)
 				for _, x := range v.Seq {
 					c.Seq = append(c.Seq, stmt(x))
 				}

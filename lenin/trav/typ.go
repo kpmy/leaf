@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/kpmy/trigo"
 	"github.com/kpmy/ypk/assert"
+	"github.com/kpmy/ypk/halt"
 	"leaf/ir/types"
 	"math/big"
 )
@@ -18,6 +19,10 @@ func (a *Any) String() string {
 }
 
 func ThisAny(v *value) *Any {
+	assert.For(v != nil, 20)
+	if _, ok := v.val.(*Any); ok {
+		halt.As(100)
+	}
 	return &Any{typ: v.typ, x: v.val}
 }
 
@@ -116,8 +121,11 @@ func conv(v *value, target types.Type) (ret *value) {
 		b := v.toBool()
 		x := tri.This(b)
 		ret = &value{typ: target, val: x}
-	case target == types.ANY:
+	case target == types.ANY && v.typ != types.ANY:
 		x := ThisAny(v)
+		ret = &value{typ: target, val: x}
+	case target == types.ANY && v.typ == types.ANY:
+		x := v.toAny()
 		ret = &value{typ: target, val: x}
 	case v.typ == target:
 		ret = v

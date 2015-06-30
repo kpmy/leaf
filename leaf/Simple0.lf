@@ -1,39 +1,3 @@
 (* dummy *)
 MODULE Simple0
-	VAR
-		a, z ANY
-		x INTEGER
-		t TRILEAN
-		b BOOLEAN
-BEGIN
-	a:=UNDEF
-	t := a IS INTEGER
-	z:=a
-	x:=0
-	a:=z
-	a:=x
-	z:=x
-	b := (a = z)
-	b := (a # z)
-	b := (a # UNDEF)
-	b := (a = UNDEF)
-	t := a IS INTEGER
-	t := a IS BOOLEAN
-(*	CHOOSE a
-		AS REAL: a:=0.5
-		OR INTEGER: a:=55
-		OR UNDEF: a:=t
-	END;
-	z := 0.4
-	CHOOSE z
-		AS REAL: z:=0.5
-		OR INTEGER: z:=55
-		OR UNDEF: z:=t
-	END;
-	a:=UNDEF
-	CHOOSE a
-		AS REAL: a:=0.5
-		OR INTEGER: a:=55
-		OR UNDEF: a:=t
-	END; *)
 END Simple0.

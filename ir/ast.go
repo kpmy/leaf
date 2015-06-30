@@ -225,9 +225,10 @@ type ElseBranch struct {
 }
 
 type ChooseStmt struct {
-	Expr Expression
-	Cond []*ConditionBranch
-	Else *ElseBranch
+	TypeTest bool
+	Expr     Expression
+	Cond     []*ConditionBranch
+	Else     *ElseBranch
 }
 
 func (c *ChooseStmt) Do() {}

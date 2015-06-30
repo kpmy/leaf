@@ -57,5 +57,6 @@ func init() {
 		"OR":         Opt,
 		"INFIX":      Infix,
 		"IS":         Is,
-		"UNDEF":      Undef}
+		"UNDEF":      Undef,
+		"AS":         As}
 }

@@ -86,11 +86,12 @@ const (
 	Opt
 	Infix
 	Is
+	As
 )
 
 func (s Symbol) String() (ret string) {
 	switch s {
-	case Definition, Module, End, Do, While, Elsif, Import, Const, Of, Pre, Post, Proc, Var, Begin, Close, If, Then, Repeat, Until, Else, True, False, Nil, Inf, Choose, Opt, Infix, Is:
+	case Definition, Module, End, Do, While, Elsif, Import, Const, Of, Pre, Post, Proc, Var, Begin, Close, If, Then, Repeat, Until, Else, True, False, Nil, Inf, Choose, Opt, Infix, Is, As, Undef:
 		ret = keyByTab(s)
 	case Null:
 		ret = "null"

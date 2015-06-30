@@ -262,6 +262,7 @@ func internalize(m *Module) (ret *ir.Module) {
 			ret = this
 		case Choose:
 			this := &ir.ChooseStmt{}
+			this.TypeTest = s.Leaf[fldz.Type].(bool)
 			cl := treatIfList(s.Leaf[fldz.Leaf])
 			for _, c := range cl {
 				i := &ir.ConditionBranch{}
