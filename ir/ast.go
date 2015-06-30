@@ -176,6 +176,13 @@ type InvokeInfix struct {
 
 func (i *InvokeInfix) Self() {}
 
+type TypeTest struct {
+	Typ     types.Type
+	Operand Expression
+}
+
+func (t *TypeTest) Self() {}
+
 type SelectExpr struct {
 	Base          Expression
 	Before, After Selector

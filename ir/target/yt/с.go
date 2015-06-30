@@ -12,6 +12,7 @@ const (
 	SelExpr       ExprType = "selector"
 	Infix         ExprType = "infix"
 	InvokeInfix   ExprType = "invoke"
+	TypeTest      ExprType = "typetest"
 )
 
 type StmtType string

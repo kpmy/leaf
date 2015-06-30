@@ -114,6 +114,17 @@ func (v *value) toCmp() (ret *Cmp) {
 	return
 }
 
+func (v *value) toAny() (ret *Any) {
+	assert.For(v.typ == types.ANY, 20)
+	switch x := v.val.(type) {
+	case *Any:
+		ret = ThisAny(&value{typ: x.typ, val: x.x})
+	default:
+		halt.As(100, "wrong any ", reflect.TypeOf(x))
+	}
+	return
+}
+
 func cval(e *ir.ConstExpr) (ret *value) {
 	t := e.Type
 	switch t {

@@ -15,8 +15,8 @@ type tm map[types.Type]interface{}
 var dyadic tm
 
 func calcDyadic(left *value, op operation.Operation, right *value) (ret *value) {
-	if ml, _ := dyadic[left.typ].(tm); ml != nil {
-		if dml, _ := ml[right.typ].(df); dml != nil {
+	if ml, ok := dyadic[left.typ].(tm); ml != nil && ok {
+		if dml, ok := ml[right.typ].(df); dml != nil && ok {
 			if df := dml[op]; df != nil {
 				ret = df(left, right)
 			} else {
@@ -200,6 +200,34 @@ func b_i_i_(fn func(*big.Int, *big.Int) bool) func(*big.Int, *value) bool {
 	return func(li *big.Int, r *value) bool {
 		ri := r.toInt()
 		return fn(li, ri)
+	}
+}
+
+func b_z_(fn func(*Any, *value) bool) func(*value, *value) bool {
+	return func(l *value, r *value) bool {
+		la := l.toAny()
+		return fn(la, r)
+	}
+}
+
+func b_z_z_(fn func(*Any, *Any) bool) func(*Any, *value) bool {
+	return func(la *Any, r *value) bool {
+		ra := r.toAny()
+		return fn(la, ra)
+	}
+}
+
+func b_z_t_(fn func(*Any, tri.Trit) bool) func(*Any, *value) bool {
+	return func(la *Any, r *value) bool {
+		rt := r.toTril()
+		return fn(la, rt)
+	}
+}
+
+func b_t_z_(fn func(tri.Trit, *Any) bool) func(tri.Trit, *value) bool {
+	return func(lt tri.Trit, r *value) bool {
+		ra := r.toAny()
+		return fn(lt, ra)
 	}
 }
 
@@ -713,6 +741,51 @@ func dyABT() {
 	}))))
 }
 
+func dyANY() {
+	putDyadic(types.ANY, types.ANY, operation.Neq, b_(b_z_(b_z_z_(func(la *Any, ra *Any) bool {
+		neq := true
+		if la.x == nil && ra.x == nil {
+			neq = false
+		} else if la.x != nil && ra.x != nil {
+			v := calcDyadic(&value{typ: la.typ, val: la.x}, operation.Neq, &value{typ: ra.typ, val: ra.x})
+			neq = v.toBool()
+		}
+		return neq
+	}))))
+
+	putDyadic(types.ANY, types.ANY, operation.Eq, b_(b_z_(b_z_z_(func(la *Any, ra *Any) bool {
+		eq := false
+		if la.x == nil && ra.x == nil {
+			eq = true
+		} else if la.x != nil && ra.x != nil {
+			v := calcDyadic(&value{typ: la.typ, val: la.x}, operation.Eq, &value{typ: ra.typ, val: ra.x})
+			eq = v.toBool()
+		}
+		return eq
+	}))))
+
+	putDyadic(types.ANY, types.TRILEAN, operation.Eq, b_(b_z_(b_z_t_(func(la *Any, rt tri.Trit) bool {
+		assert.For(tri.Nil(rt), 40, "NIL comparision only")
+		return la.x == nil
+	}))))
+
+	putDyadic(types.TRILEAN, types.ANY, operation.Eq, b_(b_t_(b_t_z_(func(lt tri.Trit, ra *Any) bool {
+		assert.For(tri.Nil(lt), 40, "NIL comparision only")
+		return ra.x == nil
+	}))))
+
+	putDyadic(types.ANY, types.TRILEAN, operation.Neq, b_(b_z_(b_z_t_(func(la *Any, rt tri.Trit) bool {
+		assert.For(tri.Nil(rt), 40, "NIL comparision only")
+		return la.x != nil
+	}))))
+
+	putDyadic(types.TRILEAN, types.ANY, operation.Neq, b_(b_t_(b_t_z_(func(lt tri.Trit, ra *Any) bool {
+		assert.For(tri.Nil(lt), 40, "NIL comparision only")
+		return ra.x != nil
+	}))))
+
+}
+
 func init() {
 	dyadic = make(tm)
 	dyINTEGER()
@@ -724,4 +797,5 @@ func init() {
 	dyREAL2COMPLEX()
 	dyCHAR2STRING()
 	dyABT()
+	dyANY()
 }

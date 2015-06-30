@@ -7,14 +7,18 @@ MODULE Simple0
 		b BOOLEAN
 BEGIN
 	a:=NIL
+	t := a IS INTEGER
 	z:=a
 	x:=0
 	a:=z
 	a:=x
 	z:=x
-	b := (a = z) & (a # z)
-	b := (a # NIL) & (a = NIL)
+	b := (a = z)
+	b := (a # z)
+	b := (a # NIL)
+	b := (a = NIL)
 	t := a IS INTEGER
+	t := a IS BOOLEAN
 (*	CHOOSE a
 		AS REAL: a:=0.5
 		OR INTEGER: a:=55

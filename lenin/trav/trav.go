@@ -267,6 +267,8 @@ func (s *storage) alloc(vl map[string]*ir.Variable) {
 			s.data[v.Name] = init(NewRat(0.0))
 		case types.COMPLEX:
 			s.data[v.Name] = init(NewCmp(0.0, 0.0))
+		case types.ANY:
+			s.data[v.Name] = init(&Any{})
 		default:
 			halt.As(100, "unknown type ", v.Name, ": ", v.Type)
 		}
@@ -397,7 +399,7 @@ func (s *exprStack) pop() (ret *value) {
 	return
 }
 
-func (ctx *context) expr(_e ir.Expression, typ types.Type) {
+func (ctx *context) expr(_e ir.Expression) {
 	var eval func(ir.Expression)
 
 	eval = func(_e ir.Expression) {
@@ -410,14 +412,7 @@ func (ctx *context) expr(_e ir.Expression, typ types.Type) {
 		case *ir.AtomExpr:
 			ctx.push(&value{typ: types.ATOM, val: Atom(this.Value)})
 		case *ir.ConstExpr:
-			switch typ {
-			case types.INTEGER, types.BOOLEAN, types.CHAR, types.STRING, types.REAL, types.COMPLEX:
-				ctx.push(cval(this))
-			case types.TRILEAN:
-				ctx.push(&value{typ: typ, val: tri.This(this.Value)})
-			default:
-				halt.As(100, "unknown target type ", typ)
-			}
+			ctx.push(cval(this))
 		case *ir.VariableExpr:
 			scope := ctx.tgt
 			ctx.tgt = nil
@@ -437,6 +432,20 @@ func (ctx *context) expr(_e ir.Expression, typ types.Type) {
 					return nil
 				})
 			}
+		case *ir.TypeTest:
+			eval(this.Operand)
+			v := ctx.pop()
+			a := v.toAny()
+			switch {
+			case a.x == nil:
+				ctx.push(&value{typ: types.TRILEAN, val: tri.NIL})
+			case a.x != nil && a.typ == this.Typ:
+				ctx.push(&value{typ: types.TRILEAN, val: tri.TRUE})
+			case a.x != nil && a.typ != this.Typ:
+				ctx.push(&value{typ: types.TRILEAN, val: tri.FALSE})
+			default:
+				halt.As(100, "unhandled type testing for ", v.typ, v.val)
+			}
 		case *ir.Monadic:
 			eval(this.Operand)
 			v := ctx.pop()
@@ -455,7 +464,7 @@ func (ctx *context) expr(_e ir.Expression, typ types.Type) {
 					halt.As(100, "unknown type of operand ", v.typ)
 				}
 			case operation.Not:
-				switch typ {
+				switch v.typ {
 				case types.BOOLEAN:
 					b := v.toBool()
 					ctx.push(&value{typ: v.typ, val: !b})
@@ -503,7 +512,7 @@ func (ctx *context) expr(_e ir.Expression, typ types.Type) {
 				l = ctx.pop()
 				switch this.Op {
 				case operation.And:
-					switch typ {
+					switch l.typ {
 					case types.BOOLEAN:
 						lb := l.toBool()
 						if lb {
@@ -512,7 +521,7 @@ func (ctx *context) expr(_e ir.Expression, typ types.Type) {
 							rb := r.toBool()
 							lb = lb && rb
 						}
-						ctx.push(&value{typ: typ, val: lb})
+						ctx.push(&value{typ: l.typ, val: lb})
 					case types.TRILEAN:
 						lt := l.toTril()
 						if !tri.False(lt) {
@@ -521,12 +530,12 @@ func (ctx *context) expr(_e ir.Expression, typ types.Type) {
 							rt := r.toTril()
 							lt = tri.And(lt, rt)
 						}
-						ctx.push(&value{typ: typ, val: lt})
+						ctx.push(&value{typ: l.typ, val: lt})
 					default:
 						halt.As(100, "unexpected logical type")
 					}
 				case operation.Or:
-					switch typ {
+					switch l.typ {
 					case types.BOOLEAN:
 						lb := l.toBool()
 						if !lb {
@@ -535,7 +544,7 @@ func (ctx *context) expr(_e ir.Expression, typ types.Type) {
 							rb := r.toBool()
 							lb = lb || rb
 						}
-						ctx.push(&value{typ: typ, val: lb})
+						ctx.push(&value{typ: l.typ, val: lb})
 					case types.TRILEAN:
 						lt := l.toTril()
 						if !tri.True(lt) {
@@ -544,7 +553,7 @@ func (ctx *context) expr(_e ir.Expression, typ types.Type) {
 							rt := r.toTril()
 							lt = tri.Or(lt, rt)
 						}
-						ctx.push(&value{typ: typ, val: lt})
+						ctx.push(&value{typ: l.typ, val: lt})
 					default:
 						halt.As(100, "unexpected logical type")
 					}
@@ -658,7 +667,7 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 		case *ir.SelectIndex:
 			chain = append(chain, func(in, out *value, l ...hs) *value {
 				//fmt.Println("select index ", in, out)
-				ctx.expr(s.Expr, types.INTEGER)
+				ctx.expr(s.Expr)
 				iv := ctx.pop()
 				i := iv.toInt().Int64()
 				if in != nil { //get
@@ -712,7 +721,7 @@ func (ctx *context) stmt(_s ir.Statement) {
 			x := &param{}
 			x.obj = p.Var
 			if p.Expr != nil {
-				ctx.expr(p.Expr, p.Var.Type)
+				ctx.expr(p.Expr)
 				x.val = ctx.pop()
 			} else {
 				x.sel = p.Sel
@@ -726,7 +735,7 @@ func (ctx *context) stmt(_s ir.Statement) {
 			x := &param{}
 			x.obj = p.Var
 			if p.Expr != nil {
-				ctx.expr(p.Expr, p.Var.Type)
+				ctx.expr(p.Expr)
 				x.val = ctx.pop()
 			} else {
 				x.sel = p.Sel
@@ -744,14 +753,14 @@ func (ctx *context) stmt(_s ir.Statement) {
 		}
 	case *ir.AssignStmt:
 		ctx.sel(this.Sel, nil, nil, func(in *value) *value {
-			ctx.expr(this.Expr, in.typ)
+			ctx.expr(this.Expr)
 			val := ctx.pop()
 			return val
 		})
 	case *ir.IfStmt:
 		done := false
 		for _, i := range this.Cond {
-			ctx.expr(i.Expr, types.BOOLEAN)
+			ctx.expr(i.Expr)
 			val := ctx.pop()
 			if val.toBool() {
 				done = true
@@ -770,7 +779,7 @@ func (ctx *context) stmt(_s ir.Statement) {
 		for stop := false; !stop; {
 			stop = true
 			for _, i := range this.Cond {
-				ctx.expr(i.Expr, types.BOOLEAN)
+				ctx.expr(i.Expr)
 				val := ctx.pop()
 				if val.toBool() {
 					stop = false
@@ -787,7 +796,7 @@ func (ctx *context) stmt(_s ir.Statement) {
 			for _, s := range this.Cond.Seq {
 				ctx.do(s)
 			}
-			ctx.expr(this.Cond.Expr, types.BOOLEAN)
+			ctx.expr(this.Cond.Expr)
 			val := ctx.pop()
 			stop = val.toBool()
 		}
@@ -809,7 +818,7 @@ func (ctx *context) stmt(_s ir.Statement) {
 				ex = i.Expr
 			}
 			assert.For(ex != nil, 40)
-			ctx.expr(ex, types.BOOLEAN)
+			ctx.expr(ex)
 			val := ctx.pop()
 			if val.toBool() {
 				done = true
@@ -869,7 +878,7 @@ func (ctx *context) invoke(mod, proc string, par ...interface{}) (ret interface{
 		}
 	}
 	for i, e := range p.Pre() {
-		ctx.expr(e, types.BOOLEAN)
+		ctx.expr(e)
 		val := ctx.pop()
 		assert.For(val.toBool(), 20+i)
 	}
@@ -885,7 +894,7 @@ func (ctx *context) invoke(mod, proc string, par ...interface{}) (ret interface{
 		halt.As(100, "unknown std procedure")
 	}
 	for i, e := range p.Post() {
-		ctx.expr(e, types.BOOLEAN)
+		ctx.expr(e)
 		val := ctx.pop()
 		assert.For(val.toBool(), 60+i)
 	}
@@ -928,7 +937,7 @@ func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 			}
 		}
 		for i, e := range this.Pre {
-			ctx.expr(e, types.BOOLEAN)
+			ctx.expr(e)
 			val := ctx.pop()
 			assert.For(val.toBool(), 20+i)
 		}
@@ -936,7 +945,7 @@ func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 			ctx.do(v)
 		}
 		for i, e := range this.Post {
-			ctx.expr(e, types.BOOLEAN)
+			ctx.expr(e)
 			val := ctx.pop()
 			assert.For(val.toBool(), 60+i)
 		}

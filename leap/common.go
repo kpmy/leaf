@@ -389,6 +389,9 @@ func (p *common) expression(b *exprBuilder) {
 		b.expr(b.infix(mid, id, limit))
 	case lss.Is:
 		p.next()
-		p.mark("not implemented")
+		p.pass(lss.Separator)
+		p.typ(func(t types.Type) {
+			b.expr(&ir.TypeTest{Typ: t})
+		})
 	}
 }

@@ -135,6 +135,9 @@ func treatExpr(_m interface{}) (ret *Expression) {
 		ret.Leaf[fldz.Object] = leaf[fldz.Object]
 	case Variable:
 		ret.Leaf[fldz.Object] = leaf[fldz.Object]
+	case TypeTest:
+		ret.Leaf[fldz.Operand] = leaf[fldz.Operand]
+		ret.Leaf[fldz.Type] = leaf[fldz.Type]
 	case Monadic:
 		ret.Leaf[fldz.Operand] = leaf[fldz.Operand]
 		ret.Leaf[fldz.Operation] = leaf[fldz.Operation]

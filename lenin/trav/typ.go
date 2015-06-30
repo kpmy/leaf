@@ -2,10 +2,24 @@ package trav
 
 import (
 	"fmt"
+	"github.com/kpmy/trigo"
 	"github.com/kpmy/ypk/assert"
 	"leaf/ir/types"
 	"math/big"
 )
+
+type Any struct {
+	typ types.Type
+	x   interface{}
+}
+
+func (a *Any) String() string {
+	return fmt.Sprint(a.x)
+}
+
+func ThisAny(v *value) *Any {
+	return &Any{typ: v.typ, x: v.val}
+}
 
 type Atom string
 
@@ -80,9 +94,13 @@ func ThisCmp(c *Cmp) (ret *Cmp) {
 
 func compTypes(propose, expect types.Type) (ret bool) {
 	switch {
-	case propose == expect:
-		ret = true
 	case propose == types.INTEGER && expect == types.REAL:
+		ret = true
+	case propose == types.BOOLEAN && expect == types.TRILEAN:
+		ret = true
+	case expect == types.ANY:
+		ret = true
+	case propose == expect:
 		ret = true
 	}
 	return
@@ -90,12 +108,25 @@ func compTypes(propose, expect types.Type) (ret bool) {
 
 func conv(v *value, target types.Type) (ret *value) {
 	switch {
-	case v.typ == target:
-		ret = v
 	case v.typ == types.INTEGER && target == types.REAL:
 		i := v.toInt()
 		x := big.NewRat(0, 1)
 		ret = &value{typ: target, val: ThisRat(x.SetInt(i))}
+	case v.typ == types.BOOLEAN && target == types.TRILEAN:
+		b := v.toBool()
+		x := tri.This(b)
+		ret = &value{typ: target, val: x}
+	case target == types.ANY:
+		var x interface{}
+		if v.typ == types.TRILEAN && v.toTril() == tri.NIL {
+			// NIL literal
+			x = &Any{}
+		} else {
+			x = ThisAny(v)
+		}
+		ret = &value{typ: target, val: x}
+	case v.typ == target:
+		ret = v
 	}
 	assert.For(ret != nil, 60, v.typ, target, v.val)
 	return

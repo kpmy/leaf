@@ -63,6 +63,11 @@ func internalize(m *Module) (ret *ir.Module) {
 			this.Operand = expr(treatExpr(e.Leaf[fldz.Operand]))
 			this.Op = operation.OpMap[e.Leaf[fldz.Operation].(string)]
 			d.e = this
+		case TypeTest:
+			this := &ir.TypeTest{}
+			this.Operand = expr(treatExpr(e.Leaf[fldz.Operand]))
+			this.Typ = types.TypMap[e.Leaf[fldz.Type].(string)]
+			d.e = this
 		case Dyadic:
 			this := &ir.Dyadic{}
 			this.Left = expr(treatExpr(e.Leaf[fldz.Left]))

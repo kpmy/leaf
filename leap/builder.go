@@ -286,6 +286,16 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 				ret = trav(expr, tail)
 			}
 			root.Operand = expr.e
+		case *ir.TypeTest:
+			expr, tail := first(stack)
+			assert.For(expr != nil, 40)
+			ok := false
+			expr, ok = bypass(expr)
+			if !ok {
+				//fmt.Println("mop trav")
+				ret = trav(expr, tail)
+			}
+			root.Operand = expr.e
 		case *ir.Dyadic:
 			ret = stack
 			ok := false

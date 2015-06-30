@@ -41,6 +41,10 @@ func externalize(mod *ir.Module) (ret *Module) {
 			ex.Type = Monadic
 			ex.Leaf[fldz.Operand] = expr(e.Operand)
 			ex.Leaf[fldz.Operation] = e.Op.String()
+		case *ir.TypeTest:
+			ex.Type = TypeTest
+			ex.Leaf[fldz.Operand] = expr(e.Operand)
+			ex.Leaf[fldz.Type] = e.Typ.String()
 		case *ir.Dyadic:
 			ex.Type = Dyadic
 			ex.Leaf[fldz.Left] = expr(e.Left)

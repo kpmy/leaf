@@ -43,6 +43,8 @@ func (t Type) String() (ret string) {
 		return "REAL"
 	case COMPLEX:
 		return "COMPLEX"
+	case ANY:
+		return "ANY"
 	default:
 		return strconv.Itoa(int(t))
 	}
