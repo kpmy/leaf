@@ -11,6 +11,8 @@ import (
 	"leaf/ir/types"
 )
 
+const VERSION = 0.3
+
 type Param struct {
 	Uuid string
 	Expr *Expression `yaml:"expression"`
