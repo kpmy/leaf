@@ -84,6 +84,13 @@ func resize(st rt.Storage, calc rt.Calc) {
 	l.Len(int(n.Int64()))
 }
 
+func typeof(st rt.Storage, calc rt.Calc) {
+	a := st.Get("in").(*trav.Any)
+	t, _ := a.This()
+	at := trav.Atom(t.String())
+	st.Set("res", at)
+}
+
 func init() {
 	buf := bytes.NewBufferString(rt.StdDef)
 	p := lead.ConnectTo(lss.ConnectTo(bufio.NewReader(buf)), func(string) (*ir.Import, error) {
@@ -97,4 +104,5 @@ func init() {
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "LEN"}] = length
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "ODD"}] = odd
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "RESIZE"}] = resize
+	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "TYPEOF"}] = typeof
 }

@@ -16,11 +16,16 @@ BEGIN
 END TestStd.
 
 MODULE TestStd2
+	CONST
+		INTEGER
 	CONST s = "Hello, World!"
 	VAR i INTEGER
 	VAR x STRING
 	VAR b BOOLEAN
+	VAR t ATOM
 BEGIN
+	t := \TYPEOF i
+	b:=t = INTEGER
 	i:=0
 	WHILE i < \LEN s DO
 		x := x + \CAP s[i]
