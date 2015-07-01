@@ -257,7 +257,7 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 							p.expression(e)
 							par.expr = e
 							param = append(param, par)
-						} else if p.is(lss.ArrowLeft) {
+						} else if p.is(lss.ArrowLeft) || p.is(lss.ArrowRight) {
 							par := &forwardParam{name: id}
 							p.next()
 							p.expect(lss.Ident, "ident expected", lss.Separator)

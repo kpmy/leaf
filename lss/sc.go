@@ -48,6 +48,7 @@ const (
 	Gtr
 	ArrowUp
 	ArrowLeft
+	ArrowRight
 	Div
 	Divide
 	Mod
@@ -151,6 +152,8 @@ func (s Symbol) String() (ret string) {
 		ret = "^"
 	case ArrowLeft:
 		ret = "<-"
+	case ArrowRight:
+		ret = "->"
 	case Div:
 		ret = "//"
 	case Divide:
@@ -490,8 +493,11 @@ func (s *sc) Get() (sym Sym) {
 				sym.Code = Equal
 			}
 		case '-':
-			if s.next() == '!' {
+			if ch := s.next(); ch == '!' {
 				sym.Code = Ncmp
+				s.next()
+			} else if ch == '>' {
+				sym.Code = ArrowRight
 				s.next()
 			} else {
 				sym.Code = Minus
