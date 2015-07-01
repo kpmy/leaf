@@ -10,6 +10,8 @@ import (
 	def "leaf/lead/target"
 	_ "leaf/lead/target/tt"
 	"leaf/leap"
+	mem "leaf/lem"
+	_ "leaf/lem/ym"
 	"leaf/lenin"
 	_ "leaf/lenin/rt/dumb"
 	_ "leaf/lenin/trav"
@@ -84,6 +86,10 @@ func TestParser(t *testing.T) {
 					defer t.Close()
 					def.New(ir, t)
 				}
+				if t, err := os.Create(mname + ".lm"); err == nil {
+					defer t.Close()
+					mem.New(ir, t)
+				}
 			}
 		}
 	}
@@ -153,6 +159,10 @@ func TestCollection(t *testing.T) {
 						if d, err := os.Open(ast.Name + ".ld"); err == nil {
 							p := lead.ConnectTo(scanner.ConnectTo(bufio.NewReader(d)), resolve)
 							p.Import()
+						}
+						if t, err := os.Create(ast.Name + ".lm"); err == nil {
+							defer t.Close()
+							mem.New(ast, t)
 						}
 					}
 				}

@@ -11,6 +11,8 @@ import (
 	def "leaf/lead/target"
 	_ "leaf/lead/target/tt"
 	"leaf/leap"
+	mem "leaf/lem"
+	_ "leaf/lem/ym"
 	"leaf/lenin"
 	_ "leaf/lenin/rt/dumb"
 	_ "leaf/lenin/trav"
@@ -64,6 +66,10 @@ func main() {
 			if d, err := os.Create(name + ".ld"); err == nil {
 				def.New(ir, d)
 				d.Close()
+			}
+			if m, err := os.Create(name + ".lm"); err == nil {
+				mem.New(ir, m)
+				m.Close()
 			}
 			lenin.Do(ir, load)
 		}
