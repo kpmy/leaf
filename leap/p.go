@@ -30,6 +30,7 @@ const (
 	any
 	trilean
 	vek
+	set
 )
 
 func init() {
@@ -42,7 +43,8 @@ func init() {
 		"REAL":    flo,
 		"COMPLEX": comp,
 		"ANY":     any,
-		"LIST":    vek}
+		"LIST":    vek,
+		"SET":     set}
 
 	entries = map[lss.Foreign]interface{}{integer: Type{typ: types.INTEGER},
 		boolean: Type{typ: types.BOOLEAN},
@@ -53,7 +55,8 @@ func init() {
 		flo:     Type{typ: types.REAL},
 		comp:    Type{typ: types.COMPLEX},
 		any:     Type{typ: types.ANY},
-		vek:     Type{typ: types.LIST}}
+		vek:     Type{typ: types.LIST},
+		set:     Type{typ: types.SET}}
 
 	mods = map[lss.Symbol]modifiers.Modifier{lss.Minus: modifiers.Semi, lss.Plus: modifiers.Full}
 
@@ -117,34 +120,6 @@ func (p *pr) constDecl(b *constBuilder) {
 		} else {
 			break
 		}
-	}
-}
-
-func (p *common) typ(consume func(t types.Type)) {
-	assert.For(p.sym.Code == lss.Ident, 20, "type identifier expected here but found ", p.sym.Code)
-	id := p.ident()
-	if t, ok := entries[p.sym.User].(Type); ok {
-		switch t.typ {
-		case types.INTEGER, types.REAL, types.COMPLEX:
-			p.next()
-			consume(t.typ)
-		case types.CHAR, types.STRING:
-			p.next()
-			consume(t.typ)
-		case types.ATOM, types.BOOLEAN, types.TRILEAN:
-			p.next()
-			consume(t.typ)
-		case types.ANY:
-			p.next()
-			consume(t.typ)
-		case types.LIST:
-			p.next()
-			consume(t.typ)
-		default:
-			p.mark("unexpected type ", id)
-		}
-	} else {
-		p.mark("unknown type ", id)
 	}
 }
 
@@ -683,7 +658,7 @@ func (p *pr) Module() (ret *ir.Module, err error) {
 
 func ConnectTo(s lss.Scanner, rs Resolver) Parser {
 	assert.For(s != nil, 20)
-	s.Init(lss.Module, lss.End, lss.Do, lss.While, lss.Elsif, lss.Import, lss.Const, lss.Of, lss.Pre, lss.Post, lss.Proc, lss.Var, lss.Begin, lss.Close, lss.If, lss.Then, lss.Repeat, lss.Until, lss.Else, lss.True, lss.False, lss.Nil, lss.Inf, lss.Choose, lss.Opt, lss.Infix, lss.Is, lss.Undef, lss.As)
+	s.Init(lss.Module, lss.End, lss.Do, lss.While, lss.Elsif, lss.Import, lss.Const, lss.Of, lss.Pre, lss.Post, lss.Proc, lss.Var, lss.Begin, lss.Close, lss.If, lss.Then, lss.Repeat, lss.Until, lss.Else, lss.True, lss.False, lss.Nil, lss.Inf, lss.Choose, lss.Opt, lss.Infix, lss.Is, lss.Undef, lss.As, lss.In)
 	ret := &pr{resolver: rs}
 	ret.sc = s
 	ret.debug = false

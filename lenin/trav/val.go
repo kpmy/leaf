@@ -136,6 +136,17 @@ func (v *value) toList() (ret *List) {
 	return
 }
 
+func (v *value) toSet() (ret *Set) {
+	assert.For(v.typ == types.SET, 20)
+	switch x := v.val.(type) {
+	case *Set:
+		ret = ThisSet(x)
+	default:
+		halt.As(100, "wrong list ", reflect.TypeOf(x))
+	}
+	return
+}
+
 func cval(e *ir.ConstExpr) (ret *value) {
 	t := e.Type
 	switch t {

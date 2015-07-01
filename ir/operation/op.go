@@ -33,6 +33,8 @@ const (
 	Geq
 	Lss
 	Leq
+
+	In
 	//leave this last
 	None
 )
@@ -84,6 +86,8 @@ func (o Operation) String() string {
 		return "+!"
 	case None:
 		return "nop"
+	case In:
+		return "∈"
 	default:
 		return strconv.Itoa(int(o))
 	}
@@ -106,7 +110,8 @@ func init() {
 		scanner.Leq:     Leq,
 		scanner.ArrowUp: Pow,
 		scanner.Ncmp:    Ncmp,
-		scanner.Pcmp:    Pcmp}
+		scanner.Pcmp:    Pcmp,
+		scanner.In:      In}
 
 	OpMap = make(map[string]Operation)
 	for i := int(Undef); i < int(None); i++ {

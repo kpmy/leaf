@@ -111,6 +111,28 @@ func r_ir_ir_(fn func(*big.Rat, *big.Rat) *big.Rat) func(*big.Rat, *value) *big.
 	}
 }
 
+func set_(fn func(*value, *value) *Set) func(*value, *value) *value {
+	return func(l *value, r *value) (ret *value) {
+		ret = &value{typ: types.SET}
+		ret.val = ThisSet(fn(l, r))
+		return
+	}
+}
+
+func set_set_(fn func(*Set, *value) *Set) func(*value, *value) *Set {
+	return func(l *value, r *value) *Set {
+		lc := l.toSet()
+		return fn(lc, r)
+	}
+}
+
+func set_set_set_(fn func(*Set, *Set) *Set) func(*Set, *value) *Set {
+	return func(lc *Set, r *value) *Set {
+		rc := r.toSet()
+		return fn(lc, rc)
+	}
+}
+
 func c_(fn func(*value, *value) *Cmp) func(*value, *value) *value {
 	return func(l *value, r *value) (ret *value) {
 		ret = &value{typ: types.COMPLEX}
@@ -390,6 +412,27 @@ func b_s_s_(fn func(string, string) bool) func(string, *value) bool {
 	return func(ls string, r *value) bool {
 		rs := r.toStr()
 		return fn(ls, rs)
+	}
+}
+
+func b_set_(fn func(*Set, *value) bool) func(*value, *value) bool {
+	return func(l *value, r *value) bool {
+		ls := l.toSet()
+		return fn(ls, r)
+	}
+}
+
+func b_set_set_(fn func(*Set, *Set) bool) func(*Set, *value) bool {
+	return func(ls *Set, r *value) bool {
+		rs := r.toSet()
+		return fn(ls, rs)
+	}
+}
+
+func b_z_set_(fn func(*Any, *Set) bool) func(*Any, *value) bool {
+	return func(lt *Any, r *value) bool {
+		ra := r.toSet()
+		return fn(lt, ra)
 	}
 }
 
@@ -765,6 +808,54 @@ func dyANY() {
 	}))))
 }
 
+func dySET() {
+	putDyadic(types.SET, types.SET, operation.Eq, b_(b_set_(b_set_set_(func(ls *Set, rs *Set) bool {
+		s := &Set{}
+		s.Sum(ls)
+		s.Diff(rs)
+		return s.IsEmpty()
+	}))))
+
+	putDyadic(types.SET, types.SET, operation.Neq, b_(b_set_(b_set_set_(func(ls *Set, rs *Set) bool {
+		s := &Set{}
+		s.Sum(ls)
+		s.Diff(rs)
+		return !s.IsEmpty()
+	}))))
+
+	putDyadic(types.SET, types.SET, operation.Sum, set_(set_set_(set_set_set_(func(ls *Set, rs *Set) *Set {
+		s := &Set{}
+		s.Sum(ls)
+		s.Sum(rs)
+		return s
+	}))))
+
+	putDyadic(types.SET, types.SET, operation.Diff, set_(set_set_(set_set_set_(func(ls *Set, rs *Set) *Set {
+		s := &Set{}
+		s.Sum(ls)
+		s.Diff(rs)
+		return s
+	}))))
+
+	putDyadic(types.SET, types.SET, operation.Prod, set_(set_set_(set_set_set_(func(ls *Set, rs *Set) *Set {
+		s := &Set{}
+		s.Sum(ls)
+		s.Prod(rs)
+		return s
+	}))))
+
+	putDyadic(types.SET, types.SET, operation.Quot, set_(set_set_(set_set_set_(func(ls *Set, rs *Set) *Set {
+		s := &Set{}
+		s.Sum(ls)
+		s.Quot(rs)
+		return s
+	}))))
+
+	putDyadic(types.ANY, types.SET, operation.In, b_(b_z_(b_z_set_(func(la *Any, rs *Set) bool {
+		return rs.In(la) >= 0
+	}))))
+}
+
 func init() {
 	dyadic = make(tm)
 	dyINTEGER()
@@ -777,4 +868,5 @@ func init() {
 	dyCHAR2STRING()
 	dyABT()
 	dyANY()
+	dySET()
 }

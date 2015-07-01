@@ -133,6 +133,8 @@ func treatExpr(_m interface{}) (ret *Expression) {
 		ret.Leaf[fldz.Type] = leaf[fldz.Type]
 	case NamedConstant:
 		ret.Leaf[fldz.Object] = leaf[fldz.Object]
+	case Set:
+		ret.Leaf[fldz.Expression] = leaf[fldz.Expression]
 	case Variable:
 		ret.Leaf[fldz.Object] = leaf[fldz.Object]
 	case TypeTest:

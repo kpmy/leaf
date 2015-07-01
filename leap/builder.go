@@ -274,7 +274,7 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 	trav = func(r *exprItem, stack []*exprItem) (ret []*exprItem) {
 		//fmt.Println(reflect.TypeOf(r.e))
 		switch root := r.e.(type) {
-		case *ir.ConstExpr, *ir.NamedConstExpr, *ir.VariableExpr, *ir.SelectExpr: //do nothing
+		case *ir.ConstExpr, *ir.NamedConstExpr, *ir.VariableExpr, *ir.SelectExpr, *ir.SetExpr: //do nothing
 			ret = stack
 		case *ir.Monadic:
 			expr, tail := first(stack)

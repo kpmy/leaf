@@ -20,6 +20,7 @@ const (
 	COMPLEX
 	ANY
 	LIST
+	SET
 	// leave this last
 	NONE
 )
@@ -48,6 +49,8 @@ func (t Type) String() (ret string) {
 		return "ANY"
 	case LIST:
 		return "LIST"
+	case SET:
+		return "SET"
 	default:
 		return strconv.Itoa(int(t))
 	}

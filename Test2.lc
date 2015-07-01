@@ -107,3 +107,24 @@ BEGIN
 	Item(l <- l, idx: 0, res <- c)
 	Item(l <- l, idx: 1, res <- c)
 END TestList.
+
+MODULE TestSet
+	CONST und = UNDEF
+	CONST initial = {3, "a", 0.5}
+	VAR s SET; ok BOOLEAN; i INTEGER;val LIST
+BEGIN
+	s := {11, 45, 33} + initial
+	s := {7, 16, 4, "a", 3} - initial
+	s := {343, 342, 3} * initial
+	s := {45454554, 0.444, 0.555, 3} / initial
+	ok:= (s = s)
+	ok := (s # s)
+	ok := 3 IN s
+	INCL(set<-s, x: 42)
+	EXCL(set<-s, x: 3)
+	WHILE i<32 DO
+		INCL(set<-s, x: i)
+		INC(x<-i)
+	END;
+	val := \VALUES s
+END TestSet.

@@ -275,6 +275,8 @@ func (s *storage) alloc(vl map[string]*ir.Variable) {
 			s.data[v.Name] = init(&Any{})
 		case types.LIST:
 			s.data[v.Name] = init(&List{})
+		case types.SET:
+			s.data[v.Name] = init(&Set{})
 		default:
 			halt.As(100, "unknown type ", v.Name, ": ", v.Type)
 		}
@@ -467,6 +469,14 @@ func (ctx *context) expr(_e ir.Expression) {
 			default:
 				halt.As(100, "unhandled type testing for ", v.typ, v.val)
 			}
+		case *ir.SetExpr:
+			var tmp []*value
+			for _, x := range this.Expr {
+				eval(x)
+				v := ctx.pop()
+				tmp = append(tmp, v)
+			}
+			ctx.push(&value{typ: types.SET, val: NewSet(tmp...)})
 		case *ir.Monadic:
 			eval(this.Operand)
 			v := ctx.pop()
@@ -524,6 +534,9 @@ func (ctx *context) expr(_e ir.Expression) {
 			if !(this.Op == operation.And || this.Op == operation.Or) {
 				eval(this.Left)
 				l = ctx.pop()
+				if this.Op == operation.In {
+					l = &value{typ: types.ANY, val: ThisAny(l)}
+				}
 				eval(this.Right)
 				r = ctx.pop()
 				v := calcDyadic(l, this.Op, r)

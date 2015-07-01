@@ -324,7 +324,7 @@ func (p *pd) Import() (*ir.Import, error) {
 
 func leadp(s lss.Scanner, rs lead.Resolver) lead.Parser {
 	assert.For(s != nil, 20)
-	s.Init(lss.Definition, lss.End, lss.Import, lss.Const, lss.Pre, lss.Post, lss.Proc, lss.Var, lss.True, lss.False, lss.Nil, lss.Inf, lss.Choose, lss.Opt, lss.Infix)
+	s.Init(lss.Definition, lss.End, lss.Import, lss.Const, lss.Pre, lss.Post, lss.Proc, lss.Var, lss.True, lss.False, lss.Nil, lss.Inf, lss.Choose, lss.Opt, lss.Infix, lss.Undef, lss.Is, lss.In)
 	ret := &pd{resolver: rs}
 	ret.sc = s
 	ret.init()

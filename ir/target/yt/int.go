@@ -32,6 +32,13 @@ func internalize(m *Module) (ret *ir.Module) {
 			this.Type = types.TypMap[e.Leaf[fldz.Type].(string)]
 			typeFix(this)
 			d.e = this
+		case Set:
+			this := &ir.SetExpr{}
+			el := treatExprList(e.Leaf[fldz.Expression])
+			for _, x := range el {
+				this.Expr = append(this.Expr, expr(x))
+			}
+			d.e = this
 		case NamedConstant:
 			this := &ir.NamedConstExpr{}
 			id := e.Leaf[fldz.Object].(string)

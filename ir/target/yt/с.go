@@ -5,6 +5,7 @@ type ExprType string
 const (
 	Atom          ExprType = "atom"
 	Constant      ExprType = "constant"
+	Set           ExprType = "set"
 	NamedConstant ExprType = "named-constant"
 	Variable      ExprType = "variable"
 	Monadic       ExprType = "monadic"

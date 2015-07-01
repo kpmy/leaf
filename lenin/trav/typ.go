@@ -5,9 +5,124 @@ import (
 	"github.com/kpmy/trigo"
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
+	"leaf/ir/operation"
 	"leaf/ir/types"
 	"math/big"
 )
+
+type Set struct {
+	x []*Any
+}
+
+func (s *Set) String() (ret string) {
+	for i, x := range s.x {
+		if i > 0 {
+			ret = fmt.Sprint(ret, ", ")
+		}
+		ret = fmt.Sprint(ret, x)
+	}
+	return fmt.Sprint("{", ret, "}")
+}
+
+func (s *Set) In(a *Any) (idx int) {
+	assert.For(a != nil, 20)
+	idx = -1
+	for i, x := range s.x {
+		if x.Equal(a) {
+			idx = i
+			break
+		}
+	}
+	return
+}
+
+func (s *Set) Incl(a *Any) {
+	assert.For(a.x != nil, 20)
+	if s.In(a) < 0 {
+		s.x = append(s.x, a)
+	}
+}
+
+func (s *Set) Excl(a *Any) {
+	assert.For(a.x != nil, 20)
+	var tmp []*Any
+	if i := s.In(a); i >= 0 {
+		for idx, x := range s.x {
+			if idx != i {
+				tmp = append(tmp, x)
+			}
+		}
+		s.x = tmp
+	}
+}
+
+func (s *Set) Sum(x *Set) {
+	assert.For(x != nil, 20)
+	for _, v := range x.x {
+		s.Incl(v)
+	}
+}
+
+func (s *Set) Diff(x *Set) {
+	assert.For(x != nil, 20)
+	for _, v := range x.x {
+		s.Excl(v)
+	}
+}
+
+func (s *Set) Prod(x *Set) {
+	assert.For(x != nil, 20)
+	for _, v := range s.x {
+		if x.In(v) < 0 {
+			s.Excl(v)
+		}
+	}
+}
+
+func (s *Set) Quot(x *Set) {
+	assert.For(x != nil, 20)
+	tmp := &Set{}
+	tmp.Sum(s)
+	tmp.Prod(x)
+	for _, v := range x.x {
+		if tmp.In(v) < 0 {
+			s.Incl(v)
+		}
+	}
+	for _, v := range s.x {
+		if tmp.In(v) >= 0 {
+			s.Excl(v)
+		}
+	}
+}
+
+func (s *Set) AsList() (ret []*Any) {
+	for _, x := range s.x {
+		ret = append(ret, x)
+	}
+	return
+}
+
+func (s *Set) IsEmpty() bool {
+	return len(s.x) == 0
+}
+
+func NewSet(v ...*value) (s *Set) {
+	s = &Set{}
+	for _, x := range v {
+		s.Incl(ThisAny(x))
+	}
+	return
+}
+
+func ThisSet(s *Set) (ret *Set) {
+	ret = &Set{}
+	for _, i := range s.x {
+		n := &Any{typ: i.typ, x: i.x}
+		ret.x = append(ret.x, n)
+	}
+	return
+}
 
 type List struct {
 	x []*Any
@@ -45,6 +160,10 @@ func (l *List) Set(i int, x *value) {
 	l.x[i] = n
 }
 
+func (l *List) SetVal(i int, x *Any) {
+	l.Set(i, &value{typ: types.ANY, val: x})
+}
+
 func (l *List) Get(i int) *Any {
 	return l.x[i]
 }
@@ -79,6 +198,17 @@ func (a *Any) This() (types.Type, interface{}) {
 
 func (a *Any) String() string {
 	return fmt.Sprint(a.x)
+}
+
+func (a *Any) Equal(b *Any) (ok bool) {
+	ok = false
+	if a.x != nil && b.x != nil {
+		if a.typ == b.typ {
+			v := calcDyadic(&value{typ: a.typ, val: a.x}, operation.Eq, &value{typ: b.typ, val: b.x})
+			ok = v.toBool()
+		}
+	}
+	return
 }
 
 func ThisAny(v *value) *Any {

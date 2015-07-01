@@ -1,6 +1,3 @@
 (* dummy *)
 MODULE Simple0
-	VAR x INTEGER
-BEGIN
-	INC(x -> x)
 END Simple0.

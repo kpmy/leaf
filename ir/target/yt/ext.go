@@ -29,6 +29,13 @@ func externalize(mod *ir.Module) (ret *Module) {
 		case *ir.AtomExpr:
 			ex.Type = Atom
 			ex.Leaf[fldz.Name] = e.Value
+		case *ir.SetExpr:
+			ex.Type = Set
+			var el []*Expression
+			for _, x := range e.Expr {
+				el = append(el, expr(x))
+			}
+			ex.Leaf[fldz.Expression] = el
 		case *ir.ConstExpr:
 			ex.Type = Constant
 			ex.Leaf[fldz.Value] = e.Value

@@ -91,6 +91,35 @@ func typeof(st rt.Storage, calc rt.Calc) {
 	st.Set("res", at)
 }
 
+func incl(st rt.Storage, calc rt.Calc) {
+	s := st.Get("set").(*trav.Set)
+	a := st.Get("x").(*trav.Any)
+	s.Incl(a)
+}
+
+func excl(st rt.Storage, calc rt.Calc) {
+	s := st.Get("set").(*trav.Set)
+	a := st.Get("x").(*trav.Any)
+	s.Excl(a)
+}
+
+func values(st rt.Storage, calc rt.Calc) {
+	s := st.Get("x").(*trav.Any)
+	out := st.Get("out").(*trav.List)
+	t, x := s.This()
+	switch t {
+	case types.SET:
+		set := x.(*trav.Set)
+		sl := set.AsList()
+		out.Len(len(sl))
+		for i, x := range sl {
+			out.SetVal(i, x)
+		}
+	default:
+		halt.As(100, "unsupported type ", t)
+	}
+}
+
 func init() {
 	buf := bytes.NewBufferString(rt.StdDef)
 	p := lead.ConnectTo(lss.ConnectTo(bufio.NewReader(buf)), func(string) (*ir.Import, error) {
@@ -105,4 +134,7 @@ func init() {
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "ODD"}] = odd
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "RESIZE"}] = resize
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "TYPEOF"}] = typeof
+	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "INCL"}] = incl
+	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "EXCL"}] = excl
+	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "VALUES"}] = values
 }

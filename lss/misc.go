@@ -58,5 +58,6 @@ func init() {
 		"INFIX":      Infix,
 		"IS":         Is,
 		"UNDEF":      Undef,
-		"AS":         As}
+		"AS":         As,
+		"IN":         In}
 }

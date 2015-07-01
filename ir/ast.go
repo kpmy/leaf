@@ -232,3 +232,9 @@ type ChooseStmt struct {
 }
 
 func (c *ChooseStmt) Do() {}
+
+type SetExpr struct {
+	Expr []Expression
+}
+
+func (e *SetExpr) Self() {}

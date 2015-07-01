@@ -110,6 +110,34 @@ func (p *common) qualident(b *block) (id string, mod bool) {
 	return
 }
 
+func (p *common) typ(consume func(t types.Type)) {
+	assert.For(p.sym.Code == lss.Ident, 20, "type identifier expected here but found ", p.sym.Code)
+	id := p.ident()
+	if t, ok := entries[p.sym.User].(Type); ok {
+		switch t.typ {
+		case types.INTEGER, types.REAL, types.COMPLEX:
+			p.next()
+			consume(t.typ)
+		case types.CHAR, types.STRING:
+			p.next()
+			consume(t.typ)
+		case types.ATOM, types.BOOLEAN, types.TRILEAN:
+			p.next()
+			consume(t.typ)
+		case types.ANY:
+			p.next()
+			consume(t.typ)
+		case types.LIST, types.SET:
+			p.next()
+			consume(t.typ)
+		default:
+			p.mark("unexpected type ", id)
+		}
+	} else {
+		p.mark("unknown type ", id)
+	}
+}
+
 func (p *common) is(sym lss.Symbol) bool {
 	return p.sym.Code == sym
 }
@@ -244,6 +272,27 @@ func (p *common) factor(b *exprBuilder) {
 		b.factor(expr)
 		p.expect(lss.Rparen, ") expected", lss.Separator)
 		p.next()
+	case lss.Lbrace:
+		p.next()
+		r := &ir.SetExpr{}
+		for stop := false; !stop; {
+			p.pass(lss.Separator, lss.Delimiter)
+			if !p.is(lss.Rbrace) {
+				expr := &exprBuilder{sc: b.sc}
+				p.expression(expr)
+				r.Expr = append(r.Expr, expr)
+				if p.await(lss.Comma, lss.Separator) {
+					p.next()
+				} else {
+					stop = true
+				}
+			} else { //empty set
+				stop = true
+			}
+		}
+		p.expect(lss.Rbrace, "} expected", lss.Separator)
+		p.next()
+		b.factor(r)
 	case lss.Infixate:
 		p.next()
 		p.expect(lss.Ident, "identifier expected")
@@ -360,7 +409,7 @@ func (p *common) expression(b *exprBuilder) {
 	p.quantum(b)
 	p.pass(lss.Separator)
 	switch p.sym.Code {
-	case lss.Equal, lss.Nequal, lss.Geq, lss.Leq, lss.Gtr, lss.Lss:
+	case lss.Equal, lss.Nequal, lss.Geq, lss.Leq, lss.Gtr, lss.Lss, lss.In:
 		op := p.sym.Code
 		p.next()
 		p.pass(lss.Separator)
