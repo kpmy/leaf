@@ -31,6 +31,7 @@ const (
 	trilean
 	vek
 	set
+	ass
 )
 
 func init() {
@@ -44,7 +45,8 @@ func init() {
 		"COMPLEX": comp,
 		"ANY":     any,
 		"LIST":    vek,
-		"SET":     set}
+		"SET":     set,
+		"MAP":     ass}
 
 	entries = map[lss.Foreign]interface{}{integer: Type{typ: types.INTEGER},
 		boolean: Type{typ: types.BOOLEAN},
@@ -56,7 +58,8 @@ func init() {
 		comp:    Type{typ: types.COMPLEX},
 		any:     Type{typ: types.ANY},
 		vek:     Type{typ: types.LIST},
-		set:     Type{typ: types.SET}}
+		set:     Type{typ: types.SET},
+		ass:     Type{typ: types.MAP}}
 
 	mods = map[lss.Symbol]modifiers.Modifier{lss.Minus: modifiers.Semi, lss.Plus: modifiers.Full}
 
@@ -658,7 +661,7 @@ func (p *pr) Module() (ret *ir.Module, err error) {
 
 func ConnectTo(s lss.Scanner, rs Resolver) Parser {
 	assert.For(s != nil, 20)
-	s.Init(lss.Module, lss.End, lss.Do, lss.While, lss.Elsif, lss.Import, lss.Const, lss.Of, lss.Pre, lss.Post, lss.Proc, lss.Var, lss.Begin, lss.Close, lss.If, lss.Then, lss.Repeat, lss.Until, lss.Else, lss.True, lss.False, lss.Nil, lss.Inf, lss.Choose, lss.Opt, lss.Infix, lss.Is, lss.Undef, lss.As, lss.In)
+	s.Init(lss.Module, lss.End, lss.Do, lss.While, lss.Elsif, lss.Import, lss.Const, lss.Of, lss.Pre, lss.Post, lss.Proc, lss.Var, lss.Begin, lss.Close, lss.If, lss.Then, lss.Repeat, lss.Until, lss.Else, lss.True, lss.False, lss.Nil, lss.Inf, lss.Choose, lss.Opt, lss.Infix, lss.Is, lss.Undef, lss.As, lss.In, lss.Rbrux, lss.Lbrux)
 	ret := &pr{resolver: rs}
 	ret.sc = s
 	ret.debug = false

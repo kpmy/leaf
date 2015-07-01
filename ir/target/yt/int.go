@@ -39,6 +39,24 @@ func internalize(m *Module) (ret *ir.Module) {
 				this.Expr = append(this.Expr, expr(x))
 			}
 			d.e = this
+		case List:
+			this := &ir.ListExpr{}
+			el := treatExprList(e.Leaf[fldz.Expression])
+			for _, x := range el {
+				this.Expr = append(this.Expr, expr(x))
+			}
+			d.e = this
+		case Map:
+			this := &ir.MapExpr{}
+			kl := treatExprList(e.Leaf[fldz.Key])
+			for _, x := range kl {
+				this.Key = append(this.Key, expr(x))
+			}
+			vl := treatExprList(e.Leaf[fldz.Value])
+			for _, x := range vl {
+				this.Value = append(this.Value, expr(x))
+			}
+			d.e = this
 		case NamedConstant:
 			this := &ir.NamedConstExpr{}
 			id := e.Leaf[fldz.Object].(string)
@@ -116,7 +134,6 @@ func internalize(m *Module) (ret *ir.Module) {
 				}
 			} else {
 				halt.As(100, "unexpected nil")
-
 			}
 		case InvokeInfix:
 			this := &ir.InvokeInfix{}

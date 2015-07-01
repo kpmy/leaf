@@ -277,6 +277,8 @@ func (s *storage) alloc(vl map[string]*ir.Variable) {
 			s.data[v.Name] = init(&List{})
 		case types.SET:
 			s.data[v.Name] = init(&Set{})
+		case types.MAP:
+			s.data[v.Name] = init(&Map{})
 		default:
 			halt.As(100, "unknown type ", v.Name, ": ", v.Type)
 		}
@@ -477,6 +479,28 @@ func (ctx *context) expr(_e ir.Expression) {
 				tmp = append(tmp, v)
 			}
 			ctx.push(&value{typ: types.SET, val: NewSet(tmp...)})
+		case *ir.ListExpr:
+			var tmp []*value
+			for _, x := range this.Expr {
+				eval(x)
+				v := ctx.pop()
+				tmp = append(tmp, v)
+			}
+			ctx.push(&value{typ: types.LIST, val: NewList(tmp...)})
+		case *ir.MapExpr:
+			var k []*value
+			for _, x := range this.Key {
+				eval(x)
+				v := ctx.pop()
+				k = append(k, v)
+			}
+			var v []*value
+			for _, x := range this.Value {
+				eval(x)
+				n := ctx.pop()
+				v = append(v, n)
+			}
+			ctx.push(&value{typ: types.MAP, val: NewMap(k, v)})
 		case *ir.Monadic:
 			eval(this.Operand)
 			v := ctx.pop()
@@ -703,16 +727,22 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 				//fmt.Println("select index ", in, out)
 				ctx.expr(s.Expr)
 				iv := ctx.pop()
-				i := iv.toInt().Int64()
 				if in != nil { //get
 					switch in.typ {
 					case types.STRING:
+						i := iv.toInt().Int64()
 						buf := []rune(in.toStr())
 						//fmt.Println(buf, i, buf[i])
 						out = &value{typ: types.CHAR, val: buf[i]}
 					case types.LIST:
+						i := iv.toInt().Int64()
 						l := in.toList()
 						data := l.Get(int(i))
+						out = &value{typ: types.ANY, val: data}
+					case types.MAP:
+						i := ThisAny(iv)
+						m := in.toMap()
+						data := m.Get(i)
 						out = &value{typ: types.ANY, val: data}
 					default:
 						halt.As(100, "unknown base type ", in.typ)
@@ -723,14 +753,21 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 					//fmt.Println(data)
 					switch out.typ {
 					case types.STRING:
+						i := iv.toInt().Int64()
 						buf := []rune(out.toStr())
 						//fmt.Println(buf, i, buf[i])
 						buf[i] = data.toRune()
 						in = &value{typ: types.STRING, val: string(buf)}
 					case types.LIST:
+						i := iv.toInt().Int64()
 						l := out.toList()
 						l.Set(int(i), data)
 						in = &value{typ: types.LIST, val: ThisList(l)}
+					case types.MAP:
+						i := ThisAny(iv)
+						m := out.toMap()
+						m.Set(i, ThisAny(data))
+						in = &value{typ: types.MAP, val: ThisMap(m)}
 					default:
 						halt.As(100, "unknown base type ", out.typ)
 					}

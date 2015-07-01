@@ -56,6 +56,8 @@ const (
 	Ncmp
 	Pcmp
 	Infixate
+	Rbrux
+	Lbrux
 
 	Inf
 	True
@@ -173,6 +175,10 @@ func (s Symbol) String() (ret string) {
 		ret = "-!"
 	case Infixate:
 		ret = "\\"
+	case Rbrux:
+		ret = ">>"
+	case Lbrux:
+		ret = "<<"
 	default:
 		ret = fmt.Sprint("sym [", strconv.Itoa(int(s)), "]")
 	}
@@ -513,13 +519,19 @@ func (s *sc) Get() (sym Sym) {
 			} else if ch == '-' {
 				s.next()
 				sym.Code = ArrowLeft
+			} else if ch == '<' {
+				s.next()
+				sym.Code = Lbrux
 			} else {
 				sym.Code = Lss
 			}
 		case '>':
-			if s.next() == '=' {
+			if ch := s.next(); ch == '=' {
 				s.next()
 				sym.Code = Geq
+			} else if ch == '>' {
+				s.next()
+				sym.Code = Rbrux
 			} else {
 				sym.Code = Gtr
 			}

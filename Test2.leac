@@ -76,9 +76,11 @@ END TestAny.
 
 MODULE TestList
 	CONST s = "HELLO"
-	VAR	l LIST
+	CONST li = [123, 124124, "LITERAL"]
+	VAR	l, l2 LIST
 	VAR i, len INTEGER
 	VAR c CHAR
+
 
 	PROCEDURE Item
 		VAR l+ LIST
@@ -106,6 +108,7 @@ BEGIN
 	END
 	Item(l <- l, idx: 0, res <- c)
 	Item(l <- l, idx: 1, res <- c)
+	l2 := li
 END TestList.
 
 MODULE TestSet
@@ -128,3 +131,20 @@ BEGIN
 	END;
 	val := \VALUES s
 END TestSet.
+
+MODULE TestMap
+	CONST
+		type; value;
+		ml = <<type: 3.14, value: "OBERON FOR THE GOOD!">>
+		l = [123, 124124, "LITERAL"]
+	VAR m MAP; x ANY
+BEGIN
+	m["memory"] := 1945
+	m[type] := 42
+	m[value] := "Hello, World!"
+	x:=m[value]
+	m := ml
+	m[value] := l
+	m.value := l
+	m."memory":=1812
+END TestMap.

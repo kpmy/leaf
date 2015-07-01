@@ -6,6 +6,8 @@ const (
 	Atom          ExprType = "atom"
 	Constant      ExprType = "constant"
 	Set           ExprType = "set"
+	List          ExprType = "list"
+	Map           ExprType = "map"
 	NamedConstant ExprType = "named-constant"
 	Variable      ExprType = "variable"
 	Monadic       ExprType = "monadic"

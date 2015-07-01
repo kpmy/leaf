@@ -127,7 +127,7 @@ func (p *common) typ(consume func(t types.Type)) {
 		case types.ANY:
 			p.next()
 			consume(t.typ)
-		case types.LIST, types.SET:
+		case types.LIST, types.SET, types.MAP:
 			p.next()
 			consume(t.typ)
 		default:
@@ -183,6 +183,13 @@ func (p *common) selector(b *selBuilder) {
 			b.join(this)
 			p.expect(lss.Rbrak, "no ] found", lss.Separator)
 			p.next()
+		case lss.Period:
+			p.next()
+			this := &ir.SelectIndex{}
+			expr := &exprBuilder{sc: b.sc}
+			p.factor(expr)
+			this.Expr = expr
+			b.join(this)
 		default:
 			stop = true
 		}
@@ -291,6 +298,53 @@ func (p *common) factor(b *exprBuilder) {
 			}
 		}
 		p.expect(lss.Rbrace, "} expected", lss.Separator)
+		p.next()
+		b.factor(r)
+	case lss.Lbrak:
+		p.next()
+		r := &ir.ListExpr{}
+		for stop := false; !stop; {
+			p.pass(lss.Separator, lss.Delimiter)
+			if !p.is(lss.Rbrak) {
+				expr := &exprBuilder{sc: b.sc}
+				p.expression(expr)
+				r.Expr = append(r.Expr, expr)
+				if p.await(lss.Comma, lss.Separator) {
+					p.next()
+				} else {
+					stop = true
+				}
+			} else { //empty set
+				stop = true
+			}
+		}
+		p.expect(lss.Rbrak, "] expected", lss.Separator)
+		p.next()
+		b.factor(r)
+	case lss.Lbrux:
+		p.next()
+		r := &ir.MapExpr{}
+		for stop := false; !stop; {
+			p.pass(lss.Separator, lss.Delimiter)
+			if !p.is(lss.Rbrux) {
+				kexpr := &exprBuilder{sc: b.sc}
+				p.expression(kexpr)
+				r.Key = append(r.Key, kexpr)
+				p.expect(lss.Colon, "colon expected", lss.Separator)
+				p.next()
+				vexpr := &exprBuilder{sc: b.sc}
+				p.expression(vexpr)
+				r.Value = append(r.Value, vexpr)
+				if p.await(lss.Comma, lss.Separator) {
+					p.next()
+				} else {
+					stop = true
+				}
+			} else {
+				stop = true
+			}
+		}
+		p.expect(lss.Rbrux, "] expected", lss.Separator)
 		p.next()
 		b.factor(r)
 	case lss.Infixate:

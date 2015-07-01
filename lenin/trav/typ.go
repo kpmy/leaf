@@ -10,6 +10,75 @@ import (
 	"math/big"
 )
 
+type Map struct {
+	k []*Any
+	v []*Any
+}
+
+func (m *Map) String() (ret string) {
+	for i, x := range m.k {
+		if i > 0 {
+			ret = fmt.Sprint(ret, ", ")
+		}
+		ret = fmt.Sprint(ret, x, ":", m.v[i])
+	}
+	return fmt.Sprint("<", ret, ">")
+}
+
+func ThisMap(m *Map) (ret *Map) {
+	ret = &Map{}
+	for _, k := range m.k {
+		n := &Any{typ: k.typ, x: k.x}
+		ret.k = append(ret.k, n)
+	}
+	for _, v := range m.v {
+		n := &Any{typ: v.typ, x: v.x}
+		ret.v = append(ret.v, n)
+	}
+	return
+}
+
+func NewMap(_k, _v []*value) (ret *Map) {
+	ret = &Map{}
+	for _, k := range _k {
+		ret.k = append(ret.k, ThisAny(k))
+	}
+	for _, v := range _v {
+		ret.v = append(ret.v, ThisAny(v))
+	}
+	return
+}
+
+func (m *Map) In(a *Any) (idx int) {
+	assert.For(a != nil, 20)
+	idx = -1
+	for i, x := range m.k {
+		if x.Equal(a) {
+			idx = i
+			break
+		}
+	}
+	return
+}
+
+func (m *Map) Set(i *Any, a *Any) {
+	if x := m.In(i); x >= 0 {
+		m.v[x] = &Any{typ: a.typ, x: a.x}
+	} else {
+		m.k = append(m.k, &Any{typ: i.typ, x: i.x})
+		m.v = append(m.v, &Any{typ: a.typ, x: a.x})
+	}
+}
+
+func (m *Map) Get(i *Any) (ret *Any) {
+	ret = &Any{}
+	if x := m.In(i); x >= 0 {
+		n := &Any{typ: m.v[x].typ, x: m.v[x].x}
+		ret = n
+	}
+	return
+}
+
 type Set struct {
 	x []*Any
 }
@@ -183,6 +252,14 @@ func ThisList(l *List) (ret *List) {
 	for _, i := range l.x {
 		n := &Any{typ: i.typ, x: i.x}
 		ret.x = append(ret.x, n)
+	}
+	return
+}
+
+func NewList(v ...*value) (s *List) {
+	s = &List{}
+	for _, x := range v {
+		s.x = append(s.x, ThisAny(x))
 	}
 	return
 }

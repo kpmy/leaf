@@ -21,6 +21,7 @@ const (
 	ANY
 	LIST
 	SET
+	MAP
 	// leave this last
 	NONE
 )
@@ -51,6 +52,8 @@ func (t Type) String() (ret string) {
 		return "LIST"
 	case SET:
 		return "SET"
+	case MAP:
+		return "MAP"
 	default:
 		return strconv.Itoa(int(t))
 	}

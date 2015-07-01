@@ -7,6 +7,7 @@ const (
 	Leaf       = "leaf"
 	Object     = "object"
 	Value      = "value"
+	Key        = "key"
 	Operand    = "operand"
 	Operation  = "operation"
 	Name       = "name"

@@ -238,3 +238,15 @@ type SetExpr struct {
 }
 
 func (e *SetExpr) Self() {}
+
+type ListExpr struct {
+	Expr []Expression
+}
+
+func (e *ListExpr) Self() {}
+
+type MapExpr struct {
+	Key, Value []Expression
+}
+
+func (e *MapExpr) Self() {}

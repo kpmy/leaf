@@ -36,6 +36,25 @@ func externalize(mod *ir.Module) (ret *Module) {
 				el = append(el, expr(x))
 			}
 			ex.Leaf[fldz.Expression] = el
+		case *ir.ListExpr:
+			ex.Type = List
+			var el []*Expression
+			for _, x := range e.Expr {
+				el = append(el, expr(x))
+			}
+			ex.Leaf[fldz.Expression] = el
+		case *ir.MapExpr:
+			ex.Type = Map
+			var kl []*Expression
+			for _, x := range e.Key {
+				kl = append(kl, expr(x))
+			}
+			ex.Leaf[fldz.Key] = kl
+			var vl []*Expression
+			for _, x := range e.Value {
+				vl = append(vl, expr(x))
+			}
+			ex.Leaf[fldz.Value] = vl
 		case *ir.ConstExpr:
 			ex.Type = Constant
 			ex.Leaf[fldz.Value] = e.Value

@@ -147,6 +147,17 @@ func (v *value) toSet() (ret *Set) {
 	return
 }
 
+func (v *value) toMap() (ret *Map) {
+	assert.For(v.typ == types.MAP, 20)
+	switch x := v.val.(type) {
+	case *Map:
+		ret = ThisMap(x)
+	default:
+		halt.As(100, "wrong list ", reflect.TypeOf(x))
+	}
+	return
+}
+
 func cval(e *ir.ConstExpr) (ret *value) {
 	t := e.Type
 	switch t {
