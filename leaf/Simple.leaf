@@ -1,3 +1,17 @@
 (* dummy *)
 MODULE Simple
+
+	CONST
+		type; value;
+		ml = [type: 3.14, value: "OBERON FOR THE GOOD!"]
+		l = [123, 124124, "LITERAL"]
+
+	VAR m MAP
+BEGIN
+	m."memory" := 1945
+	m.type := 42
+	m.value := "Hello, World!"
+
+	m := ml
+	m.value = l
 END Simple.
