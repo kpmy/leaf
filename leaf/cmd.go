@@ -24,7 +24,7 @@ import (
 var name string
 
 func init() {
-	flag.StringVar(&name, "i", "Simple0", "-i name.ext")
+	flag.StringVar(&name, "i", "Simple", "-i name.ext")
 }
 
 func resolve(name string) (ret *ir.Import, err error) {
@@ -47,7 +47,7 @@ func main() {
 	log.Println("Leaf compiler, pk, 20150529")
 	flag.Parse()
 	assert.For(name != "", 20)
-	sname := name + ".lf"
+	sname := name + ".leaf"
 	log.Println(name, "running...")
 	if f, err := os.Open(sname); err == nil {
 		defer f.Close()

@@ -38,7 +38,7 @@ func load(name string) (ret *ir.Module, err error) {
 }
 
 func TestScanner(t *testing.T) {
-	if f, err := os.Open("test-scanner.lf"); err == nil {
+	if f, err := os.Open("test-scanner.leaf"); err == nil {
 		defer f.Close()
 		sc := scanner.ConnectTo(bufio.NewReader(f))
 		sc.Init(scanner.Module)
@@ -72,7 +72,7 @@ func TestParser(t *testing.T) {
 	var err error
 	for i := int64(0); err == nil; i++ {
 		mname := "Test" + strconv.FormatInt(i, 16)
-		sname := mname + ".lf"
+		sname := mname + ".leaf"
 		if _, err = os.Stat(sname); err == nil {
 			if f, err := os.Open(sname); err == nil {
 				defer f.Close()
@@ -117,7 +117,7 @@ func TestInterp(t *testing.T) {
 	var err error
 	for i := int64(0); err == nil; i++ {
 		mname := "Test" + strconv.FormatInt(i, 16)
-		sname := mname + ".lf"
+		sname := mname + ".leaf"
 		if _, err = os.Stat(sname); err == nil {
 			if f, err := os.Open(sname); err == nil {
 				defer f.Close()
@@ -133,7 +133,7 @@ func TestCollection(t *testing.T) {
 	var err error
 	for i := int64(0); err == nil; i++ {
 		mname := "Test" + strconv.FormatInt(i, 16)
-		sname := mname + ".lc"
+		sname := mname + ".leac"
 		if _, err = os.Stat(sname); err == nil {
 			if f, err := os.Open(sname); err == nil {
 				defer f.Close()
@@ -147,11 +147,6 @@ func TestCollection(t *testing.T) {
 							code.New(ast, t)
 							t.Close()
 						}
-						if t, err := os.Open(ast.Name + ".li"); err == nil {
-							defer t.Close()
-							ast := code.Old(t)
-							lenin.Do(ast, load)
-						}
 						if t, err := os.Create(ast.Name + ".ld"); err == nil {
 							def.New(ast, t)
 							t.Close()
@@ -163,6 +158,11 @@ func TestCollection(t *testing.T) {
 						if t, err := os.Create(ast.Name + ".lm"); err == nil {
 							defer t.Close()
 							mem.New(ast, t)
+						}
+						if t, err := os.Open(ast.Name + ".li"); err == nil {
+							defer t.Close()
+							ast := code.Old(t)
+							lenin.Do(ast, load)
 						}
 					}
 				}
