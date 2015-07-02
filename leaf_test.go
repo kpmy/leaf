@@ -10,7 +10,7 @@ import (
 	def "leaf/lead/target"
 	_ "leaf/lead/target/tt"
 	"leaf/leap"
-	mem "leaf/lem"
+	"leaf/lem"
 	_ "leaf/lem/ym"
 	"leaf/lenin"
 	_ "leaf/lenin/rt/dumb"
@@ -29,6 +29,7 @@ func resolve(name string) (ret *ir.Import, err error) {
 	}
 	return
 }
+
 func load(name string) (ret *ir.Module, err error) {
 	if t, err := os.Open(name + ".li"); err == nil {
 		defer t.Close()
@@ -88,7 +89,7 @@ func TestParser(t *testing.T) {
 				}
 				if t, err := os.Create(mname + ".lm"); err == nil {
 					defer t.Close()
-					mem.New(ir, t)
+					lem.New(ir, t)
 				}
 			}
 		}
@@ -123,7 +124,8 @@ func TestInterp(t *testing.T) {
 				defer f.Close()
 				p := leap.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)), resolve)
 				ir, _ := p.Module()
-				lenin.Do(ir, load)
+				mach := lem.Run()
+				lenin.Do(ir, load, mach.Chan())
 			}
 		}
 	}
@@ -157,12 +159,13 @@ func TestCollection(t *testing.T) {
 						}
 						if t, err := os.Create(ast.Name + ".lm"); err == nil {
 							defer t.Close()
-							mem.New(ast, t)
+							lem.New(ast, t)
 						}
 						if t, err := os.Open(ast.Name + ".li"); err == nil {
 							defer t.Close()
 							ast := code.Old(t)
-							lenin.Do(ast, load)
+							mach := lem.Run()
+							lenin.Do(ast, load, mach.Chan())
 						}
 					}
 				}

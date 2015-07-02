@@ -34,5 +34,6 @@ MODULE TestHandle
 BEGIN
 	msg.type := console
 	msg.data := "Hello, World!"
+	msg."ln" := TRUE
 	HANDLE(to<-msg, from->anwser)
 END TestHandle.
