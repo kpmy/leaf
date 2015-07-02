@@ -45,6 +45,10 @@ type Map struct {
 	v []*Any
 }
 
+func (m *Map) Keys() []*Any {
+	return m.k
+}
+
 func (m *Map) String() (ret string) {
 	for i, x := range m.k {
 		if i > 0 {
@@ -427,6 +431,8 @@ func conv(v *value, target types.Type) (ret *value) {
 	case target == types.ANY && v.typ == types.ANY:
 		x := v.toAny()
 		ret = &value{typ: target, val: x}
+	case v.typ == types.PTR && target == types.PTR:
+		ret = &value{typ: types.PTR, val: ThisPtr(v.val.(*Ptr))} //pointers have only value, not an identity
 	case v.typ == target:
 		ret = v
 	}

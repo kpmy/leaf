@@ -20,8 +20,9 @@ import (
 type context struct {
 	data *storeStack
 	exprStack
-	load []*ir.Module
-	tgt  *storage
+	load     []*ir.Module
+	tgt      *storage
+	universe chan rt.Message
 }
 
 type anyData interface {
@@ -1041,7 +1042,7 @@ func (ctx *context) invoke(mod, proc string, par ...interface{}) (ret interface{
 		assert.For(val.toBool(), 20+i)
 	}
 	if p := rt.StdProc[rt.Qualident{mod, proc}]; p != nil {
-		p(ctx.data.top(), func(lt types.Type, l interface{}, op operation.Operation, rt types.Type, r interface{}, t types.Type) interface{} {
+		p(ctx, ctx.data.top(), func(lt types.Type, l interface{}, op operation.Operation, rt types.Type, r interface{}, t types.Type) interface{} {
 			rv := &value{typ: rt, val: r}
 			lv := &value{typ: lt, val: l}
 			v := calcDyadic(lv, op, rv)
@@ -1128,17 +1129,25 @@ func (c *context) run() {
 	}
 }
 
-func connectTo(m ...*ir.Module) (ret *context) {
+func (c *context) Handler() func(rt.Message) rt.Message {
+	return func(in rt.Message) rt.Message {
+		c.universe <- in
+		return <-c.universe
+	}
+}
+
+func connectTo(universe chan rt.Message, m ...*ir.Module) (ret *context) {
 	assert.For(len(m) > 0, 20)
 	ret = &context{}
 	ret.load = m
+	ret.universe = universe
 	ret.data = &storeStack{}
 	ret.data.init(ret)
 	ret.exprStack.init()
 	return
 }
 
-func run(main *ir.Module, ld lenin.Loader) {
+func run(main *ir.Module, ld lenin.Loader, universe chan rt.Message) {
 
 	cache := make(map[string]*ir.Module)
 	var ml []string
@@ -1165,7 +1174,7 @@ func run(main *ir.Module, ld lenin.Loader) {
 			delete(cache, ml[i])
 		}
 	}
-	connectTo(mm...).run()
+	connectTo(universe, mm...).run()
 }
 
 func init() {

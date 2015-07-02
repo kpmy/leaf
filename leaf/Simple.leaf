@@ -1,3 +1,12 @@
 (* dummy *)
 MODULE Simple
+	CONST
+		type; data;
+		console = "console"
+	VAR msg, anwser MAP
+BEGIN
+	msg.type := console
+	msg.data := "Hello, World!"
+	msg."ln" := TRUE
+	HANDLE(to<-msg, from->anwser)
 END Simple.

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
 	"leaf/ir/operation"
@@ -15,6 +16,7 @@ import (
 	"leaf/lss"
 	"math/big"
 	"reflect"
+	"runtime"
 	"unicode"
 )
 
@@ -25,7 +27,7 @@ func bi(x int64) *big.Int {
 }
 
 //INC x to n
-func inc(s rt.Storage, calc rt.Calc) {
+func inc(ctx rt.Context, s rt.Storage, calc rt.Calc) {
 	x := s.Get("x")
 	n := s.Get("n")
 	zero := calc(types.INTEGER, n, operation.Eq, types.INTEGER, trav.NewInt(0), types.BOOLEAN).(bool)
@@ -36,7 +38,7 @@ func inc(s rt.Storage, calc rt.Calc) {
 }
 
 //DEC x to n
-func dec(s rt.Storage, calc rt.Calc) {
+func dec(ctx rt.Context, s rt.Storage, calc rt.Calc) {
 	x := s.Get("x")
 	n := s.Get("n")
 	zero := calc(types.INTEGER, n, operation.Eq, types.INTEGER, trav.NewInt(0), types.BOOLEAN).(bool)
@@ -47,12 +49,12 @@ func dec(s rt.Storage, calc rt.Calc) {
 }
 
 //CAP x to cap
-func toUpper(s rt.Storage, calc rt.Calc) {
+func toUpper(ctx rt.Context, s rt.Storage, calc rt.Calc) {
 	x := s.Get("x").(rune)
 	s.Set("cap", unicode.ToUpper(x))
 }
 
-func length(st rt.Storage, calc rt.Calc) {
+func length(ctx rt.Context, st rt.Storage, calc rt.Calc) {
 	t, x := st.Get("in").(*trav.Any).This()
 	switch t {
 	case types.STRING:
@@ -68,7 +70,7 @@ func length(st rt.Storage, calc rt.Calc) {
 	}
 }
 
-func odd(st rt.Storage, calc rt.Calc) {
+func odd(ctx rt.Context, st rt.Storage, calc rt.Calc) {
 	_x := st.Get("in")
 	if i := _x.(*trav.Int); i != nil {
 		x := &big.Int{}
@@ -80,32 +82,32 @@ func odd(st rt.Storage, calc rt.Calc) {
 	}
 }
 
-func resize(st rt.Storage, calc rt.Calc) {
+func resize(ctx rt.Context, st rt.Storage, calc rt.Calc) {
 	l := st.Get("list").(*trav.List)
 	n := st.Get("n").(*trav.Int)
 	l.Len(int(n.Int64()))
 }
 
-func typeof(st rt.Storage, calc rt.Calc) {
+func typeof(ctx rt.Context, st rt.Storage, calc rt.Calc) {
 	a := st.Get("in").(*trav.Any)
 	t, _ := a.This()
 	at := trav.Atom(t.String())
 	st.Set("res", at)
 }
 
-func incl(st rt.Storage, calc rt.Calc) {
+func incl(ctx rt.Context, st rt.Storage, calc rt.Calc) {
 	s := st.Get("set").(*trav.Set)
 	a := st.Get("x").(*trav.Any)
 	s.Incl(a)
 }
 
-func excl(st rt.Storage, calc rt.Calc) {
+func excl(ctx rt.Context, st rt.Storage, calc rt.Calc) {
 	s := st.Get("set").(*trav.Set)
 	a := st.Get("x").(*trav.Any)
 	s.Excl(a)
 }
 
-func values(st rt.Storage, calc rt.Calc) {
+func values(ctx rt.Context, st rt.Storage, calc rt.Calc) {
 	s := st.Get("x").(*trav.Any)
 	out := st.Get("out").(*trav.List)
 	t, x := s.This()
@@ -122,11 +124,24 @@ func values(st rt.Storage, calc rt.Calc) {
 	}
 }
 
-func alloc(st rt.Storage, calc rt.Calc) {
+func alloc(ctx rt.Context, st rt.Storage, calc rt.Calc) {
 	p := st.Get("p").(*trav.Ptr)
 	adr := Heap.New()
 	link := &heapy{h: Heap, adr: adr}
+	runtime.SetFinalizer(link, func(obj *heapy) {
+		fmt.Println("finalize ", fmt.Sprintf("%X", obj.adr))
+	})
 	p.Init(adr, link)
+}
+
+func handle(ctx rt.Context, st rt.Storage, calc rt.Calc) {
+	in := st.Get("to").(*trav.Map)
+	m := Map(in)
+	fn := ctx.Handler()
+	m = fn(rt.Message(m))
+	if m != nil {
+		halt.As(100)
+	}
 }
 
 func init() {
@@ -147,5 +162,6 @@ func init() {
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "EXCL"}] = excl
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "VALUES"}] = values
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "NEW"}] = alloc
+	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "HANDLE"}] = handle
 	Heap = newHeap()
 }

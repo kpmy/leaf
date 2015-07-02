@@ -79,12 +79,22 @@ DEFINITION STD
 		VAR out+ LIST
 	INFIX out x
 	END VALUES
+
+	PROCEDURE HANDLE
+		VAR to+, from+ MAP
+	END HANDLE
 END STD.
 `
 
 type Qualident struct {
 	Mod  string
 	Proc string
+}
+
+type Message map[interface{}]interface{}
+
+type Context interface {
+	Handler() func(Message) Message
 }
 
 type Storage interface {
@@ -94,7 +104,7 @@ type Storage interface {
 }
 
 type Calc func(types.Type, interface{}, operation.Operation, types.Type, interface{}, types.Type) interface{}
-type Proc func(Storage, Calc)
+type Proc func(Context, Storage, Calc)
 
 var StdImp *ir.Import
 var StdProc map[Qualident]Proc

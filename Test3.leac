@@ -1,0 +1,38 @@
+MODULE TestLinked
+	CONST
+		value; parent;
+
+	VAR
+		root, item PTR
+		i INTEGER
+		x, y ANY
+BEGIN
+	NEW(p->root)
+	WHILE i<10 DO
+		NEW(p->item)
+		item$ := <<parent: root, value: i>>
+		root := item
+		INC(x->i)
+	END
+	item := root
+	WHILE item # NIL DO
+		x:=item$
+		CHOOSE x AS MAP:
+			y:=x.value
+			CHOOSE y AS INTEGER: i:=y ELSE END;
+			y:=x.parent
+			CHOOSE y AS PTR: item:=y ELSE item:=NIL END;
+		ELSE item:=NIL END;
+	END
+END TestLinked.
+
+MODULE TestHandle
+	CONST
+		type; data;
+		console = "console"
+	VAR msg, anwser MAP
+BEGIN
+	msg.type := console
+	msg.data := "Hello, World!"
+	HANDLE(to<-msg, from->anwser)
+END TestHandle.

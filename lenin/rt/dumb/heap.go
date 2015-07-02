@@ -27,8 +27,9 @@ func (h *heapy) Get() *trav.Any {
 }
 
 func (h *heapy) Set(x *trav.Any) {
-	fmt.Println("heap touch", h.adr, x)
+	fmt.Println("heap touch", fmt.Sprintf("%X", h.adr), x)
 	h.h.data[h.adr] = x
+	fmt.Println(h.h)
 }
 
 func newHeap() *heap {
