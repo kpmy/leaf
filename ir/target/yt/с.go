@@ -34,6 +34,6 @@ type SelType string
 
 const (
 	SelVar SelType = "variable"
-	SelIdx SelType = "index"
+	SelIn  SelType = "indside"
 	SelMod SelType = "module"
 )

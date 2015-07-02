@@ -158,6 +158,17 @@ func (v *value) toMap() (ret *Map) {
 	return
 }
 
+func (v *value) toPtr() (ret *Ptr) {
+	assert.For(v.typ == types.PTR, 20)
+	switch x := v.val.(type) {
+	case *Ptr:
+		ret = ThisPtr(x)
+	default:
+		halt.As(100, "wrong list ", reflect.TypeOf(x))
+	}
+	return
+}
+
 func cval(e *ir.ConstExpr) (ret *value) {
 	t := e.Type
 	switch t {
@@ -204,6 +215,8 @@ func cval(e *ir.ConstExpr) (ret *value) {
 		}
 	case types.ANY:
 		ret = &value{typ: t, val: &Any{}}
+	case types.PTR:
+		ret = &value{typ: t, val: &Ptr{}}
 	default:
 		halt.As(100, "unknown type ", t, " for ", e)
 	}

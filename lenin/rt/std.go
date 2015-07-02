@@ -9,6 +9,10 @@ import (
 const StdDef = ` (* Builtin procedures definition *)
 DEFINITION STD
 
+	PROCEDURE NEW
+	VAR p+ PTR
+	END NEW
+
 	PROCEDURE INC
 	VAR
 		x+ INTEGER

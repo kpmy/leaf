@@ -59,9 +59,9 @@ type indirect struct {
 
 func (i *indirect) String() string {
 	if i.sel != nil {
-		return fmt.Sprint("@", i.sel)
+		return fmt.Sprint("@", reflect.TypeOf(i.sel))
 	} else {
-		return fmt.Sprint("@", i.____x)
+		return fmt.Sprint("_", i.____x)
 	}
 }
 func (d *indirect) set(x interface{}) {
@@ -279,6 +279,8 @@ func (s *storage) alloc(vl map[string]*ir.Variable) {
 			s.data[v.Name] = init(&Set{})
 		case types.MAP:
 			s.data[v.Name] = init(&Map{})
+		case types.PTR:
+			s.data[v.Name] = init(&Ptr{})
 		default:
 			halt.As(100, "unknown type ", v.Name, ": ", v.Type)
 		}
@@ -722,7 +724,7 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 				})
 				return
 			})
-		case *ir.SelectIndex:
+		case *ir.SelectInside:
 			chain = append(chain, func(in, out *value, l ...hs) *value {
 				//fmt.Println("select index ", in, out)
 				ctx.expr(s.Expr)
@@ -744,6 +746,15 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 						m := in.toMap()
 						data := m.Get(i)
 						out = &value{typ: types.ANY, val: data}
+					case types.PTR:
+						_ = iv.toPtr()
+						p := in.toPtr()
+						if p.adr != 0 {
+							data := p.link.Get()
+							out = &value{typ: types.ANY, val: data}
+						} else {
+							halt.As(100, "nil dereference read")
+						}
 					default:
 						halt.As(100, "unknown base type ", in.typ)
 					}
@@ -768,6 +779,15 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 						m := out.toMap()
 						m.Set(i, ThisAny(data))
 						in = &value{typ: types.MAP, val: ThisMap(m)}
+					case types.PTR:
+						_ = iv.toPtr()
+						p := out.toPtr()
+						if p.adr != 0 {
+							p.link.Set(ThisAny(data))
+							in = &value{typ: types.PTR, val: ThisPtr(p)}
+						} else {
+							halt.As(100, "nil dereference write")
+						}
 					default:
 						halt.As(100, "unknown base type ", out.typ)
 					}

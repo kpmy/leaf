@@ -19,6 +19,7 @@ const (
 	REAL
 	COMPLEX
 	ANY
+	PTR
 	LIST
 	SET
 	MAP
@@ -48,6 +49,8 @@ func (t Type) String() (ret string) {
 		return "COMPLEX"
 	case ANY:
 		return "ANY"
+	case PTR:
+		return "PTR"
 	case LIST:
 		return "LIST"
 	case SET:

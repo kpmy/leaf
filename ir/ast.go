@@ -190,11 +190,11 @@ type SelectExpr struct {
 
 func (s *SelectExpr) Self() {}
 
-type SelectIndex struct {
+type SelectInside struct {
 	Expr Expression
 }
 
-func (s *SelectIndex) Select() {}
+func (s *SelectInside) Select() {}
 
 type IfStmt struct {
 	Cond []*ConditionBranch

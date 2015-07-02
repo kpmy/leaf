@@ -148,3 +148,21 @@ BEGIN
 	m.value := l
 	m."memory":=1812
 END TestMap.
+
+MODULE TestPtr
+	VAR
+		p0, p1 PTR
+		x INTEGER
+		b BOOLEAN
+		a ANY
+BEGIN
+	b:=p0 # NIL
+	b:=p1 = p1
+	NEW(p-> p0)
+	x := 103
+	p0$ := x
+	b:=p0 = p1
+	p1 := p0
+	b:=p1=p0
+	a:=p1$
+END TestPtr.

@@ -18,6 +18,8 @@ import (
 	"unicode"
 )
 
+var Heap *heap
+
 func bi(x int64) *big.Int {
 	return big.NewInt(x)
 }
@@ -120,6 +122,13 @@ func values(st rt.Storage, calc rt.Calc) {
 	}
 }
 
+func alloc(st rt.Storage, calc rt.Calc) {
+	p := st.Get("p").(*trav.Ptr)
+	adr := Heap.New()
+	link := &heapy{h: Heap, adr: adr}
+	p.Init(adr, link)
+}
+
 func init() {
 	buf := bytes.NewBufferString(rt.StdDef)
 	p := lead.ConnectTo(lss.ConnectTo(bufio.NewReader(buf)), func(string) (*ir.Import, error) {
@@ -137,4 +146,6 @@ func init() {
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "INCL"}] = incl
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "EXCL"}] = excl
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "VALUES"}] = values
+	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "NEW"}] = alloc
+	Heap = newHeap()
 }

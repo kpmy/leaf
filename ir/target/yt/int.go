@@ -160,8 +160,8 @@ func internalize(m *Module) (ret *ir.Module) {
 				id := s.Leaf[fldz.Object].(string)
 				this.Var = m.that(id).(*ir.Variable)
 				ds.put(this)
-			case SelIdx:
-				this := &ir.SelectIndex{}
+			case SelIn:
+				this := &ir.SelectInside{}
 				this.Expr = expr(treatExpr(s.Leaf[fldz.Expression]))
 				ds.put(this)
 			case SelMod:

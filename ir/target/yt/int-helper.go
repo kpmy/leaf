@@ -103,7 +103,7 @@ func treatSel(_s interface{}) (ret *Selector) {
 	switch ret.Type {
 	case SelVar:
 		ret.Leaf[fldz.Object] = leaf[fldz.Object]
-	case SelIdx:
+	case SelIn:
 		ret.Leaf[fldz.Expression] = leaf[fldz.Expression]
 	case SelMod:
 		ret.Leaf[fldz.Module] = leaf[fldz.Module]

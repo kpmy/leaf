@@ -127,8 +127,8 @@ func externalize(mod *ir.Module) (ret *Module) {
 			x.Type = SelVar
 			x.Leaf[fldz.Object] = ret.this(s.Var)
 			sl = append(sl, x)
-		case *ir.SelectIndex:
-			x.Type = SelIdx
+		case *ir.SelectInside:
+			x.Type = SelIn
 			x.Leaf[fldz.Expression] = expr(s.Expr.(ir.EvaluatedExpression).Eval())
 			sl = append(sl, x)
 		case *ir.SelectMod:

@@ -429,6 +429,20 @@ func b_set_set_(fn func(*Set, *Set) bool) func(*Set, *value) bool {
 	}
 }
 
+func b_ptr_(fn func(*Ptr, *value) bool) func(*value, *value) bool {
+	return func(l *value, r *value) bool {
+		ls := l.toPtr()
+		return fn(ls, r)
+	}
+}
+
+func b_ptr_ptr_(fn func(*Ptr, *Ptr) bool) func(*Ptr, *value) bool {
+	return func(ls *Ptr, r *value) bool {
+		rs := r.toPtr()
+		return fn(ls, rs)
+	}
+}
+
 func b_z_set_(fn func(*Any, *Set) bool) func(*Any, *value) bool {
 	return func(lt *Any, r *value) bool {
 		ra := r.toSet()
@@ -856,6 +870,16 @@ func dySET() {
 	}))))
 }
 
+func dyPTR() {
+	putDyadic(types.PTR, types.PTR, operation.Eq, b_(b_ptr_(b_ptr_ptr_(func(lp *Ptr, rp *Ptr) bool {
+		return lp.adr == rp.adr
+	}))))
+
+	putDyadic(types.PTR, types.PTR, operation.Neq, b_(b_ptr_(b_ptr_ptr_(func(lp *Ptr, rp *Ptr) bool {
+		return lp.adr != rp.adr
+	}))))
+}
+
 func init() {
 	dyadic = make(tm)
 	dyINTEGER()
@@ -869,4 +893,5 @@ func init() {
 	dyABT()
 	dyANY()
 	dySET()
+	dyPTR()
 }

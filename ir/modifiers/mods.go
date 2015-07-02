@@ -20,13 +20,13 @@ var ModMap map[string]Modifier
 func (m Modifier) Sym() lss.Symbol {
 	switch m {
 	case None:
-		return lss.Null
+		return lss.None
 	case Semi:
 		return lss.Minus
 	case Full:
 		return lss.Plus
 	default:
-		return lss.Null
+		return lss.None
 	}
 }
 

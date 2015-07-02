@@ -15,7 +15,7 @@ type Symbol int
 type Foreign int
 
 const (
-	Null = iota
+	None = iota
 
 	Ident
 	String
@@ -58,12 +58,14 @@ const (
 	Infixate
 	Rbrux
 	Lbrux
+	Deref
 
 	Inf
 	True
 	False
-	Nil
+	Null
 	Undef
+	Nil
 
 	Definition
 	Module
@@ -95,10 +97,10 @@ const (
 
 func (s Symbol) String() (ret string) {
 	switch s {
-	case Definition, Module, End, Do, While, Elsif, Import, Const, Of, Pre, Post, Proc, Var, Begin, Close, If, Then, Repeat, Until, Else, True, False, Nil, Inf, Choose, Opt, Infix, Is, As, Undef, In:
+	case Definition, Module, End, Do, While, Elsif, Import, Const, Of, Pre, Post, Proc, Var, Begin, Close, If, Then, Repeat, Until, Else, True, False, Null, Inf, Choose, Opt, Infix, Is, As, Undef, In, Nil:
 		ret = keyByTab(s)
-	case Null:
-		ret = "null"
+	case None:
+		ret = "none"
 	case Period:
 		ret = "."
 	case Delimiter:
@@ -179,6 +181,8 @@ func (s Symbol) String() (ret string) {
 		ret = ">>"
 	case Lbrux:
 		ret = "<<"
+	case Deref:
+		ret = "$"
 	default:
 		ret = fmt.Sprint("sym [", strconv.Itoa(int(s)), "]")
 	}
@@ -303,17 +307,17 @@ func (s *sc) ident() (sym Sym) {
 		if s.evil == nil {
 			x := true
 			s.evil = &x
-			if keyTab[key] == Null && keyTab[strings.ToUpper(key)] == s.useTab[0] {
+			if keyTab[key] == None && keyTab[strings.ToUpper(key)] == s.useTab[0] {
 				*s.evil = true
 			} else if keyTab[key] == s.useTab[0] {
 				*s.evil = false
 			}
 		}
 		set := func() {
-			if sym.Code = keyTab[key]; sym.Code == Null {
+			if sym.Code = keyTab[key]; sym.Code == None {
 				sym.Code = Ident
 				sym.User = s.foreignTab[key]
-			} else if sym.Code != Null {
+			} else if sym.Code != None {
 				ok := false
 				for _, u := range s.useTab {
 					if u == sym.Code {
@@ -576,6 +580,9 @@ func (s *sc) Get() (sym Sym) {
 		case '%':
 			sym.Code = Mod
 			s.next()
+		case '$':
+			sym.Code = Deref
+			s.next()
 		default:
 			switch {
 			case unicode.IsLetter(s.ch):
@@ -587,7 +594,7 @@ func (s *sc) Get() (sym Sym) {
 				s.next()
 			}
 		}
-		if s.err != nil || sym.Code != Null {
+		if s.err != nil || sym.Code != None {
 			break
 		}
 	}

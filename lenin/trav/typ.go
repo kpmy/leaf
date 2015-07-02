@@ -10,6 +10,36 @@ import (
 	"math/big"
 )
 
+type Extractor interface {
+	Get() *Any
+	Set(*Any)
+}
+
+type Ptr struct {
+	adr  int64
+	link Extractor
+}
+
+func ThisPtr(p *Ptr) (ret *Ptr) {
+	ret = &Ptr{}
+	ret.adr = p.adr
+	ret.link = p.link
+	return
+}
+
+func (p *Ptr) Init(x int64, link Extractor) {
+	p.adr = x
+	p.link = link
+}
+
+func (p *Ptr) String() string {
+	if p.adr != 0 {
+		return fmt.Sprint("$", fmt.Sprintf("%x", p.adr), ": ", p.link.Get())
+	} else {
+		return "nil"
+	}
+}
+
 type Map struct {
 	k []*Any
 	v []*Any
@@ -274,7 +304,7 @@ func (a *Any) This() (types.Type, interface{}) {
 }
 
 func (a *Any) String() string {
-	return fmt.Sprint(a.x)
+	return fmt.Sprint("^", a.x)
 }
 
 func (a *Any) Equal(b *Any) (ok bool) {

@@ -24,7 +24,7 @@ func (p *common) mark(msg ...interface{}) {
 
 func (p *common) next() lss.Sym {
 	p.done = true
-	if p.sym.Code != lss.Null {
+	if p.sym.Code != lss.None {
 		//		fmt.Print("this ")
 		//		fmt.Print("`" + fmt.Sprint(p.sym) + "`")
 	}
@@ -124,7 +124,7 @@ func (p *common) typ(consume func(t types.Type)) {
 		case types.ATOM, types.BOOLEAN, types.TRILEAN:
 			p.next()
 			consume(t.typ)
-		case types.ANY:
+		case types.ANY, types.PTR:
 			p.next()
 			consume(t.typ)
 		case types.LIST, types.SET, types.MAP:
@@ -176,7 +176,7 @@ func (p *common) selector(b *selBuilder) {
 		switch p.sym.Code {
 		case lss.Lbrak:
 			p.next()
-			this := &ir.SelectIndex{}
+			this := &ir.SelectInside{}
 			expr := &exprBuilder{sc: b.sc}
 			p.expression(expr)
 			this.Expr = expr
@@ -185,9 +185,16 @@ func (p *common) selector(b *selBuilder) {
 			p.next()
 		case lss.Period:
 			p.next()
-			this := &ir.SelectIndex{}
+			this := &ir.SelectInside{}
 			expr := &exprBuilder{sc: b.sc}
 			p.factor(expr)
+			this.Expr = expr
+			b.join(this)
+		case lss.Deref:
+			p.next()
+			this := &ir.SelectInside{}
+			expr := &exprBuilder{sc: b.sc}
+			expr.factor(&ir.ConstExpr{Type: types.PTR})
 			this.Expr = expr
 			b.join(this)
 		default:
@@ -222,7 +229,7 @@ func (p *common) factor(b *exprBuilder) {
 		val.Value = (p.sym.Code == lss.True)
 		b.factor(val)
 		p.next()
-	case lss.Nil:
+	case lss.Null:
 		val := &ir.ConstExpr{}
 		val.Type = types.TRILEAN
 		b.factor(val)
@@ -230,6 +237,11 @@ func (p *common) factor(b *exprBuilder) {
 	case lss.Undef:
 		val := &ir.ConstExpr{}
 		val.Type = types.ANY
+		b.factor(val)
+		p.next()
+	case lss.Nil:
+		val := &ir.ConstExpr{}
+		val.Type = types.PTR
 		b.factor(val)
 		p.next()
 	case lss.Inf:
