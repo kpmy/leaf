@@ -96,12 +96,13 @@ func exists(fullpath string) (ret bool) {
 	return
 }
 
-func load(name string) (ret *ir.Module, err error) {
-
-	if t, err := os.Open(name + ".li"); err == nil {
-		defer t.Close()
-		ret = target.Old(t)
-	}
+func load(n string) (ret *ir.Module, err error) {
+	find(n, func(fullpath string) {
+		if t, err := os.Open(fullpath); err == nil {
+			defer t.Close()
+			ret = target.Old(t)
+		}
+	})
 	return
 }
 
