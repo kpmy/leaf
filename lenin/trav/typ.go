@@ -49,6 +49,10 @@ func (m *Map) Keys() []*Any {
 	return m.k
 }
 
+func (m *Map) AsList() (ret []*Any) {
+	return m.v
+}
+
 func (m *Map) String() (ret string) {
 	for i, x := range m.k {
 		if i > 0 {

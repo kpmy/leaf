@@ -138,6 +138,7 @@ MODULE TestMap
 		ml = <<type: 3.14, value: "OBERON FOR THE GOOD!">>
 		l = [123, 124124, "LITERAL"]
 	VAR m MAP; x ANY
+		k, v LIST
 BEGIN
 	m["memory"] := 1945
 	m[type] := 42
@@ -147,6 +148,8 @@ BEGIN
 	m[value] := l
 	m.value := l
 	m."memory":=1812
+	k := \KEYS m
+	v := \VALUES m
 END TestMap.
 
 MODULE TestPtr

@@ -119,8 +119,25 @@ func values(ctx rt.Context, st rt.Storage, calc rt.Calc) {
 		for i, x := range sl {
 			out.SetVal(i, x)
 		}
+	case types.MAP:
+		m := x.(*trav.Map)
+		vl := m.AsList()
+		out.Len(len(vl))
+		for i, x := range vl {
+			out.SetVal(i, x)
+		}
 	default:
 		halt.As(100, "unsupported type ", t)
+	}
+}
+
+func keys(ctx rt.Context, st rt.Storage, calc rt.Calc) {
+	m := st.Get("x").(*trav.Map)
+	out := st.Get("out").(*trav.List)
+	kl := m.Keys()
+	out.Len(len(kl))
+	for i, x := range kl {
+		out.SetVal(i, x)
 	}
 }
 
@@ -134,7 +151,7 @@ func alloc(ctx rt.Context, st rt.Storage, calc rt.Calc) {
 	p.Init(adr, link)
 }
 
-func handle(ctx rt.Context, st rt.Storage, calc rt.Calc) {
+func process(ctx rt.Context, st rt.Storage, calc rt.Calc) {
 	in := st.Get("to").(*trav.Map)
 	m := Map(in)
 	fn := ctx.Handler()
@@ -161,7 +178,8 @@ func init() {
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "INCL"}] = incl
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "EXCL"}] = excl
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "VALUES"}] = values
+	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "KEYS"}] = keys
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "NEW"}] = alloc
-	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "HANDLE"}] = handle
+	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "PROCESS"}] = process
 	Heap = newHeap()
 }
