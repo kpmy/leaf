@@ -3,6 +3,9 @@
 ````
 (* Builtin procedures definition *)
 DEFINITION STD
+	PROCEDURE NEW
+	VAR p+ PTR
+	END NEW
 
 	PROCEDURE INC
 	VAR
@@ -70,5 +73,15 @@ DEFINITION STD
 		VAR out+ LIST
 	INFIX out x
 	END VALUES
+
+	PROCEDURE KEYS
+		VAR x- MAP
+		VAR out+ LIST
+	INFIX out x
+	END KEYS
+
+	PROCEDURE PROCESS
+		VAR to+, from+ MAP
+	END PROCESS
 END STD.
 ````
