@@ -84,7 +84,7 @@ type pr struct {
 func (p *pr) resolve(name string) (ret *ir.Import) {
 	ret, _ = p.resolver(name)
 	if ret == nil {
-		p.mark("unresolved import")
+		p.mark("unresolved import ", name)
 	}
 	return
 }

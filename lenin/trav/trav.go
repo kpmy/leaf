@@ -186,19 +186,25 @@ func (s *storeStack) alloc(_x interface{}) {
 		d.alloc(x.VarDecl)
 		s.store[x.Name] = d
 		s.mpush(x)
-		fmt.Println("alloc", x.Name, d.data)
+		if lenin.Debug {
+			fmt.Println("alloc", x.Name, d.data)
+		}
 	case *ir.Procedure:
 		d := &storage{root: s.mtop(), link: x}
 		d.init()
 		d.alloc(x.VarDecl)
 		s.push(d)
-		fmt.Println("alloc", x.Name, d.data)
+		if lenin.Debug {
+			fmt.Println("alloc", x.Name, d.data)
+		}
 	case ir.ImportProcedure:
 		d := &storage{root: s.mtop(), link: x}
 		d.init()
 		d.alloc(x.This().VarDecl)
 		s.push(d)
-		fmt.Println("alloc", x.Name(), d.data)
+		if lenin.Debug {
+			fmt.Println("alloc", x.Name(), d.data)
+		}
 	default:
 		halt.As(100, reflect.TypeOf(x))
 	}
@@ -207,17 +213,23 @@ func (s *storeStack) alloc(_x interface{}) {
 func (s *storeStack) dealloc(_x interface{}) (ret *storage) {
 	switch x := _x.(type) {
 	case *ir.Module:
-		fmt.Println("dealloc", x.Name, s.store[x.Name].data)
+		if lenin.Debug {
+			fmt.Println("dealloc", x.Name, s.store[x.Name].data)
+		}
 		s.store[x.Name] = nil
 		//TODO проверить наличие связанных элементов стека
 	case *ir.Procedure:
 		assert.For(s.top() != nil && s.top().link == x, 20)
-		fmt.Println("dealloc", x.Name, s.top().data)
+		if lenin.Debug {
+			fmt.Println("dealloc", x.Name, s.top().data)
+		}
 		ret = s.top()
 		s.pop()
 	case ir.ImportProcedure:
 		assert.For(s.top() != nil && s.top().link == x, 20)
-		fmt.Println("dealloc", x.Name(), s.top().data)
+		if lenin.Debug {
+			fmt.Println("dealloc", x.Name(), s.top().data)
+		}
 		ret = s.top()
 		s.pop()
 	default:
@@ -340,7 +352,9 @@ func (st *storeStack) find(s *storage, o *ir.Variable, fn func(*value) *value) (
 			assert.For(compTypes(nv.typ, o.Type), 40, "provided ", nv.typ, " != expected ", o.Type)
 			nv = conv(nv, o.Type)
 			s.data[o.Name].write(nv.val)
-			fmt.Println("touch", o.Name, nv.val)
+			if lenin.Debug {
+				fmt.Println("touch", o.Name, nv.val)
+			}
 		}
 		ret = true
 	}
@@ -463,7 +477,20 @@ func (ctx *context) expr(_e ir.Expression) {
 		case *ir.TypeTest:
 			eval(this.Operand)
 			v := ctx.pop()
-			a := v.toAny()
+			var a *Any
+			switch v.typ {
+			case types.ANY:
+				a = v.toAny()
+			case types.PTR:
+				p := v.toPtr()
+				if p.adr != 0 {
+					a = p.link.Get()
+				} else {
+					a = &Any{}
+				}
+			default:
+				halt.As(100, "unsupported ")
+			}
 			switch {
 			case a.x == nil:
 				ctx.push(&value{typ: types.TRILEAN, val: tri.NIL})

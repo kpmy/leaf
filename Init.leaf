@@ -1,0 +1,7 @@
+MODULE Init
+	IMPORT Log
+BEGIN
+	WHILE TRUE DO 
+		Log.String(s: ".")
+	END
+END Init.

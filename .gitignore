@@ -27,3 +27,5 @@ leaf.wiki
 *.lio
 *.ld
 *.lm
+.code
+.def

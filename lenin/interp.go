@@ -9,6 +9,8 @@ import (
 	"leaf/lenin/rt"
 )
 
+var Debug = false
+
 type Loader func(string) (*ir.Module, error)
 
 var Run func(*ir.Module, Loader, chan rt.Message)

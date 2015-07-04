@@ -157,6 +157,7 @@ MODULE TestPtr
 		p0, p1 PTR
 		x INTEGER
 		b BOOLEAN
+		t TRILEAN
 		a ANY
 BEGIN
 	b:=p0 # NIL
@@ -168,4 +169,5 @@ BEGIN
 	p1 := p0
 	b:=p1=p0
 	a:=p1$
+	t := p0 IS INTEGER
 END TestPtr.

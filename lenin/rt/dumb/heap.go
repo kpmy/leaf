@@ -2,6 +2,7 @@ package dumb
 
 import (
 	"fmt"
+	"leaf/lenin"
 	"leaf/lenin/trav"
 )
 
@@ -27,9 +28,13 @@ func (h *heapy) Get() *trav.Any {
 }
 
 func (h *heapy) Set(x *trav.Any) {
-	fmt.Println("heap touch", fmt.Sprintf("%X", h.adr), x)
+	if lenin.Debug {
+		fmt.Println("heap touch", fmt.Sprintf("%X", h.adr), x)
+	}
 	h.h.data[h.adr] = x
-	fmt.Println(h.h)
+	if lenin.Debug {
+		fmt.Println(h.h)
+	}
 }
 
 func newHeap() *heap {

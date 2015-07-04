@@ -1,5 +1,0 @@
-MODULE Init
-
-BEGIN
-	WHILE TRUE DO END
-END Init.

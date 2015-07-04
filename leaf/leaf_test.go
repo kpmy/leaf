@@ -125,6 +125,7 @@ func TestInterp(t *testing.T) {
 				p := leap.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)), resolve)
 				ir, _ := p.Module()
 				mach := lem.Run()
+				lenin.Debug = true
 				lenin.Do(ir, load, mach.Chan())
 			}
 		}
@@ -132,6 +133,7 @@ func TestInterp(t *testing.T) {
 }
 
 func TestCollection(t *testing.T) {
+	lenin.Debug = true
 	var err error
 	for i := int64(0); err == nil; i++ {
 		mname := "Test" + strconv.FormatInt(i, 16)
