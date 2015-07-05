@@ -168,6 +168,7 @@ func TestCollection(t *testing.T) {
 							ast := code.Old(t)
 							mach := lem.Run()
 							lenin.Do(ast, load, mach.Chan())
+							mach.Stop()
 						}
 					}
 				}

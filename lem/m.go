@@ -9,6 +9,7 @@ import (
 
 type Machine interface {
 	Chan() chan rt.Message
+	Stop()
 }
 
 var Ext func(*ir.Module, io.Writer)

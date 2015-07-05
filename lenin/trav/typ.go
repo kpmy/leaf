@@ -5,10 +5,37 @@ import (
 	"github.com/kpmy/trigo"
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
+	"leaf/ir"
 	"leaf/ir/operation"
 	"leaf/ir/types"
 	"math/big"
 )
+
+type Proc struct {
+	p *ir.Procedure
+}
+
+func (p *Proc) This() *ir.Procedure {
+	return p.p
+}
+
+func (p *Proc) String() string {
+	if p.p != nil {
+		return fmt.Sprint("@", p.p.Name)
+	} else {
+		return fmt.Sprint("@", "undef")
+	}
+}
+
+func NewProc(p *ir.Procedure) *Proc {
+	return &Proc{p: p}
+}
+
+func ThisProc(p *Proc) *Proc {
+	ret := &Proc{}
+	ret.p = p.p
+	return ret
+}
 
 type Extractor interface {
 	Get() *Any
@@ -407,6 +434,8 @@ func ThisCmp(c *Cmp) (ret *Cmp) {
 
 func compTypes(propose, expect types.Type) (ret bool) {
 	switch {
+	case propose == types.ANY && expect == types.PROC:
+		ret = true
 	case propose == types.INTEGER && expect == types.REAL:
 		ret = true
 	case propose == types.BOOLEAN && expect == types.TRILEAN:
@@ -421,6 +450,10 @@ func compTypes(propose, expect types.Type) (ret bool) {
 
 func conv(v *value, target types.Type) (ret *value) {
 	switch {
+	case v.typ == types.ANY && target == types.PROC:
+		a := v.toAny()
+		assert.For(a.x == nil, 20)
+		ret = &value{typ: types.PROC, val: &Proc{}}
 	case v.typ == types.INTEGER && target == types.REAL:
 		i := v.toInt()
 		x := big.NewRat(0, 1)

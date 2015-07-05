@@ -271,6 +271,9 @@ func (s *sc) next() rune {
 	//	fmt.Print(Token2(s.ch))
 	read := 0
 	s.ch, read, s.err = s.rd.ReadRune()
+	if s.ch == '\r' || s.ch == '\n' {
+		s.line()
+	}
 	if s.err == nil {
 		s.pos += read
 	}
@@ -465,9 +468,6 @@ func (s *sc) Get() (sym Sym) {
 			sym.Code = Rparen
 		case '\r', '\n', ';':
 			for ; s.ch == '\n' || s.ch == '\r' || s.ch == ';'; s.next() {
-				if s.ch == '\r' || s.ch == '\n' {
-					s.line()
-				}
 			}
 			sym.Code = Delimiter
 		case ' ', '\t':

@@ -253,6 +253,34 @@ func b_t_z_(fn func(tri.Trit, *Any) bool) func(tri.Trit, *value) bool {
 	}
 }
 
+func b_proc_(fn func(*Proc, *value) bool) func(*value, *value) bool {
+	return func(l *value, r *value) bool {
+		la := l.toProc()
+		return fn(la, r)
+	}
+}
+
+func b_proc_proc_(fn func(*Proc, *Proc) bool) func(*Proc, *value) bool {
+	return func(la *Proc, r *value) bool {
+		ra := r.toProc()
+		return fn(la, ra)
+	}
+}
+
+func b_z_proc_(fn func(*Any, *Proc) bool) func(*Any, *value) bool {
+	return func(la *Any, r *value) bool {
+		rt := r.toProc()
+		return fn(la, rt)
+	}
+}
+
+func b_proc_z_(fn func(*Proc, *Any) bool) func(*Proc, *value) bool {
+	return func(lt *Proc, r *value) bool {
+		ra := r.toAny()
+		return fn(lt, ra)
+	}
+}
+
 func b_r_(fn func(*big.Rat, *value) bool) func(*value, *value) bool {
 	return func(l *value, r *value) bool {
 		lr := l.toReal()
@@ -802,22 +830,22 @@ func dyANY() {
 	}))))
 
 	putDyadic(types.ATOM, types.ANY, operation.Eq, b_(b_a_(b_a_z_(func(la Atom, ra *Any) bool {
-		assert.For(ra.x == nil, 40, "NIL comparision only")
+		assert.For(ra.x == nil, 40, "UNDEF comparision only")
 		return la == ""
 	}))))
 
 	putDyadic(types.ANY, types.ATOM, operation.Eq, b_(b_z_(b_z_a_(func(la *Any, ra Atom) bool {
-		assert.For(la.x == nil, 40, "NIL comparision only")
+		assert.For(la.x == nil, 40, "UNDEF comparision only")
 		return ra == ""
 	}))))
 
 	putDyadic(types.ATOM, types.ANY, operation.Neq, b_(b_a_(b_a_z_(func(la Atom, ra *Any) bool {
-		assert.For(ra.x == nil, 40, "NIL comparision only")
+		assert.For(ra.x == nil, 40, "UNDEF comparision only")
 		return la != ""
 	}))))
 
 	putDyadic(types.ANY, types.ATOM, operation.Neq, b_(b_z_(b_z_a_(func(la *Any, ra Atom) bool {
-		assert.For(la.x == nil, 40, "NIL comparision only")
+		assert.For(la.x == nil, 40, "UNDEF comparision only")
 		return ra != ""
 	}))))
 }
@@ -880,6 +908,36 @@ func dyPTR() {
 	}))))
 }
 
+func dyPROC() {
+	putDyadic(types.PROC, types.PROC, operation.Eq, b_(b_proc_(b_proc_proc_(func(lp *Proc, rp *Proc) bool {
+		return lp.p == rp.p
+	}))))
+
+	putDyadic(types.PROC, types.PROC, operation.Neq, b_(b_proc_(b_proc_proc_(func(lp *Proc, rp *Proc) bool {
+		return lp.p != rp.p
+	}))))
+
+	putDyadic(types.PROC, types.ANY, operation.Eq, b_(b_proc_(b_proc_z_(func(la *Proc, ra *Any) bool {
+		assert.For(ra.x == nil, 40, "UNDEF comparision only")
+		return la.p == nil
+	}))))
+
+	putDyadic(types.ANY, types.PROC, operation.Eq, b_(b_z_(b_z_proc_(func(la *Any, ra *Proc) bool {
+		assert.For(la.x == nil, 40, "UNDEF comparision only")
+		return ra.p == nil
+	}))))
+
+	putDyadic(types.PROC, types.ANY, operation.Neq, b_(b_proc_(b_proc_z_(func(la *Proc, ra *Any) bool {
+		assert.For(ra.x == nil, 40, "UNDEF comparision only")
+		return la.p != nil
+	}))))
+
+	putDyadic(types.ANY, types.PROC, operation.Neq, b_(b_z_(b_z_proc_(func(la *Any, ra *Proc) bool {
+		assert.For(la.x == nil, 40, "UNDEF comparision only")
+		return ra.p != nil
+	}))))
+}
+
 func init() {
 	dyadic = make(tm)
 	dyINTEGER()
@@ -894,4 +952,5 @@ func init() {
 	dyANY()
 	dySET()
 	dyPTR()
+	dyPROC()
 }

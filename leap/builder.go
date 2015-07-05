@@ -274,7 +274,7 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 	trav = func(r *exprItem, stack []*exprItem) (ret []*exprItem) {
 		//fmt.Println(reflect.TypeOf(r.e))
 		switch root := r.e.(type) {
-		case *ir.ConstExpr, *ir.NamedConstExpr, *ir.VariableExpr, *ir.SelectExpr, *ir.SetExpr, *ir.ListExpr, *ir.MapExpr: //do nothing
+		case *ir.ConstExpr, *ir.NamedConstExpr, *ir.VariableExpr, *ir.SelectExpr, *ir.SetExpr, *ir.ListExpr, *ir.MapExpr, *ir.BindExpr: //do nothing
 			ret = stack
 		case *ir.Monadic:
 			expr, tail := first(stack)
@@ -465,6 +465,8 @@ func (e *exprBuilder) as(id string) ir.Expression {
 			return &ir.NamedConstExpr{Named: v}
 		case *ir.Variable:
 			return &ir.VariableExpr{Obj: v}
+		case *ir.Procedure:
+			return &ir.BindExpr{Proc: v}
 		default:
 			halt.As(100, "unexpected ", reflect.TypeOf(v))
 		}

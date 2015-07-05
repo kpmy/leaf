@@ -89,6 +89,19 @@ DEFINITION STD
 	PROCEDURE PROCESS
 		VAR to+, from+ MAP
 	END PROCESS
+
+	PROCEDURE ASSERT
+		VAR cond- BOOLEAN; msg- ANY; code- INTEGER
+	END ASSERT
+
+	PROCEDURE HALT
+		VAR code- INTEGER; msg- ANY
+	END HALT
+
+	PROCEDURE RUN
+		VAR proc- PROCEDURE
+		PRE proc # UNDEF
+	END RUN
 END STD.
 `
 
@@ -101,6 +114,7 @@ type Message map[interface{}]interface{}
 
 type Context interface {
 	Handler() func(Message) Message
+	Queue(x interface{})
 }
 
 type Storage interface {

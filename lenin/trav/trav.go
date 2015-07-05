@@ -294,6 +294,8 @@ func (s *storage) alloc(vl map[string]*ir.Variable) {
 			s.data[v.Name] = init(&Map{})
 		case types.PTR:
 			s.data[v.Name] = init(&Ptr{})
+		case types.PROC:
+			s.data[v.Name] = init(&Proc{})
 		default:
 			halt.As(100, "unknown type ", v.Name, ": ", v.Type)
 		}
@@ -705,6 +707,9 @@ func (ctx *context) expr(_e ir.Expression) {
 			} else {
 				halt.As(100, "no result from infix")
 			}
+		case *ir.BindExpr:
+			p := NewProc(this.Proc)
+			ctx.push(&value{typ: types.PROC, val: p})
 		default:
 			halt.As(100, "unknown expression ", reflect.TypeOf(this))
 		}
@@ -1142,6 +1147,10 @@ func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 		halt.As(100, reflect.TypeOf(this))
 	}
 	return
+}
+
+func (c *context) Queue(x interface{}) {
+	c.do(x)
 }
 
 func (c *context) run() {

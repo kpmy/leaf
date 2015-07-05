@@ -145,6 +145,10 @@ func internalize(m *Module) (ret *ir.Module) {
 			}
 			this.Proc = e.Leaf[fldz.Procedure].(string)
 			d.e = this
+		case Bind:
+			this := &ir.BindExpr{}
+			this.Proc = m.that(e.Leaf[fldz.Procedure].(string)).(*ir.Procedure)
+			d.e = this
 		default:
 			halt.As(100, "unknown type ", e.Type)
 		}

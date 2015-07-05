@@ -16,6 +16,7 @@ const (
 	Infix         ExprType = "infix"
 	InvokeInfix   ExprType = "invoke"
 	TypeTest      ExprType = "typetest"
+	Bind          ExprType = "bind"
 )
 
 type StmtType string

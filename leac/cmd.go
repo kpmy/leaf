@@ -72,7 +72,9 @@ func main() {
 				m.Close()
 			}
 			mach := lem.Run()
+			lenin.Debug = true
 			lenin.Do(ir, load, mach.Chan())
+			mach.Stop()
 		}
 	} else {
 		log.Fatal(err)

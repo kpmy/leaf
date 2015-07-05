@@ -37,3 +37,34 @@ BEGIN
 	msg."ln" := TRUE
 	PROCESS(to<-msg, from->anwser)
 END TestHandle.
+
+MODULE TestAssert
+	VAR s STRING
+BEGIN
+	s:="hello"
+	ASSERT(cond: s # "", code: 20, msg: "string should not be empty")
+	(* s:="" *)
+	IF s = "" THEN
+		HALT(code: 100)
+	END
+END TestAssert.
+
+MODULE TestProcVar
+	VAR
+		do, do2 PROCEDURE
+		ok BOOLEAN
+
+	PROCEDURE Do0
+		VAR x INTEGER
+	BEGIN
+		x:=100500
+	END Do0
+
+BEGIN
+	ok := do # do2
+	do := UNDEF
+	do := Do0
+	IF do # UNDEF THEN
+		RUN(proc: do)
+	END
+END TestProcVar.

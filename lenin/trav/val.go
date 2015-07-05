@@ -169,6 +169,17 @@ func (v *value) toPtr() (ret *Ptr) {
 	return
 }
 
+func (v *value) toProc() (ret *Proc) {
+	assert.For(v.typ == types.PROC, 20)
+	switch x := v.val.(type) {
+	case *Proc:
+		ret = ThisProc(x)
+	default:
+		halt.As(100, "wrong list ", reflect.TypeOf(x))
+	}
+	return
+}
+
 func cval(e *ir.ConstExpr) (ret *value) {
 	t := e.Type
 	switch t {

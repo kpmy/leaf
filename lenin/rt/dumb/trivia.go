@@ -161,6 +161,29 @@ func process(ctx rt.Context, st rt.Storage, calc rt.Calc) {
 	}
 }
 
+func trapIf(ctx rt.Context, st rt.Storage, calc rt.Calc) {
+	cond := st.Get("cond").(bool)
+	msg := st.Get("msg").(*trav.Any)
+	code := st.Get("code").(*trav.Int)
+	if !cond {
+		halt.As(100, code, msg)
+	}
+}
+
+func trap(ctx rt.Context, st rt.Storage, calc rt.Calc) {
+	msg := st.Get("msg").(*trav.Any)
+	code := st.Get("code").(*trav.Int)
+	halt.As(100, code, msg)
+}
+
+func run(ctx rt.Context, st rt.Storage, calc rt.Calc) {
+	proc := st.Get("proc").(*trav.Proc)
+	p := proc.This()
+	if p != nil {
+		ctx.Queue(p)
+	}
+}
+
 func init() {
 	buf := bytes.NewBufferString(rt.StdDef)
 	p := lead.ConnectTo(lss.ConnectTo(bufio.NewReader(buf)), func(string) (*ir.Import, error) {
@@ -181,5 +204,9 @@ func init() {
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "KEYS"}] = keys
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "NEW"}] = alloc
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "PROCESS"}] = process
+	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "ASSERT"}] = trapIf
+	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "HALT"}] = trap
+	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "RUN"}] = run
+
 	Heap = newHeap()
 }

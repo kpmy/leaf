@@ -107,6 +107,9 @@ func externalize(mod *ir.Module) (ret *Module) {
 			}
 			ex.Leaf[fldz.Operand] = ops
 			ex.Leaf[fldz.Procedure] = e.Proc
+		case *ir.BindExpr:
+			ex.Type = Bind
+			ex.Leaf[fldz.Procedure] = ret.this(e.Proc)
 		case *dumbExpr:
 			return expr(e.Eval())
 		default:

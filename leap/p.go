@@ -156,12 +156,20 @@ func (p *pr) varDecl(b *varBuilder) {
 					break
 				}
 			}
-			p.expect(lss.Ident, "type identifier expected", lss.Separator)
-			p.typ(func(t types.Type) {
+			if p.await(lss.Ident, lss.Separator) {
+				p.typ(func(t types.Type) {
+					for _, obj := range vl {
+						obj.Type = t
+					}
+				})
+			} else if p.is(lss.Proc) {
+				p.next()
 				for _, obj := range vl {
-					obj.Type = t
+					obj.Type = types.PROC
 				}
-			})
+			} else {
+				p.mark("identifier expected")
+			}
 		} else {
 			break
 		}

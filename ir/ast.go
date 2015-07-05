@@ -144,6 +144,12 @@ type VariableExpr struct {
 
 func (v *VariableExpr) Self() {}
 
+type BindExpr struct {
+	Proc *Procedure
+}
+
+func (b *BindExpr) Self() {}
+
 type Monadic struct {
 	Op      operation.Operation
 	Operand Expression

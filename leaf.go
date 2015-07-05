@@ -130,6 +130,7 @@ func do(fullpath string) {
 		m := target.Old(li)
 		mach := lem.Run()
 		lenin.Do(m, load, mach.Chan())
+		mach.Stop()
 	} else {
 		log.Fatal(err)
 	}

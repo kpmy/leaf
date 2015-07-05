@@ -23,6 +23,7 @@ const (
 	LIST
 	SET
 	MAP
+	PROC
 	// leave this last
 	NONE
 )
@@ -57,6 +58,8 @@ func (t Type) String() (ret string) {
 		return "SET"
 	case MAP:
 		return "MAP"
+	case PROC:
+		return "PROCEDURE"
 	default:
 		return strconv.Itoa(int(t))
 	}
