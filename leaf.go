@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"leaf/ir"
@@ -114,13 +115,18 @@ func exists(fullpath string) (ret bool) {
 	return
 }
 
-func load(n string) (ret *ir.Module, err error) {
+func load(n string) (ret *ir.Module, rerr error) {
 	doFind(n, func(fullpath string) {
 		if t, err := os.Open(fullpath); err == nil {
 			defer t.Close()
 			ret = target.Old(t)
+		} else {
+			rerr = err
 		}
 	})
+	if ret == nil && rerr == nil {
+		rerr = errors.New("file not found")
+	}
 	return
 }
 
@@ -220,6 +226,7 @@ func doBuild(name string) {
 		var msg string
 		if f, err := os.Open(fullpath); err == nil {
 			defer f.Close()
+			log.Println("compiling", name)
 			p := leap.ConnectTo(lss.ConnectTo(bufio.NewReader(f)), resolve)
 			code, _ := p.Module()
 			msg = fmt.Sprint("compiled ", name)

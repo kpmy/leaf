@@ -15,6 +15,8 @@ func Value(_x *trav.Any) (ret interface{}) {
 		ret = x.(string)
 	case types.BOOLEAN:
 		ret = x.(bool)
+	case types.INTEGER:
+		ret = x.(*trav.Int).String()
 	default:
 		halt.As(100, x, " ", t)
 	}

@@ -23,6 +23,13 @@ type context struct {
 	load     []*ir.Module
 	tgt      *storage
 	universe chan rt.Message
+	loader   lenin.Loader
+	queue    []*later
+}
+
+type later struct {
+	x   interface{}
+	par []interface{}
 }
 
 type anyData interface {
@@ -843,7 +850,7 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 	first(in, out, lh...)
 }
 
-func (ctx *context) stmt(_s ir.Statement) {
+func (ctx *context) _stmt(_s ir.Statement) {
 	switch this := _s.(type) {
 	case ir.WrappedStatement:
 		ctx.do(this.Fwd())
@@ -863,6 +870,7 @@ func (ctx *context) stmt(_s ir.Statement) {
 		}
 		ctx.invoke(this.Mod, this.Proc, par...)
 	case *ir.CallStmt:
+		assert.For(len(this.Par) < 20, 20)
 		var par []interface{}
 		for _, p := range this.Par {
 			x := &param{}
@@ -882,7 +890,7 @@ func (ctx *context) stmt(_s ir.Statement) {
 		ctx.do(this.Proc, par...)
 		if this.Mod != "" {
 			top := ctx.data.mpop()
-			assert.For(top.Name == this.Mod, 60)
+			assert.For(top.Name == this.Mod, 60, top.Name, " # ", this.Mod)
 		}
 	case *ir.AssignStmt:
 		ctx.sel(this.Sel, nil, nil, func(in *value) *value {
@@ -1107,6 +1115,17 @@ func (ctx *context) invoke(mod, proc string, par ...interface{}) (ret interface{
 func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 	//	fmt.Println("do", reflect.TypeOf(_t))
 	switch this := _t.(type) {
+	case string: //dyn load, string invoke etc
+		if nm, err := ctx.loader(this); err == nil {
+			ml := importChain(nm, ctx.loader)
+			for _, m := range ml {
+				if ctx.data.store[m.Name] == nil {
+					ctx.do(m)
+				}
+			}
+		} else {
+			halt.As(100, "error loading module ", this, " ", err)
+		}
 	case *ir.Module:
 		for _, i := range this.ImportSeq {
 			ctx.imp(i)
@@ -1127,7 +1146,7 @@ func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 	case *ir.Procedure:
 		ctx.data.alloc(this)
 		if lenin.Debug {
-			fmt.Println(par...)
+			fmt.Println("PARAMS", len(par), fmt.Sprint(par...))
 		}
 		for _, _v := range par {
 			switch v := _v.(type) {
@@ -1164,11 +1183,36 @@ func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 		}
 		ret = ctx.data.dealloc(this)
 	case ir.Statement:
-		ctx.stmt(this)
+		ctx._stmt(this)
+		//очередь инструкций от системы
+		for ctx.queue != nil {
+			tmp := ctx.queue
+			ctx.queue = nil
+			for i := 0; i < len(tmp)-2; i++ {
+				ctx.queue = append(ctx.queue, tmp[i])
+			}
+			this := tmp[len(tmp)-1]
+			top := ctx.data.mtop().Name
+			ctx.do(this.x, this.par...)
+			for ctx.data.mtop().Name != top {
+				ctx.data.mpop()
+			}
+			assert.For(ctx.data.mtop().Name == top, 60)
+		}
 	default:
 		halt.As(100, reflect.TypeOf(this))
 	}
 	return
+}
+
+func (c *context) doLater(x interface{}, par ...interface{}) {
+	l := &later{}
+	l.x = x
+	l.par = par
+	tmp := c.queue
+	c.queue = nil
+	c.queue = append(c.queue, l)
+	c.queue = append(c.queue, tmp...)
 }
 
 func (c *context) Queue(x interface{}, par ...rt.VarPar) {
@@ -1176,7 +1220,7 @@ func (c *context) Queue(x interface{}, par ...rt.VarPar) {
 	for _, x := range par {
 		p = append(p, x)
 	}
-	c.do(x, p...)
+	c.doLater(x, p...)
 }
 
 func (c *context) run() {
@@ -1198,19 +1242,20 @@ func (c *context) Handler() func(rt.Message) rt.Message {
 	}
 }
 
-func connectTo(universe chan rt.Message, m ...*ir.Module) (ret *context) {
+func connectTo(universe chan rt.Message, ld lenin.Loader, m ...*ir.Module) (ret *context) {
 	assert.For(len(m) > 0, 20)
 	ret = &context{}
 	ret.load = m
 	ret.universe = universe
 	ret.data = &storeStack{}
+	ret.loader = ld
 	ret.data.init(ret)
 	ret.exprStack.init()
 	return
 }
 
-func run(main *ir.Module, ld lenin.Loader, universe chan rt.Message) {
-
+func importChain(main *ir.Module, ld lenin.Loader) []*ir.Module {
+	assert.For(main != nil, 20)
 	cache := make(map[string]*ir.Module)
 	var ml []string
 	var do func(m *ir.Module)
@@ -1237,7 +1282,16 @@ func run(main *ir.Module, ld lenin.Loader, universe chan rt.Message) {
 			delete(cache, ml[i])
 		}
 	}
-	connectTo(universe, mm...).run()
+	return mm
+}
+
+func run(main *ir.Module, ld lenin.Loader, universe chan rt.Message) {
+	modList := importChain(main, ld)
+	ctx := connectTo(universe, ld, modList...)
+	msg := map[interface{}]interface{}{"type": "machine", "context": ctx}
+	universe <- msg
+	<-universe
+	ctx.run()
 }
 
 func init() {

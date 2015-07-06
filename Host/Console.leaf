@@ -6,14 +6,30 @@ MODULE HostConsole
 			type; data; ln
 			console = "console"
 		VAR s- STRING
+		VAR lf- BOOLEAN
 		VAR msg, anwser MAP
 	BEGIN
 		msg.type := console
 		msg.data := s
-		msg.ln := FALSE
+		msg.ln := lf
 		PROCESS(to<-msg)
 	END String
 
+	PROCEDURE Print
+		CONST
+			type; data; ln
+			console = "console"
+		VAR x- ANY
+		VAR lf- BOOLEAN
+		VAR msg, anwser MAP
+	BEGIN
+		msg.type := console
+		msg.data := x
+		msg.ln := lf
+		PROCESS(to<-msg)
+	END Print
+	
 BEGIN
 	Log.string := String
+	Log.print := Print
 END HostConsole.

@@ -13,12 +13,14 @@ const (
 	Wrong Type = iota
 	Machine
 	Console
+	Kernel
 )
 
 var TypMap map[string]Type
 
 type mach struct {
-	ch chan rt.Message
+	ch  chan rt.Message
+	ctx rt.Context
 }
 
 func TypeOf(msg rt.Message) (ret Type) {
@@ -32,11 +34,20 @@ func TypeOf(msg rt.Message) (ret Type) {
 func (m *mach) Do(msg rt.Message) (ret rt.Message, stop bool) {
 	switch TypeOf(msg) {
 	case Machine:
-		stop = true
+		if msg["context"] != nil {
+			m.ctx = msg["context"].(rt.Context)
+		} else {
+			stop = true
+		}
 	case Console:
 		fmt.Print(msg["data"])
 		if b, _ := msg["ln"].(bool); b {
 			fmt.Println()
+		}
+	case Kernel:
+		switch msg["action"].(string) {
+		case "load":
+			m.ctx.Queue(msg["data"].(string))
 		}
 	default:
 		halt.As(100, "wrong message ")
@@ -44,7 +55,7 @@ func (m *mach) Do(msg rt.Message) (ret rt.Message, stop bool) {
 	return
 }
 
-func (m *mach) Chan() (ch chan rt.Message) {
+func (m *mach) Chan() chan rt.Message {
 	if m.ch == nil {
 		m.ch = make(chan rt.Message)
 		go func(ch chan rt.Message) {
@@ -57,8 +68,7 @@ func (m *mach) Chan() (ch chan rt.Message) {
 			}
 		}(m.ch)
 	}
-	ch = m.ch
-	return
+	return m.ch
 }
 
 func (m *mach) Stop() {
@@ -68,7 +78,7 @@ func (m *mach) Stop() {
 }
 
 func init() {
-	TypMap = map[string]Type{"console": Console, "machine": Machine}
+	TypMap = map[string]Type{"console": Console, "machine": Machine, "kernel": Kernel}
 	lem.Rt = func() lem.Machine {
 		return &mach{}
 	}

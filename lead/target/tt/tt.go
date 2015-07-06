@@ -7,6 +7,7 @@ import (
 	"io"
 	"leaf/ir"
 	"leaf/ir/modifiers"
+	"leaf/ir/types"
 	"leaf/lead/target"
 	"reflect"
 	"sort"
@@ -49,7 +50,13 @@ func (g *generator) expr(x ir.Expression) {
 			expr(e.Eval())
 			put(")")
 		case *ir.ConstExpr:
-			put(e.Value)
+			switch e.Type {
+			case types.STRING:
+				put(`"`, e.Value, `"`)
+			default:
+				put(e.Value)
+			}
+
 		case *ir.Dyadic:
 			expr(e.Left)
 			put(" ", e.Op.String(), " ")

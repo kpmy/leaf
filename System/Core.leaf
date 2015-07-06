@@ -1,0 +1,16 @@
+MODULE Core
+	CONST
+		type; data; action
+		
+	PROCEDURE LoadMod+
+		VAR mod- STRING
+		VAR msg MAP
+		PRE mod # ""
+	BEGIN
+		msg.type := "kernel"
+		msg.action := "load"
+		msg.data := mod
+		PROCESS(to<-msg)
+	END LoadMod
+	
+END Core.

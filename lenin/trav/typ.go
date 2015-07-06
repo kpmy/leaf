@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/kpmy/trigo"
 	"github.com/kpmy/ypk/assert"
-	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
 	"leaf/ir/operation"
 	"leaf/ir/types"
@@ -353,12 +352,14 @@ func (a *Any) Equal(b *Any) (ok bool) {
 	return
 }
 
-func ThisAny(v *value) *Any {
+func ThisAny(v *value) (ret *Any) {
 	assert.For(v != nil, 20)
-	if _, ok := v.val.(*Any); ok {
-		halt.As(100)
+	if a, ok := v.val.(*Any); ok {
+		ret = &Any{typ: a.typ, x: a.x}
+	} else {
+		ret = &Any{typ: v.typ, x: v.val}
 	}
-	return &Any{typ: v.typ, x: v.val}
+	return
 }
 
 type Atom string

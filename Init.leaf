@@ -1,7 +1,8 @@
 MODULE Init
-	IMPORT Log HostConsole
+	IMPORT Log Core HostConsole
 BEGIN
-	WHILE TRUE DO
-		Log.String(s: ".")
-	END
+	Log.Ln(s: "LEAF initialized")
+	Core.LoadMod(mod: "TestCore")
+CLOSE
+	Log.String(s:"LEAF closed")
 END Init.

@@ -66,7 +66,8 @@ func (d *dumbExpr) Eval() ir.Expression {
 	if d.e != nil {
 		return d.e
 	} else {
-		return d.later()
+		d.e = d.later()
+		return d.e
 	}
 }
 
@@ -90,7 +91,8 @@ func (d *dumbCall) Fwd() ir.Statement {
 	if d.c != nil {
 		return d.c
 	} else {
-		return d.later()
+		d.c = d.later()
+		return d.c
 	}
 }
 

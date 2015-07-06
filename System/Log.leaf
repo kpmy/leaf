@@ -2,10 +2,31 @@ MODULE Log
 
 	VAR
 		string+ PROCEDURE
-
+		print+ PROCEDURE
+		
+	PROCEDURE wrap
+		VAR s- STRING
+		VAR ln- BOOLEAN
+	BEGIN
+		RUN(proc: string, s: s, lf: ln)
+	END wrap
+	
 	PROCEDURE String+
 		VAR s- STRING
 	BEGIN
-		RUN(proc: string, s: s)
+		wrap(s: s)
 	END String
+	
+	PROCEDURE Ln+
+		VAR s- STRING
+	BEGIN	
+		wrap(s: s, ln: TRUE)
+	END Ln
+	
+	PROCEDURE Print+
+		VAR x- ANY
+	BEGIN
+		RUN(proc: print, x: x)
+	END Print
+	
 END Log.

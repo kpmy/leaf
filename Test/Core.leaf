@@ -1,0 +1,28 @@
+MODULE TestCore
+	IMPORT Log
+
+	VAR n, res INTEGER
+
+	PROCEDURE Fib
+		VAR f+, n- INTEGER
+		VAR tmp0, tmp1 INTEGER
+	BEGIN
+		IF n > 1 THEN
+			Fib(n: n - 1, f -> tmp0)
+			Fib(n: n - 2, f -> tmp1)
+			f := tmp0 + tmp1
+		ELSIF n = 1 THEN
+			f := 1
+		ELSE
+			f := 0
+		END
+	END Fib
+
+BEGIN
+	Log.Ln(s: "Test started")
+	WHILE n < 20 DO
+		Fib(n: n, f -> res)
+		Log.Print(x: n); Log.String(s: ": "); Log.Print(x: res); Log.Ln
+		INC(x -> n)
+	END
+END TestCore.
