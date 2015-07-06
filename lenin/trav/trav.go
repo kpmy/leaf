@@ -1031,6 +1031,7 @@ func (ctx *context) stmt(_s ir.Statement) {
 		halt.As(100, "unknown statement ", reflect.TypeOf(this))
 	}
 }
+
 func (ctx *context) imp(i *ir.Import) {
 	ms := ctx.data.store[i.Name]
 	for _, x := range i.ConstDecl {
@@ -1214,14 +1215,15 @@ func run(main *ir.Module, ld lenin.Loader, universe chan rt.Message) {
 	var ml []string
 	var do func(m *ir.Module)
 	do = func(m *ir.Module) {
-
-		ml = append(ml, m.Name)
+		ml = append(ml, m.Name) // последовательность загрузки, модули могут повторяться и фильтруются ниже
 		for _, v := range m.ImportSeq {
 			assert.For(main.Name != v.Name, 30, "cyclic import from ", v.Name)
-			if cache[v.Name] == nil {
-				x, _ := ld(v.Name)
+			if x := cache[v.Name]; x == nil {
+				x, _ = ld(v.Name)
 				assert.For(x != nil, 40)
 				cache[v.Name] = x
+				do(x)
+			} else {
 				do(x)
 			}
 		}

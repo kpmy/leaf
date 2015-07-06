@@ -1,15 +1,11 @@
 MODULE Log
 
+	VAR
+		string+ PROCEDURE
+
 	PROCEDURE String+
-		CONST
-			type; data; ln
-			console = "console"
 		VAR s- STRING
-		VAR msg, anwser MAP
 	BEGIN
-		msg.type := console
-		msg.data := s
-		msg.ln := FALSE
-		PROCESS(to<-msg)
+		RUN(proc: string, s: s)
 	END String
 END Log.

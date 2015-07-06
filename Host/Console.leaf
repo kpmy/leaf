@@ -1,0 +1,19 @@
+MODULE HostConsole
+	IMPORT Log
+
+	PROCEDURE String
+		CONST
+			type; data; ln
+			console = "console"
+		VAR s- STRING
+		VAR msg, anwser MAP
+	BEGIN
+		msg.type := console
+		msg.data := s
+		msg.ln := FALSE
+		PROCESS(to<-msg)
+	END String
+
+BEGIN
+	Log.string := String
+END HostConsole.

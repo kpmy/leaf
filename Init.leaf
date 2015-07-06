@@ -1,7 +1,7 @@
 MODULE Init
-	IMPORT Log
+	IMPORT Log HostConsole
 BEGIN
-	WHILE TRUE DO 
+	WHILE TRUE DO
 		Log.String(s: ".")
 	END
 END Init.
