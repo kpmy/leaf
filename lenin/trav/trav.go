@@ -852,6 +852,7 @@ func (ctx *context) stmt(_s ir.Statement) {
 		for _, p := range this.Par {
 			x := &param{}
 			x.obj = p.Var
+			x.name = p.Variadic
 			if p.Expr != nil {
 				ctx.expr(p.Expr)
 				x.val = ctx.pop()
@@ -1056,13 +1057,22 @@ func (ctx *context) invoke(mod, proc string, par ...interface{}) (ret interface{
 	assert.For(rt.StdImp.Name == mod, 20)
 	p := rt.StdImp.ProcDecl[proc]
 	ctx.data.alloc(p)
+	var varPar []rt.VarPar
 	for _, _v := range par {
 		switch v := _v.(type) {
 		case *param:
-			if v.val != nil {
-				ctx.data.inner(v.obj, func(*value) *value { return v.val })
+			if v.obj != nil {
+				if v.val != nil {
+					ctx.data.inner(v.obj, func(*value) *value { return v.val })
+				} else {
+					ctx.data.ref(v.obj, v.sel)
+				}
 			} else {
-				ctx.data.ref(v.obj, v.sel)
+				x := rt.VarPar{}
+				x.Name = v.name
+				x.Sel = v.sel
+				x.Val = v.val
+				varPar = append(varPar, x)
 			}
 		default:
 			halt.As(100, "unknown par ", reflect.TypeOf(v))
@@ -1080,7 +1090,7 @@ func (ctx *context) invoke(mod, proc string, par ...interface{}) (ret interface{
 			v := calcDyadic(lv, op, rv)
 			assert.For(v.typ == t, 60)
 			return v.val
-		})
+		}, varPar...)
 	} else {
 		halt.As(100, "unknown std procedure ", mod, ".", proc)
 	}
@@ -1115,6 +1125,9 @@ func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 		ctx.data.dealloc(this)
 	case *ir.Procedure:
 		ctx.data.alloc(this)
+		if lenin.Debug {
+			fmt.Println(par...)
+		}
 		for _, _v := range par {
 			switch v := _v.(type) {
 			case *param:
@@ -1122,6 +1135,14 @@ func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 					ctx.data.inner(v.obj, func(*value) *value { return v.val })
 				} else {
 					ctx.data.ref(v.obj, v.sel)
+				}
+			case rt.VarPar:
+				obj := ctx.data.top().schema[v.Name]
+				assert.For(obj != nil, 30)
+				if val := v.Val.(*value); val != nil {
+					ctx.data.inner(obj, func(*value) *value { return val })
+				} else {
+					ctx.data.ref(obj, v.Sel)
 				}
 			default:
 				halt.As(100, "unknown par ", reflect.TypeOf(v))
@@ -1149,8 +1170,12 @@ func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 	return
 }
 
-func (c *context) Queue(x interface{}) {
-	c.do(x)
+func (c *context) Queue(x interface{}, par ...rt.VarPar) {
+	var p []interface{}
+	for _, x := range par {
+		p = append(p, x)
+	}
+	c.do(x, p...)
 }
 
 func (c *context) run() {

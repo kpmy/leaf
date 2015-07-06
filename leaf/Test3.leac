@@ -53,11 +53,15 @@ MODULE TestProcVar
 	VAR
 		do, do2 PROCEDURE
 		ok BOOLEAN
+		x INTEGER
 
 	PROCEDURE Do0
 		VAR x INTEGER
+		VAR up- INTEGER
+		VAR z+ INTEGER
 	BEGIN
-		x:=100500
+		x:=100500 + up
+		z:=1945
 	END Do0
 
 BEGIN
@@ -65,6 +69,6 @@ BEGIN
 	do := UNDEF
 	do := Do0
 	IF do # UNDEF THEN
-		RUN(proc: do)
+		RUN(proc: do, up: 42, z<-x)
 	END
 END TestProcVar.

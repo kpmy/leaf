@@ -188,12 +188,16 @@ func internalize(m *Module) (ret *ir.Module) {
 			pl := treatParList(s.Leaf[fldz.Parameter])
 			for _, par := range pl {
 				x := &ir.Parameter{}
+				x.Variadic = par.Variadic
 				if par.Expr != nil {
 					x.Expr = expr(par.Expr)
 				} else {
 					x.Sel = sel(par.Sel)
 				}
-				x.Var = m.that(par.Uuid).(*ir.Variable)
+				vx, ok := m.that(par.Uuid).(*ir.Variable)
+				if ok || x.Variadic != "" {
+					x.Var = vx
+				}
 				this.Par = append(this.Par, x)
 			}
 			ret = this

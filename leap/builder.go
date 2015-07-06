@@ -178,17 +178,24 @@ type forwardCall struct {
 
 func (s *forwardCall) Do() {}
 func (s *forwardCall) Fwd() ir.Statement {
-	params := func(p *ir.Procedure) (param []*ir.Parameter) {
+	params := func(p *ir.Procedure, variadic bool) (param []*ir.Parameter) {
 		for _, par := range s.param {
 			x := &ir.Parameter{}
 			x.Var = p.VarDecl[par.name]
-			assert.For(x.Var != nil, 30)
+			x.Variadic = par.name
+			if !variadic {
+				assert.For(x.Var != nil, 30)
+			}
 			assert.For((par.expr != nil) != (par.link != nil), 31)
 			if par.expr != nil {
-				assert.For(x.Var.Modifier == modifiers.Semi, 32)
+				if x.Var != nil {
+					assert.For(x.Var.Modifier == modifiers.Semi, 32)
+				}
 				x.Expr = par.expr
 			} else {
-				assert.For(x.Var.Modifier == modifiers.Full, 33)
+				if x.Var != nil {
+					assert.For(x.Var.Modifier == modifiers.Full, 33)
+				}
 				x.Sel = par.link
 			}
 			param = append(param, x)
@@ -196,9 +203,9 @@ func (s *forwardCall) Fwd() ir.Statement {
 		return
 	}
 	if p, _ := s.sc.find(s.name).(*ir.Procedure); p != nil {
-		return &ir.CallStmt{Proc: p, Par: params(p)}
+		return &ir.CallStmt{Proc: p, Par: params(p, false)}
 	} else if p := rt.StdImp.ProcDecl[s.name]; p != nil {
-		return &ir.InvokeStmt{Mod: rt.StdImp.Name, Proc: p.Name(), Par: params(p.This())}
+		return &ir.InvokeStmt{Mod: rt.StdImp.Name, Proc: p.Name(), Par: params(p.This(), rt.Special[rt.Qualident{Mod: rt.StdImp.Name, Proc: p.Name()}].Variadic)}
 	} else {
 		halt.As(100, "undefined procedure ", s.name, s.sc)
 	}

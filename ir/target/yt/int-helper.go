@@ -234,6 +234,7 @@ func treatPar(_m interface{}) (ret *Param) {
 		ret.Sel = treatSelList(m[fldz.Selector])
 	}
 	ret.Uuid = m[fldz.UUID].(string)
+	ret.Variadic = m[fldz.Variadic].(string)
 	return
 }
 

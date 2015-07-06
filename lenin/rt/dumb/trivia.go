@@ -27,7 +27,7 @@ func bi(x int64) *big.Int {
 }
 
 //INC x to n
-func inc(ctx rt.Context, s rt.Storage, calc rt.Calc) {
+func inc(ctx rt.Context, s rt.Storage, calc rt.Calc, par ...rt.VarPar) {
 	x := s.Get("x")
 	n := s.Get("n")
 	zero := calc(types.INTEGER, n, operation.Eq, types.INTEGER, trav.NewInt(0), types.BOOLEAN).(bool)
@@ -38,7 +38,7 @@ func inc(ctx rt.Context, s rt.Storage, calc rt.Calc) {
 }
 
 //DEC x to n
-func dec(ctx rt.Context, s rt.Storage, calc rt.Calc) {
+func dec(ctx rt.Context, s rt.Storage, calc rt.Calc, par ...rt.VarPar) {
 	x := s.Get("x")
 	n := s.Get("n")
 	zero := calc(types.INTEGER, n, operation.Eq, types.INTEGER, trav.NewInt(0), types.BOOLEAN).(bool)
@@ -49,12 +49,12 @@ func dec(ctx rt.Context, s rt.Storage, calc rt.Calc) {
 }
 
 //CAP x to cap
-func toUpper(ctx rt.Context, s rt.Storage, calc rt.Calc) {
+func toUpper(ctx rt.Context, s rt.Storage, calc rt.Calc, par ...rt.VarPar) {
 	x := s.Get("x").(rune)
 	s.Set("cap", unicode.ToUpper(x))
 }
 
-func length(ctx rt.Context, st rt.Storage, calc rt.Calc) {
+func length(ctx rt.Context, st rt.Storage, calc rt.Calc, par ...rt.VarPar) {
 	t, x := st.Get("in").(*trav.Any).This()
 	switch t {
 	case types.STRING:
@@ -70,7 +70,7 @@ func length(ctx rt.Context, st rt.Storage, calc rt.Calc) {
 	}
 }
 
-func odd(ctx rt.Context, st rt.Storage, calc rt.Calc) {
+func odd(ctx rt.Context, st rt.Storage, calc rt.Calc, par ...rt.VarPar) {
 	_x := st.Get("in")
 	if i := _x.(*trav.Int); i != nil {
 		x := &big.Int{}
@@ -82,32 +82,32 @@ func odd(ctx rt.Context, st rt.Storage, calc rt.Calc) {
 	}
 }
 
-func resize(ctx rt.Context, st rt.Storage, calc rt.Calc) {
+func resize(ctx rt.Context, st rt.Storage, calc rt.Calc, par ...rt.VarPar) {
 	l := st.Get("list").(*trav.List)
 	n := st.Get("n").(*trav.Int)
 	l.Len(int(n.Int64()))
 }
 
-func typeof(ctx rt.Context, st rt.Storage, calc rt.Calc) {
+func typeof(ctx rt.Context, st rt.Storage, calc rt.Calc, par ...rt.VarPar) {
 	a := st.Get("in").(*trav.Any)
 	t, _ := a.This()
 	at := trav.Atom(t.String())
 	st.Set("res", at)
 }
 
-func incl(ctx rt.Context, st rt.Storage, calc rt.Calc) {
+func incl(ctx rt.Context, st rt.Storage, calc rt.Calc, par ...rt.VarPar) {
 	s := st.Get("set").(*trav.Set)
 	a := st.Get("x").(*trav.Any)
 	s.Incl(a)
 }
 
-func excl(ctx rt.Context, st rt.Storage, calc rt.Calc) {
+func excl(ctx rt.Context, st rt.Storage, calc rt.Calc, par ...rt.VarPar) {
 	s := st.Get("set").(*trav.Set)
 	a := st.Get("x").(*trav.Any)
 	s.Excl(a)
 }
 
-func values(ctx rt.Context, st rt.Storage, calc rt.Calc) {
+func values(ctx rt.Context, st rt.Storage, calc rt.Calc, par ...rt.VarPar) {
 	s := st.Get("x").(*trav.Any)
 	out := st.Get("out").(*trav.List)
 	t, x := s.This()
@@ -131,7 +131,7 @@ func values(ctx rt.Context, st rt.Storage, calc rt.Calc) {
 	}
 }
 
-func keys(ctx rt.Context, st rt.Storage, calc rt.Calc) {
+func keys(ctx rt.Context, st rt.Storage, calc rt.Calc, par ...rt.VarPar) {
 	m := st.Get("x").(*trav.Map)
 	out := st.Get("out").(*trav.List)
 	kl := m.Keys()
@@ -141,7 +141,7 @@ func keys(ctx rt.Context, st rt.Storage, calc rt.Calc) {
 	}
 }
 
-func alloc(ctx rt.Context, st rt.Storage, calc rt.Calc) {
+func alloc(ctx rt.Context, st rt.Storage, calc rt.Calc, par ...rt.VarPar) {
 	p := st.Get("p").(*trav.Ptr)
 	adr := Heap.New()
 	link := &heapy{h: Heap, adr: adr}
@@ -151,7 +151,7 @@ func alloc(ctx rt.Context, st rt.Storage, calc rt.Calc) {
 	p.Init(adr, link)
 }
 
-func process(ctx rt.Context, st rt.Storage, calc rt.Calc) {
+func process(ctx rt.Context, st rt.Storage, calc rt.Calc, par ...rt.VarPar) {
 	in := st.Get("to").(*trav.Map)
 	m := Map(in)
 	fn := ctx.Handler()
@@ -161,7 +161,7 @@ func process(ctx rt.Context, st rt.Storage, calc rt.Calc) {
 	}
 }
 
-func trapIf(ctx rt.Context, st rt.Storage, calc rt.Calc) {
+func trapIf(ctx rt.Context, st rt.Storage, calc rt.Calc, par ...rt.VarPar) {
 	cond := st.Get("cond").(bool)
 	msg := st.Get("msg").(*trav.Any)
 	code := st.Get("code").(*trav.Int)
@@ -170,17 +170,17 @@ func trapIf(ctx rt.Context, st rt.Storage, calc rt.Calc) {
 	}
 }
 
-func trap(ctx rt.Context, st rt.Storage, calc rt.Calc) {
+func trap(ctx rt.Context, st rt.Storage, calc rt.Calc, par ...rt.VarPar) {
 	msg := st.Get("msg").(*trav.Any)
 	code := st.Get("code").(*trav.Int)
 	halt.As(100, code, msg)
 }
 
-func run(ctx rt.Context, st rt.Storage, calc rt.Calc) {
+func run(ctx rt.Context, st rt.Storage, calc rt.Calc, par ...rt.VarPar) {
 	proc := st.Get("proc").(*trav.Proc)
 	p := proc.This()
 	if p != nil {
-		ctx.Queue(p)
+		ctx.Queue(p, par...)
 	}
 }
 
@@ -207,6 +207,7 @@ func init() {
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "ASSERT"}] = trapIf
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "HALT"}] = trap
 	rt.StdProc[rt.Qualident{Mod: "STD", Proc: "RUN"}] = run
+	rt.Special[rt.Qualident{Mod: "STD", Proc: "RUN"}] = rt.Prop{Variadic: true}
 
 	Heap = newHeap()
 }

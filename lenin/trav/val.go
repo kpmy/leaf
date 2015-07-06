@@ -11,9 +11,10 @@ import (
 )
 
 type param struct {
-	obj *ir.Variable
-	val *value
-	sel ir.Selector
+	obj  *ir.Variable
+	val  *value
+	sel  ir.Selector
+	name string
 }
 
 type value struct {

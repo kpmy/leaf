@@ -114,7 +114,7 @@ type Message map[interface{}]interface{}
 
 type Context interface {
 	Handler() func(Message) Message
-	Queue(x interface{})
+	Queue(interface{}, ...VarPar)
 }
 
 type Storage interface {
@@ -123,14 +123,26 @@ type Storage interface {
 	Get(string) interface{}
 }
 
+type Prop struct {
+	Variadic bool
+}
+
+type VarPar struct {
+	Name string
+	Val  interface{}
+	Sel  ir.Selector
+}
+
 type Calc func(types.Type, interface{}, operation.Operation, types.Type, interface{}, types.Type) interface{}
-type Proc func(Context, Storage, Calc)
+type Proc func(Context, Storage, Calc, ...VarPar)
 
 var StdImp *ir.Import
 var StdProc map[Qualident]Proc
+var Special map[Qualident]Prop
 
 func init() {
 	StdImp = &ir.Import{}
 	StdImp.Init()
 	StdProc = make(map[Qualident]Proc)
+	Special = make(map[Qualident]Prop)
 }

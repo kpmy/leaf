@@ -120,9 +120,10 @@ type InvokeStmt struct {
 func (c *InvokeStmt) Do() {}
 
 type Parameter struct {
-	Var  *Variable
-	Sel  Selector
-	Expr Expression
+	Var      *Variable
+	Sel      Selector
+	Expr     Expression
+	Variadic string
 }
 
 type AssignStmt struct {

@@ -4,6 +4,7 @@ package yt
 import (
 	"bytes"
 	"fmt"
+	"github.com/kpmy/ypk/fn"
 	"github.com/kpmy/ypk/halt"
 	"gopkg.in/yaml.v2"
 	"io"
@@ -14,9 +15,10 @@ import (
 const VERSION = 0.3
 
 type Param struct {
-	Uuid string
-	Expr *Expression `yaml:"expression"`
-	Sel  []*Selector `yaml:"selector"`
+	Uuid     string
+	Expr     *Expression `yaml:"expression"`
+	Sel      []*Selector `yaml:"selector"`
+	Variadic string
 }
 
 type Expression struct {
@@ -99,9 +101,13 @@ func (i *Import) init() {
 }
 
 func (m *Module) this(item interface{}) (ret string) {
-	if ret = m.id[item]; ret == "" {
-		ret = "0" + fmt.Sprintf("%X", len(m.id)) + "H"
-		m.id[item] = ret
+	if !fn.IsNil(item) {
+		if ret = m.id[item]; ret == "" {
+			ret = "0" + fmt.Sprintf("%X", len(m.id)) + "H"
+			m.id[item] = ret
+		}
+	} else {
+		ret = "-"
 	}
 	return
 }
@@ -117,7 +123,9 @@ func (m *Module) that(id string, i ...interface{}) (ret interface{}) {
 		}
 		return
 	}
-	if x := find(id); x == nil {
+	if id == "-" {
+		ret = nil
+	} else if x := find(id); x == nil {
 		if len(i) == 1 {
 			m.id[i[0]] = id
 		} else {

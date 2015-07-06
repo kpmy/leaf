@@ -24,4 +24,5 @@ const (
 	Module     = "module"
 	Before     = "before"
 	After      = "after"
+	Variadic   = "variadic"
 )
