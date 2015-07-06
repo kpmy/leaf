@@ -1,0 +1,37 @@
+MODULE TestFib
+	IMPORT Log
+
+	VAR n, res, max INTEGER; cache LIST
+
+	PROCEDURE Fib
+		VAR f+, n- INTEGER; fast- BOOLEAN
+		VAR tmp0, tmp1 INTEGER
+		VAR c ANY
+	BEGIN
+		c:=cache[n]
+		CHOOSE c
+		AS INTEGER: f := c
+		ELSE
+			IF n > 1 THEN
+				Fib(n: n - 1, fast: fast, f -> tmp0)
+				Fib(n: n - 2, fast: fast, f -> tmp1)
+				f := tmp0 + tmp1
+				IF fast THEN cache[n] := f END
+			ELSIF n = 1 THEN
+				f := 1
+			ELSE
+				f := 0
+			END
+		END
+	END Fib
+
+BEGIN
+	Log.Ln(s: "Test started")
+	max := 2049
+	RESIZE(list<-cache, n: max)
+	WHILE n < max DO
+		Fib(n: n, fast: TRUE, f -> res)
+		Log.Print(x: n); Log.String(s: ": "); Log.Print(x: res); Log.Ln
+		INC(x -> n)
+	END
+END TestFib.

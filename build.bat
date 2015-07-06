@@ -4,5 +4,5 @@ leaf -b=Log
 leaf -b=Core
 leaf -b=HostConsole
 leaf -b=Init
-leaf -b=TestCore
+leaf -b=TestFib
 pause

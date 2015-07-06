@@ -1,6 +1,7 @@
 package trav
 
 import (
+	"fmt"
 	"github.com/kpmy/trigo"
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
@@ -15,6 +16,22 @@ type param struct {
 	val  *value
 	sel  ir.Selector
 	name string
+}
+
+func (p *param) String() string {
+	var n string
+	if p.obj != nil {
+		n = p.obj.Name
+	} else {
+		n = p.name
+	}
+	var v string
+	if p.val != nil {
+		v = ": " + fmt.Sprint(p.val.val)
+	} else {
+		v = "<-" + fmt.Sprint(p.sel)
+	}
+	return fmt.Sprint(n, v)
 }
 
 type value struct {
