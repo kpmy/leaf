@@ -182,7 +182,7 @@ func (p *pr) qualSel(b *blockBuilder) (sel *selBuilder, mid, id string) {
 	id = ""
 	if mod {
 		sel = &selBuilder{sc: b.sc}
-		imp := b.sc.im[mid]
+		imp := b.sc.imp(mid)
 		sel.join(&ir.SelectMod{Mod: imp.Name})
 		id = p.ident()
 		obj := b.impObj(mid, id)
@@ -484,22 +484,20 @@ func (p *pr) procDecl(b *blockBuilder) {
 	p.expect(lss.Begin, "BEGIN expected", lss.Separator, lss.Delimiter)
 	p.next()
 	b.decl(ret.Name, ret)
-	{
 
-		ret.ConstDecl = this.cm
-		ret.VarDecl = this.vm
-		ret.ProcDecl = this.pm
-		ret.Infix = this.in
-		ret.Pre = this.pre
-		ret.Post = this.post
-		expect := modifiers.Full
-		for i, v := range ret.Infix {
-			if v.Modifier != expect {
-				p.mark("wrong infix declared")
-			}
-			if i == 0 {
-				expect = modifiers.Semi
-			}
+	ret.ConstDecl = this.cm
+	ret.VarDecl = this.vm
+	ret.ProcDecl = this.pm
+	ret.Infix = this.in
+	ret.Pre = this.pre
+	ret.Post = this.post
+	expect := modifiers.Full
+	for i, v := range ret.Infix {
+		if v.Modifier != expect {
+			p.mark("wrong infix declared")
+		}
+		if i == 0 {
+			expect = modifiers.Semi
 		}
 	}
 	proc := &blockBuilder{sc: this}
@@ -644,8 +642,8 @@ func (p *pr) Module() (ret *ir.Module, err error) {
 	p.st.pop()
 	p.top.ConstDecl = top.cm
 	p.top.VarDecl = top.vm
-	p.top.ProcDecl = top.pm
 	p.top.ImportSeq = top.il
+	p.top.ProcDecl = top.pm
 	if p.await(lss.Begin, lss.Delimiter, lss.Separator) {
 		p.next()
 		b := &blockBuilder{sc: top}

@@ -1,0 +1,59 @@
+MODULE TestBubble
+
+	IMPORT Log
+
+	VAR x LIST
+
+	PROCEDURE Print
+		VAR l- LIST
+		VAR i INTEGER
+	BEGIN
+		WHILE i < \LEN l DO
+			Log.Print(x: l[i]); Log.String(s: " ")
+			INC(x->i)
+		END
+		Log.Ln
+	END Print
+
+	PROCEDURE Sort
+		VAR a+ LIST
+		VAR i, j, len INTEGER
+		VAR buf ANY
+
+		PROCEDURE gtr
+			VAR res+ BOOLEAN
+			VAR l-, r- ANY
+			INFIX res l r
+		BEGIN
+			CHOOSE l AS INTEGER:
+				CHOOSE r AS INTEGER:
+					res := l > r
+				ELSE END
+			ELSE END
+		END gtr
+
+	BEGIN
+		len := \LEN a
+		WHILE i < len DO
+			j := 0
+			WHILE j < (len - i - 1) DO
+				IF a[j] \gtr a[j+1] THEN
+					buf := a[j]
+					a[j] := a[j+1]
+					a[j+1] := buf
+				END
+				INC(x->j)
+			END
+			INC(x->i)
+		END;
+	END Sort
+
+BEGIN
+	Log.Ln(s: "TestBubble started")
+	x := [1, 4, 6, 2, 3, 5, 7, 9, 8, 0, 3, 5, 2, 54, 45, 22, 34532452345, 235234, 234523, 4523, 45, 23, 45, 23, 45, 23, 45, 32, 4, 52, 34, 5, 2346, 12]
+	Print(l: x)
+	Sort(a <- x)
+	Print(l: x)
+CLOSE
+	Log.Ln(s: "TestBubble end")
+END TestBubble.

@@ -5,7 +5,7 @@ MODULE TestFact
 
 	PROCEDURE Fact
 		VAR x-, res+ INTEGER
-	INFIX res x
+		INFIX res x
 	BEGIN
 		IF x > 0 THEN res := x * \Fact x - 1
 		ELSE res := 1 END
@@ -13,7 +13,9 @@ MODULE TestFact
 
 BEGIN
 	Log.Ln(s: "TestFact started")
-	max := 100
+	max := 10
 	res := \Fact max
 	Log.Print(x: max); Log.String(s: "! "); Log.Print(x: res); Log.Ln
+CLOSE
+	Log.Ln(s: "TestFact end")
 END TestFact.

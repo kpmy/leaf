@@ -291,6 +291,8 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 			if !ok {
 				//fmt.Println("mop trav")
 				ret = trav(expr, tail)
+			} else {
+				ret = tail
 			}
 			root.Operand = expr.e
 		case *ir.TypeTest:
@@ -301,6 +303,8 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 			if !ok {
 				//fmt.Println("mop trav")
 				ret = trav(expr, tail)
+			} else {
+				ret = tail
 			}
 			root.Operand = expr.e
 		case *ir.Dyadic:
@@ -313,6 +317,8 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 			if !ok {
 				//fmt.Println("dop right trav")
 				ret = trav(right, tail)
+			} else {
+				ret = tail
 			}
 			root.Right = right.e
 
@@ -322,6 +328,8 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 			if !ok {
 				//fmt.Println("dop left trav")
 				ret = trav(left, tail)
+			} else {
+				ret = tail
 			}
 			root.Left = left.e
 		case *ir.Infix:
@@ -413,6 +421,14 @@ func (e *exprBuilder) Eval() (ret ir.Expression) {
 			case *ir.InvokeInfix:
 				fmt.Println("invoke")
 				for _, x := range e.Args {
+					eprint(x)
+				}
+			case *ir.SelectExpr:
+				fmt.Println("select")
+				eprint(e.Base)
+			case *ir.ListExpr:
+				fmt.Println("list")
+				for _, x := range e.Expr {
 					eprint(x)
 				}
 			default:
@@ -537,7 +553,7 @@ func (b *blockBuilder) call(mid, id string, pl []*forwardParam) ir.Statement {
 	var p *ir.Procedure
 	mod := ""
 	if mid != "" {
-		imp := b.sc.im[mid]
+		imp := b.sc.imp(mid)
 		if x := imp.ProcDecl[id]; x != nil {
 			p = x.This()
 			mod = imp.Name

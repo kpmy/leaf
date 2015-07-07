@@ -4,6 +4,7 @@ BEGIN
 	Log.Ln(s: "LEAF initialized")
 	Core.LoadMod(mod: "TestFib")
 	Core.LoadMod(mod: "TestFact")
+	Core.LoadMod(mod: "TestBubble")
 CLOSE
 	Log.Ln
 	Log.Ln(s:"LEAF closed")

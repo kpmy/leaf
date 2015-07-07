@@ -1,0 +1,9 @@
+MODULE TestEmpty
+
+	IMPORT Log
+
+BEGIN
+	Log.Ln(s: "TestEmpty started")
+CLOSE
+	Log.Ln(s: "TestEmpty end")
+END TestEmpty.

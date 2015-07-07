@@ -34,4 +34,6 @@ BEGIN
 		INC(x -> n)
 	END
 	Log.Print(x: n-1); Log.String(s: ": "); Log.Print(x: res); Log.Ln
+CLOSE
+	Log.Ln(s: "TestFib end")
 END TestFib.

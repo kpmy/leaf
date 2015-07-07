@@ -21,6 +21,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"unicode"
 )
 
@@ -272,9 +273,13 @@ func doBuild(name string) {
 func main() {
 	log.Println("Leaf framework, pk, 20150703")
 	flag.Parse()
+	//build = "TestBubble"
 	switch {
 	case build != "":
-		doBuild(build)
+		log.Println("build", build)
+		for _, n := range strings.Split(build, " ") {
+			doBuild(n)
+		}
 	default:
 		doFind("Init", do)
 	}
