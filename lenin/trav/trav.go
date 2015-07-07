@@ -778,12 +778,12 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 						out = &value{typ: types.CHAR, val: buf[i]}
 					case types.LIST:
 						i := iv.toInt().Int64()
-						l := in.toList()
+						l := in.asList()
 						data := l.Get(int(i))
 						out = &value{typ: types.ANY, val: data}
 					case types.MAP:
 						i := ThisAny(iv)
-						m := in.toMap()
+						m := in.asMap()
 						data := m.Get(i)
 						out = &value{typ: types.ANY, val: data}
 					case types.PTR:
@@ -813,12 +813,12 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 						i := iv.toInt().Int64()
 						l := out.toList()
 						l.Set(int(i), data)
-						in = &value{typ: types.LIST, val: ThisList(l)}
+						in = &value{typ: types.LIST, val: l}
 					case types.MAP:
 						i := ThisAny(iv)
 						m := out.toMap()
 						m.Set(i, ThisAny(data))
-						in = &value{typ: types.MAP, val: ThisMap(m)}
+						in = &value{typ: types.MAP, val: m}
 					case types.PTR:
 						_ = iv.toPtr()
 						p := out.toPtr()

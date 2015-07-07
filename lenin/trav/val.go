@@ -143,17 +143,6 @@ func (v *value) toAny() (ret *Any) {
 	return
 }
 
-func (v *value) toList() (ret *List) {
-	assert.For(v.typ == types.LIST, 20)
-	switch x := v.val.(type) {
-	case *List:
-		ret = ThisList(x)
-	default:
-		halt.As(100, "wrong list ", reflect.TypeOf(x))
-	}
-	return
-}
-
 func (v *value) toSet() (ret *Set) {
 	assert.For(v.typ == types.SET, 20)
 	switch x := v.val.(type) {
@@ -165,11 +154,44 @@ func (v *value) toSet() (ret *Set) {
 	return
 }
 
+func (v *value) toList() (ret *List) {
+	assert.For(v.typ == types.LIST, 20)
+	switch x := v.val.(type) {
+	case *List:
+		ret = ThisList(x)
+	default:
+		halt.As(100, "wrong list ", reflect.TypeOf(x))
+	}
+	return
+}
+
 func (v *value) toMap() (ret *Map) {
 	assert.For(v.typ == types.MAP, 20)
 	switch x := v.val.(type) {
 	case *Map:
 		ret = ThisMap(x)
+	default:
+		halt.As(100, "wrong list ", reflect.TypeOf(x))
+	}
+	return
+}
+
+func (v *value) asList() (ret *List) {
+	assert.For(v.typ == types.LIST, 20)
+	switch x := v.val.(type) {
+	case *List:
+		ret = x
+	default:
+		halt.As(100, "wrong list ", reflect.TypeOf(x))
+	}
+	return
+}
+
+func (v *value) asMap() (ret *Map) {
+	assert.For(v.typ == types.MAP, 20)
+	switch x := v.val.(type) {
+	case *Map:
+		ret = x
 	default:
 		halt.As(100, "wrong list ", reflect.TypeOf(x))
 	}
