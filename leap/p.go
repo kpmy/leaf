@@ -484,10 +484,8 @@ func (p *pr) procDecl(b *blockBuilder) {
 	p.expect(lss.Begin, "BEGIN expected", lss.Separator, lss.Delimiter)
 	p.next()
 	b.decl(ret.Name, ret)
-	proc := &blockBuilder{sc: this}
-	p.stmtSeq(proc)
 	{
-		ret.Seq = proc.seq
+
 		ret.ConstDecl = this.cm
 		ret.VarDecl = this.vm
 		ret.ProcDecl = this.pm
@@ -504,6 +502,9 @@ func (p *pr) procDecl(b *blockBuilder) {
 			}
 		}
 	}
+	proc := &blockBuilder{sc: this}
+	p.stmtSeq(proc)
+	ret.Seq = proc.seq
 	p.expect(lss.End, "no END", lss.Delimiter, lss.Separator)
 	p.next()
 	p.expect(lss.Ident, "procedure name expected", lss.Separator)

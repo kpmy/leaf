@@ -5,4 +5,5 @@ leaf -b=Core
 leaf -b=HostConsole
 leaf -b=Init
 leaf -b=TestFib
+leaf -b=TestFact
 pause

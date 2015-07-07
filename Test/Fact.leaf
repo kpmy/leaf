@@ -1,0 +1,19 @@
+MODULE TestFact
+	IMPORT Log
+
+	VAR max, res INTEGER
+
+	PROCEDURE Fact
+		VAR x-, res+ INTEGER
+	INFIX res x
+	BEGIN
+		IF x > 0 THEN res := x * \Fact x - 1
+		ELSE res := 1 END
+	END Fact
+
+BEGIN
+	Log.Ln(s: "TestFact started")
+	max := 100
+	res := \Fact max
+	Log.Print(x: max); Log.String(s: "! "); Log.Print(x: res); Log.Ln
+END TestFact.

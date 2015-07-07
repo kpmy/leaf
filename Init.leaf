@@ -3,6 +3,8 @@ MODULE Init
 BEGIN
 	Log.Ln(s: "LEAF initialized")
 	Core.LoadMod(mod: "TestFib")
+	Core.LoadMod(mod: "TestFact")
 CLOSE
-	Log.String(s:"LEAF closed")
+	Log.Ln
+	Log.Ln(s:"LEAF closed")
 END Init.
