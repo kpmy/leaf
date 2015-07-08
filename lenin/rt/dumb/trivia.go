@@ -157,7 +157,7 @@ func process(ctx rt.Context, st rt.Storage, calc rt.Calc, par ...rt.VarPar) {
 	fn := ctx.Handler()
 	m = fn(rt.Message(m))
 	if m != nil {
-		halt.As(100)
+		st.Set("from", Unmap(m))
 	}
 }
 

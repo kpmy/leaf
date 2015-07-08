@@ -1,0 +1,24 @@
+MODULE Objects
+
+	VAR
+		load, store PROCEDURE
+
+	PROCEDURE Load+
+		VAR key- STRING; obj+ PTR
+	BEGIN
+		RUN(proc: load, k: key, o -> obj)
+	END Load
+
+	PROCEDURE Store+
+		VAR key- STRING; obj- PTR
+	BEGIN
+		RUN(proc: store, k: key, o: obj)
+	END Store
+
+	PROCEDURE Init+
+		VAR ld-, st- PROCEDURE
+	BEGIN
+		load := ld
+		store := st
+	END Init
+END Objects.

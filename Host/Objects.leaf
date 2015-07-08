@@ -1,0 +1,29 @@
+MODULE HostObjects
+	IMPORT Objects
+
+	PROCEDURE load
+		VAR k- STRING; o+ PTR
+		VAR out, in MAP; x ANY
+	BEGIN
+		out["type"] := "storage"
+		out["action"] := "load"
+		out["key"] := k
+		PROCESS(to <- out, from -> in)
+		x:=in["object"]
+		CHOOSE x AS PTR: o := x ELSE o := NIL END;
+	END load
+
+	PROCEDURE store
+		VAR k- STRING; o- PTR
+		VAR out MAP
+	BEGIN
+		out["type"] := "storage"
+		out["action"] := "store"
+		out["key"] := k
+		out["object"] := o
+		PROCESS(to <- out)
+	END store
+
+BEGIN
+	Objects.Init(ld: load, st: store)
+END HostObjects.

@@ -1,0 +1,20 @@
+MODULE TestObjects
+	IMPORT Log Objects
+
+	PROCEDURE Do
+		VAR m MAP; o PTR
+	BEGIN
+		m["point"] := [3.14, 2.71]
+		NEW(p-> o)
+		o$ := m
+		Objects.Store(key: "point", obj: o)
+		Objects.Load(key: "point", obj -> o)
+		Log.Print(x: o); Log.Ln
+	END Do
+
+BEGIN
+	Log.Ln(s: "TestObjects started")
+	Do
+CLOSE
+	Log.Ln(s: "TestObjects end")
+END TestObjects.

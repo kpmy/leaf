@@ -1,4 +1,4 @@
 @echo off
 go build leaf.go
-leaf -b="Log Core HostConsole Init TestEmpty TestFib TestFact TestBubble"
+leaf -b="Log Core Objects HostObjects HostConsole Init TestEmpty TestFib TestFact TestBubble TestObjects"
 pause

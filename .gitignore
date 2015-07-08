@@ -29,3 +29,4 @@ leaf.wiki
 *.lm
 .code
 .def
+.store

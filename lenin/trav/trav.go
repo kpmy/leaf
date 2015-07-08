@@ -22,7 +22,7 @@ type context struct {
 	exprStack
 	begin    []*ir.Module
 	end      []*ir.Module
-	tgt      *storage
+	tgt      *targetStack
 	universe chan rt.Message
 	loader   lenin.Loader
 	queue    []*later
@@ -126,6 +126,34 @@ type storage struct {
 }
 
 type lock struct{}
+
+type targetStack struct {
+	sl *list.List
+}
+
+func (s *targetStack) push(st *storage) {
+	assert.For(st != nil, 20)
+	s.sl.PushFront(st)
+}
+
+func (s *targetStack) pop() (ret *storage) {
+	if s.sl.Len() > 0 {
+		el := s.sl.Front()
+		ret = s.sl.Remove(el).(*storage)
+	}
+	return
+}
+
+/*func (s *targetStack) top() *storage {
+	if s.sl.Len() > 0 {
+		return s.sl.Front().Value.(*storage)
+	}
+	return nil
+}*/
+
+func (s *targetStack) init(o *context) {
+	s.sl = list.New()
+}
 
 type storeStack struct {
 	store map[string]*storage
@@ -305,7 +333,7 @@ func (s *storage) Get(name string) interface{} {
 }
 
 func (s *storage) Set(name string, x interface{}) {
-	assert.For(x != nil, 20)
+	assert.For(!fn.IsNil(x), 20)
 	if d := s.data[name]; d != nil {
 		d.write(x)
 	} else {
@@ -332,6 +360,7 @@ func (st *storeStack) ref(o *ir.Variable, sel ir.Selector) {
 }
 
 func (st *storeStack) find(s *storage, o *ir.Variable, fn func(*value) *value) (ret bool) {
+	//fmt.Println(o.Name)
 	if data, ok := s.data[o.Name]; ok {
 		assert.For(data != nil, 20)
 		wr := s.wrappers[o.Name]
@@ -395,7 +424,7 @@ func (s *storeStack) wrap(id string, fn func(*value) *value) {
 func (s *storeStack) outer(st *storage, o *ir.Variable, fn func(*value) *value) {
 	if st != nil {
 		found := s.find(st, o, fn)
-		assert.For(found, 60)
+		assert.For(found, 60, st.root.Name, ".", o.Name)
 	} else {
 		s.inner(o, fn)
 		return
@@ -442,8 +471,7 @@ func (ctx *context) expr(_e ir.Expression) {
 		case *ir.ConstExpr:
 			ctx.push(cval(this))
 		case *ir.VariableExpr:
-			scope := ctx.tgt
-			ctx.tgt = nil
+			scope := ctx.tgt.pop()
 			ctx.data.outer(scope, this.Obj, func(v *value) *value {
 				ctx.push(v)
 				return nil
@@ -719,14 +747,14 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 			}
 		case *ir.SelectMod:
 			chain = append(chain, func(in, out *value, l ...hs) (ret *value) {
-				ctx.tgt = ctx.data.store[s.Mod]
+				ctx.tgt.push(ctx.data.store[s.Mod])
+				//fmt.Println(s.Mod)
 				return first(in, out, l...)
 			})
 		case *ir.SelectVar:
 			chain = append(chain, func(in, out *value, l ...hs) (ret *value) {
 				//fmt.Println("select var ", s.Var, in, out)
-				scope := ctx.tgt
-				ctx.tgt = nil
+				scope := ctx.tgt.pop()
 				ctx.data.outer(scope, s.Var, func(val *value) *value {
 					ret = first(in, val, l...)
 					return ret
@@ -1233,8 +1261,10 @@ func connectTo(universe chan rt.Message, ld lenin.Loader, m ...*ir.Module) (ret 
 	ret.begin = m
 	ret.universe = universe
 	ret.data = &storeStack{}
+	ret.tgt = &targetStack{}
 	ret.loader = ld
 	ret.data.init(ret)
+	ret.tgt.init(ret)
 	ret.exprStack.init()
 	return
 }

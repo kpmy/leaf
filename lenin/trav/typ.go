@@ -58,6 +58,14 @@ func (p *Ptr) Init(x int64, link Extractor) {
 	p.link = link
 }
 
+func (p *Ptr) Get() *Any {
+	if p.adr != 0 {
+		return p.link.Get()
+	} else {
+		return nil
+	}
+}
+
 func (p *Ptr) String() string {
 	if p.adr != 0 {
 		return fmt.Sprint("$", fmt.Sprintf("%x", p.adr), ": ", p.link.Get())
@@ -360,6 +368,12 @@ func ThisAny(v *value) (ret *Any) {
 		ret = &Any{typ: v.typ, x: v.val}
 	}
 	return
+}
+
+func NewAny(typ types.Type, val interface{}) *Any {
+	_, ok := val.(*Any)
+	assert.For(!ok, 20)
+	return &Any{typ: typ, x: val}
 }
 
 type Atom string

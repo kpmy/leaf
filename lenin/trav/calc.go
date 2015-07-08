@@ -703,6 +703,14 @@ func dyREAL2COMPLEX() {
 		c_(c_ir_(c_ir_ir_(func(l *big.Rat, r *big.Rat) *Cmp {
 			return &Cmp{re: l, im: r.Neg(r)}
 		}))))
+	putDyadic(types.REAL, types.REAL, operation.Pcmp,
+		c_(c_ir_(c_ir_ir_(func(l *big.Rat, r *big.Rat) *Cmp {
+			return &Cmp{re: l, im: r}
+		}))))
+	putDyadic(types.REAL, types.REAL, operation.Ncmp,
+		c_(c_ir_(c_ir_ir_(func(l *big.Rat, r *big.Rat) *Cmp {
+			return &Cmp{re: l, im: r.Neg(r)}
+		}))))
 }
 
 func dyCHAR2STRING() {

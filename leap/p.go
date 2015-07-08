@@ -250,14 +250,17 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 							par := &forwardParam{name: id}
 							p.next()
 							p.expect(lss.Ident, "ident expected", lss.Separator)
-							sel, pm, _ := p.qualSel(b)
+							sel, pm, oid := p.qualSel(b)
 							if sel == nil {
 								p.mark("not an object")
 							}
 							p.selector(sel)
+							//fmt.Println(pm, cm)
 							if pm == "" && cm != "" {
-								msel := &ir.SelectMod{Mod: p.target.top.Name}
-								sel.head(msel)
+								if p.top.VarDecl[oid] != nil { //костыль, селектор модуля для параметра нужен только для переменных модуля, так как переменные процедуры можно найти, проходя вверх по стеку
+									msel := &ir.SelectMod{Mod: p.top.Name}
+									sel.head(msel)
+								}
 							}
 							par.link = sel
 							param = append(param, par)
