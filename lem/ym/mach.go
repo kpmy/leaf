@@ -7,10 +7,13 @@ import (
 	"fmt"
 	"github.com/kpmy/ypk/halt"
 	"io"
+	"leaf/ir/types"
 	"leaf/lem"
 	"leaf/lenin/rt"
+	"leaf/lenin/trav"
 	"os"
 	"path/filepath"
+	"reflect"
 )
 
 const STORAGE = ".store"
@@ -28,10 +31,106 @@ const (
 var TypMap map[string]Type
 
 type raw struct {
-	rd io.Reader
+	x *trav.Any
 }
 
-func (r *raw) Convert() {}
+type kv struct {
+	k, v *raw
+}
+
+func (x *kv) UnmarshalXML(d *xml.Decoder, start xml.StartElement) (err error) {
+	var _t xml.Token
+	for stop := false; !stop && err == nil; {
+		_t, err = d.Token()
+		switch tok := _t.(type) {
+		case xml.StartElement:
+			var z *raw
+			switch tok.Name.Local {
+			case "key":
+				x.k = &raw{}
+				z = x.k
+			case "value":
+				x.v = &raw{}
+				z = x.v
+			default:
+				halt.As(100, tok.Name)
+			}
+			err = d.DecodeElement(z, &tok)
+		case xml.EndElement:
+			stop = tok.Name == start.Name
+		default:
+			halt.As(100, reflect.TypeOf(tok), tok)
+		}
+	}
+	return err
+}
+
+func (r *raw) Value() *trav.Any { return r.x }
+
+func (r *raw) UnmarshalXML(d *xml.Decoder, start xml.StartElement) (err error) {
+	var t types.Type
+	for _, a := range start.Attr {
+		switch a.Name.Local {
+		case "type":
+			t = types.TypMap[a.Value]
+		default:
+			halt.As(100, a.Name)
+		}
+	}
+	switch t {
+	case types.MAP:
+		m := &trav.Map{}
+		var _t xml.Token
+		for stop := false; !stop && err == nil; {
+			_t, err = d.Token()
+			switch tok := _t.(type) {
+			case xml.StartElement:
+				k := &kv{}
+				err = d.DecodeElement(k, &tok)
+				m.Set(k.k.x, k.v.x)
+			case xml.EndElement:
+				stop = tok.Name == start.Name
+			default:
+				halt.As(100, reflect.TypeOf(tok), tok)
+			}
+		}
+		r.x = trav.NewAny(t, m)
+	case types.STRING:
+		var sd xml.Token
+		sd, err = d.Token()
+		x := string(sd.(xml.CharData))
+		r.x = trav.NewAny(t, x)
+		_, err = d.Token()
+	case types.LIST:
+		l := &trav.List{}
+		var _t xml.Token
+		for stop := false; !stop && err == nil; {
+			_t, err = d.Token()
+			switch tok := _t.(type) {
+			case xml.StartElement:
+				i := &raw{}
+				err = d.DecodeElement(i, &tok)
+				l.Len(l.Len() + 1)
+				l.SetVal(l.Len()-1, i.x)
+			case xml.EndElement:
+				stop = tok.Name == start.Name
+			default:
+				halt.As(100, reflect.TypeOf(tok), tok)
+			}
+		}
+		r.x = trav.NewAny(t, l)
+	case types.REAL:
+		var sd xml.Token
+		sd, err = d.Token()
+		rr := &trav.Rat{}
+		rr.UnmarshalText(sd.(xml.CharData))
+		r.x = trav.NewAny(t, rr)
+		_, err = d.Token()
+	default:
+		halt.As(100, t)
+	}
+	return err
+}
 
 type mach struct {
 	ch  chan rt.Message
@@ -72,13 +171,16 @@ func (m *mach) Do(msg rt.Message) (ret rt.Message, stop bool) {
 			key := msg["key"].(string)
 			fn := base64.StdEncoding.EncodeToString([]byte(key))
 			if obj := msg["object"]; obj != nil {
-				obj.(lem.Object).Convert()
 				if f, err := os.Create(filepath.Join(STORAGE, fn)); err == nil {
-					data, _ := xml.Marshal(obj)
-					buf := bytes.NewBuffer([]byte(xml.Header))
-					buf.Write(data)
-					io.Copy(f, buf)
-					f.Close()
+					if data, err := xml.Marshal(obj); err == nil {
+						buf := bytes.NewBuffer([]byte(xml.Header))
+						buf.Write(data)
+						io.Copy(f, buf)
+						f.Close()
+					} else {
+						halt.As(100, err)
+					}
+
 				} else {
 					halt.As(100, err)
 				}
@@ -91,7 +193,14 @@ func (m *mach) Do(msg rt.Message) (ret rt.Message, stop bool) {
 			ret = make(map[interface{}]interface{})
 			ret["key"] = key
 			if f, err := os.Open(filepath.Join(STORAGE, fn)); err == nil {
-				ret["object"] = &raw{rd: f}
+				buf := bytes.NewBuffer(nil)
+				io.Copy(buf, f)
+				x := &raw{}
+				if err := xml.Unmarshal(buf.Bytes(), x); err == nil {
+					ret["object"] = x
+				} else {
+					halt.As(100, err)
+				}
 			}
 		}
 	default:

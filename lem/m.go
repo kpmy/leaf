@@ -3,10 +3,11 @@ package lem
 import (
 	"github.com/kpmy/ypk/assert"
 	"leaf/lenin/rt"
+	"leaf/lenin/trav"
 )
 
 type Object interface {
-	Convert()
+	Value() *trav.Any
 }
 
 type Machine interface {

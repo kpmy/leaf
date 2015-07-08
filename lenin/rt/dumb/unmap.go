@@ -11,7 +11,10 @@ import (
 func Unvalue(_i interface{}) (ret *trav.Any) {
 	switch i := _i.(type) {
 	case lem.Object:
-		ret = trav.NewAny(types.PTR, &trav.Ptr{}) //разобрать объект в Any
+		p := &trav.Ptr{}
+		x := i.Value()
+		prepare(p, x)
+		ret = trav.NewAny(types.PTR, p)
 	case string:
 		ret = trav.NewAny(types.STRING, i)
 	default:

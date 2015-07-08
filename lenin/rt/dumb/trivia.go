@@ -141,14 +141,21 @@ func keys(ctx rt.Context, st rt.Storage, calc rt.Calc, par ...rt.VarPar) {
 	}
 }
 
-func alloc(ctx rt.Context, st rt.Storage, calc rt.Calc, par ...rt.VarPar) {
-	p := st.Get("p").(*trav.Ptr)
+func prepare(p *trav.Ptr, initial *trav.Any) {
 	adr := Heap.New()
 	link := &heapy{h: Heap, adr: adr}
 	runtime.SetFinalizer(link, func(obj *heapy) {
 		fmt.Println("finalize ", fmt.Sprintf("%X", obj.adr))
 	})
+	if initial != nil {
+		link.Set(initial)
+	}
 	p.Init(adr, link)
+}
+
+func alloc(ctx rt.Context, st rt.Storage, calc rt.Calc, par ...rt.VarPar) {
+	p := st.Get("p").(*trav.Ptr)
+	prepare(p, nil)
 }
 
 func process(ctx rt.Context, st rt.Storage, calc rt.Calc, par ...rt.VarPar) {

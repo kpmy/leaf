@@ -1,6 +1,7 @@
 package dumb
 
 import (
+	"encoding/xml"
 	"github.com/kpmy/ypk/halt"
 	"leaf/ir/types"
 	"leaf/lenin/trav"
@@ -11,6 +12,46 @@ type raw struct {
 }
 
 func (r *raw) Convert() {}
+
+func (r *raw) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
+	if start.Name.Local == "raw" {
+		start.Name.Local = "any"
+	}
+	t, x := r.x.This()
+	var ta xml.Attr
+	ta.Name.Local = "type"
+	ta.Value = t.String()
+	start.Attr = append(start.Attr, ta)
+	e.EncodeToken(start)
+	switch t {
+	case types.PTR:
+		halt.As(100, "no pointers inside")
+	case types.MAP:
+		m := x.(*trav.Map)
+		for _, k := range m.Keys() {
+			var pair xml.StartElement
+			pair.Name.Local = "item"
+			e.EncodeToken(pair)
+			e.EncodeElement(&raw{x: k}, xml.StartElement{Name: xml.Name{Local: "key"}})
+			v := m.Get(k)
+			e.EncodeElement(&raw{x: v}, xml.StartElement{Name: xml.Name{Local: "value"}})
+			e.EncodeToken(pair.End())
+		}
+	case types.LIST:
+		l := x.(*trav.List)
+		for i := 0; i < l.Len(); i++ {
+			v := l.Get(i)
+			e.EncodeElement(&raw{x: v}, xml.StartElement{Name: xml.Name{Local: "item"}})
+		}
+	case types.REAL:
+		e.EncodeToken(xml.CharData([]byte(x.(*trav.Rat).String())))
+	case types.STRING:
+		e.EncodeToken(xml.CharData([]byte(x.(string))))
+	default:
+		halt.As(100, t, " ", x)
+	}
+	return e.EncodeToken(start.End())
+}
 
 func Raw(x *trav.Any) (ret interface{}) {
 	return &raw{x: x}
