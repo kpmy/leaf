@@ -87,10 +87,6 @@ func TestParser(t *testing.T) {
 					defer t.Close()
 					def.New(ir, t)
 				}
-				if t, err := os.Create(mname + ".lm"); err == nil {
-					defer t.Close()
-					lem.New(ir, t)
-				}
 			}
 		}
 	}
@@ -158,10 +154,6 @@ func TestCollection(t *testing.T) {
 						if d, err := os.Open(ast.Name + ".ld"); err == nil {
 							p := lead.ConnectTo(scanner.ConnectTo(bufio.NewReader(d)), resolve)
 							p.Import()
-						}
-						if t, err := os.Create(ast.Name + ".lm"); err == nil {
-							defer t.Close()
-							lem.New(ast, t)
 						}
 						if t, err := os.Open(ast.Name + ".li"); err == nil {
 							defer t.Close()

@@ -67,10 +67,6 @@ func main() {
 				def.New(ir, d)
 				d.Close()
 			}
-			if m, err := os.Create(name + ".lm"); err == nil {
-				lem.New(ir, m)
-				m.Close()
-			}
 			mach := lem.Run()
 			lenin.Debug = true
 			lenin.Do(ir, load, mach.Chan())
