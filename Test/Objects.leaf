@@ -2,14 +2,15 @@ MODULE TestObjects
 	IMPORT Log Objects
 
 	PROCEDURE Do
-		VAR m MAP; o PTR
+		VAR m MAP; x ANY; o PTR
 	BEGIN
 		m["point"] := [3.14, 2.71]
 		NEW(p-> o)
 		o$ := m
 		Objects.Store(key: "point", obj: o)
 		Objects.Load(key: "point", obj -> o)
-		Log.Print(x: o); Log.Ln
+		x:=o$
+		CHOOSE x AS MAP: 	Log.Print(x: x["point"]); Log.Ln ELSE END
 	END Do
 
 BEGIN
