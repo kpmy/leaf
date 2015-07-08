@@ -22,9 +22,13 @@ import (
 )
 
 var name string
+var debug bool
+var interp bool
 
 func init() {
-	flag.StringVar(&name, "i", "Simple", "-i name.ext")
+	flag.StringVar(&name, "source", "Simple", "-source=name")
+	flag.BoolVar(&debug, "debug", false, "-debug=true/false")
+	flag.BoolVar(&interp, "int", false, "-int=true/false")
 }
 
 func resolve(name string) (ret *ir.Import, err error) {
@@ -48,7 +52,7 @@ func main() {
 	flag.Parse()
 	assert.For(name != "", 20)
 	sname := name + ".leaf"
-	log.Println(name, "running...")
+	log.Println(name, "compiling...")
 	if f, err := os.Open(sname); err == nil {
 		defer f.Close()
 		p := leap.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)), resolve)
@@ -67,10 +71,13 @@ func main() {
 				def.New(ir, d)
 				d.Close()
 			}
-			mach := lem.Run()
-			lenin.Debug = true
-			lenin.Do(ir, load, mach.Chan())
-			mach.Stop()
+			if interp {
+				log.Println(name, "running...")
+				mach := lem.Run()
+				lenin.Debug = debug
+				lenin.Do(ir, load, mach.Chan())
+				mach.Stop()
+			}
 		}
 	} else {
 		log.Fatal(err)
