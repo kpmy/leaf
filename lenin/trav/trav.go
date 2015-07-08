@@ -20,7 +20,8 @@ import (
 type context struct {
 	data *storeStack
 	exprStack
-	load     []*ir.Module
+	begin    []*ir.Module
+	end      []*ir.Module
 	tgt      *storage
 	universe chan rt.Message
 	loader   lenin.Loader
@@ -129,37 +130,14 @@ type lock struct{}
 type storeStack struct {
 	store map[string]*storage
 	sl    *list.List
-	ml    *list.List
+	mt    string
 	owner *context
 }
 
 func (s *storeStack) init(o *context) {
 	s.store = make(map[string]*storage)
 	s.sl = list.New()
-	s.ml = list.New()
 	s.owner = o
-}
-
-func (s *storeStack) mpush(m *ir.Module) {
-	assert.For(m != nil, 20)
-	s.ml.PushFront(m)
-}
-
-func (s *storeStack) mtop() *ir.Module {
-	if s.ml.Len() > 0 {
-		return s.ml.Front().Value.(*ir.Module)
-	}
-	return nil
-}
-
-func (s *storeStack) mpop() (ret *ir.Module) {
-	if s.ml.Len() > 0 {
-		el := s.ml.Front()
-		ret = s.ml.Remove(el).(*ir.Module)
-	} else {
-		halt.As(100, "pop on empty stack")
-	}
-	return
 }
 
 func (s *storeStack) push(st *storage) {
@@ -192,12 +170,12 @@ func (s *storeStack) alloc(_x interface{}) {
 		d.init()
 		d.alloc(x.VarDecl)
 		s.store[x.Name] = d
-		s.mpush(x)
 		if lenin.Debug {
 			fmt.Println("alloc", x.Name, d.data)
 		}
 	case *ir.Procedure:
-		d := &storage{root: s.mtop(), link: x}
+		assert.For(s.mt != "", 20)
+		d := &storage{root: s.store[s.mt].root, link: x}
 		d.init()
 		d.alloc(x.VarDecl)
 		s.push(d)
@@ -205,7 +183,8 @@ func (s *storeStack) alloc(_x interface{}) {
 			fmt.Println("alloc", x.Name, d.data)
 		}
 	case ir.ImportProcedure:
-		d := &storage{root: s.mtop(), link: x}
+		assert.For(s.mt != "", 20)
+		d := &storage{root: s.store[s.mt].root, link: x}
 		d.init()
 		d.alloc(x.This().VarDecl)
 		s.push(d)
@@ -381,8 +360,7 @@ func (s *storeStack) inner(o *ir.Variable, fn func(*value) *value) {
 		}
 	}
 	if !found {
-		mod := s.mtop()
-		found = s.find(s.store[mod.Name], o, fn)
+		found = s.find(s.store[s.mt], o, fn)
 	}
 	assert.For(found, 60, `"`, o.Name, `"`)
 }
@@ -409,8 +387,7 @@ func (s *storeStack) wrap(id string, fn func(*value) *value) {
 		}
 	}
 	if !found {
-		mod := s.mtop()
-		found = find(s.store[mod.Name])
+		found = find(s.store[s.mt])
 	}
 	assert.For(found, 60, `"`, id, `"`)
 }
@@ -673,15 +650,7 @@ func (ctx *context) expr(_e ir.Expression) {
 				//fmt.Println(par.Name, vl[i].val)
 				pl = append(pl, p)
 			}
-			if this.Mod != "" {
-				top := ctx.data.store[this.Mod]
-				ctx.data.mpush(top.root)
-			}
 			if x, _ := ctx.do(this.Proc, pl...).(*storage); x != nil {
-				if this.Mod != "" {
-					top := ctx.data.mpop()
-					assert.For(top.Name == this.Mod, 60)
-				}
 				out := this.Proc.Infix[0]
 				val := x.data[out.Name]
 				assert.For(val != nil, 40)
@@ -883,15 +852,7 @@ func (ctx *context) _stmt(_s ir.Statement) {
 			}
 			par = append(par, x)
 		}
-		if this.Mod != "" {
-			top := ctx.data.store[this.Mod]
-			ctx.data.mpush(top.root)
-		}
 		ctx.do(this.Proc, par...)
-		if this.Mod != "" {
-			top := ctx.data.mpop()
-			assert.For(top.Name == this.Mod, 60, top.Name, " # ", this.Mod)
-		}
 	case *ir.AssignStmt:
 		ctx.sel(this.Sel, nil, nil, func(in *value) *value {
 			ctx.expr(this.Expr)
@@ -1112,6 +1073,20 @@ func (ctx *context) invoke(mod, proc string, par ...interface{}) (ret interface{
 	return
 }
 
+func (ctx *context) Mt(mt ...string) {
+	if len(mt) > 0 {
+		ctx.data.mt = mt[0]
+		assert.For(ctx.data.store[mt[0]] != nil, 60, mt[0])
+	} else {
+		ctx.data.mt = ""
+	}
+}
+
+func (ctx *context) ModuleOf(this *ir.Procedure) string {
+	assert.For(this.Mod != "", 60, this, this.Name)
+	return this.Mod
+}
+
 func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 	//	fmt.Println("do", reflect.TypeOf(_t))
 	switch this := _t.(type) {
@@ -1131,19 +1106,19 @@ func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 			ctx.imp(i)
 		}
 		ctx.data.alloc(this)
+		ctx.Mt(this.Name)
+		ctx.end = append(ctx.end, this)
 		if len(this.BeginSeq) > 0 {
 			for _, v := range this.BeginSeq {
 				ctx.do(v)
 			}
 		}
-		ctx.run()
-		if len(this.CloseSeq) > 0 {
-			for _, v := range this.CloseSeq {
-				ctx.do(v)
-			}
-		}
-		ctx.data.dealloc(this)
+		ctx.start()
+		ctx.Mt()
 	case *ir.Procedure:
+		//prologue
+		old := ctx.data.mt
+		ctx.Mt(ctx.ModuleOf(this))
 		ctx.data.alloc(this)
 		if lenin.Debug {
 			fmt.Println("PARAMS", len(par), fmt.Sprint(par...))
@@ -1182,6 +1157,8 @@ func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 			assert.For(val.toBool(), 60+i)
 		}
 		ret = ctx.data.dealloc(this)
+		//epilogue
+		ctx.Mt(old)
 	case ir.Statement:
 		ctx._stmt(this)
 		//очередь инструкций от системы
@@ -1192,12 +1169,7 @@ func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 				ctx.queue = append(ctx.queue, tmp[i])
 			}
 			this := tmp[len(tmp)-1]
-			top := ctx.data.mtop().Name
 			ctx.do(this.x, this.par...)
-			for ctx.data.mtop().Name != top {
-				ctx.data.mpop()
-			}
-			assert.For(ctx.data.mtop().Name == top, 60)
 		}
 	default:
 		halt.As(100, reflect.TypeOf(this))
@@ -1223,15 +1195,28 @@ func (c *context) Queue(x interface{}, par ...rt.VarPar) {
 	c.doLater(x, p...)
 }
 
-func (c *context) run() {
-	if len(c.load) > 0 {
-		m := c.load[0]
-		if len(c.load) > 1 {
-			c.load = c.load[1:]
+func (c *context) start() {
+	if len(c.begin) > 0 {
+		m := c.begin[0]
+		if len(c.begin) > 1 {
+			c.begin = c.begin[1:]
 		} else {
-			c.load = nil
+			c.begin = nil
 		}
 		c.do(m)
+	}
+}
+
+func (c *context) stop() {
+	for i := len(c.end) - 1; i >= 0; i-- {
+		this := c.end[i]
+		c.Mt(this.Name)
+		if len(this.CloseSeq) > 0 {
+			for _, v := range this.CloseSeq {
+				c.do(v)
+			}
+		}
+		c.data.dealloc(this)
 	}
 }
 
@@ -1245,7 +1230,7 @@ func (c *context) Handler() func(rt.Message) rt.Message {
 func connectTo(universe chan rt.Message, ld lenin.Loader, m ...*ir.Module) (ret *context) {
 	assert.For(len(m) > 0, 20)
 	ret = &context{}
-	ret.load = m
+	ret.begin = m
 	ret.universe = universe
 	ret.data = &storeStack{}
 	ret.loader = ld
@@ -1291,7 +1276,8 @@ func run(main *ir.Module, ld lenin.Loader, universe chan rt.Message) {
 	msg := map[interface{}]interface{}{"type": "machine", "context": ctx}
 	universe <- msg
 	<-universe
-	ctx.run()
+	ctx.start()
+	ctx.stop()
 }
 
 func init() {

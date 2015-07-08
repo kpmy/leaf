@@ -469,7 +469,7 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 func (p *pr) procDecl(b *blockBuilder) {
 	assert.For(p.is(lss.Proc), 20, "PROCEDURE expected here")
 	ret := &ir.Procedure{}
-	ret.Init()
+	ret.Init(p.target.top.Name)
 	p.next()
 	p.expect(lss.Ident, "procedure name expected", lss.Separator)
 	ret.Name = p.ident()

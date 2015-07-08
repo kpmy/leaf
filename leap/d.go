@@ -157,7 +157,7 @@ func (p *pd) varDecl(b *varBuilder) {
 func (p *pd) procDecl(b *blockBuilder) {
 	assert.For(p.is(lss.Proc), 20, "PROCEDURE expected here")
 	ret := &ir.Procedure{}
-	ret.Init()
+	ret.Init(p.top.Name)
 	p.next()
 	p.expect(lss.Ident, "procedure name expected", lss.Separator)
 	ret.Name = p.ident()

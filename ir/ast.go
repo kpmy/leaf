@@ -23,6 +23,7 @@ func (m *Module) Init() {
 }
 
 type Procedure struct {
+	Mod       string
 	Name      string
 	ConstDecl map[string]*Const
 	VarDecl   map[string]*Variable
@@ -33,7 +34,7 @@ type Procedure struct {
 	Modifier  modifiers.Modifier
 }
 
-func (p *Procedure) Init() {
+func (p *Procedure) Init(mod string) {
 	p.ConstDecl = make(map[string]*Const)
 	p.VarDecl = make(map[string]*Variable)
 	p.ProcDecl = make(map[string]*Procedure)

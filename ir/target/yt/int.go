@@ -345,15 +345,16 @@ func internalize(m *Module) (ret *ir.Module) {
 		}
 		return
 	}
-	var pdecl func(pm map[string]*Proc) (im map[string]*ir.Procedure)
-	pdecl = func(pm map[string]*Proc) (im map[string]*ir.Procedure) {
+	var pdecl func(mod string, pm map[string]*Proc) (im map[string]*ir.Procedure)
+	pdecl = func(mod string, pm map[string]*Proc) (im map[string]*ir.Procedure) {
 		im = make(map[string]*ir.Procedure)
 		for k, v := range pm {
 			p := &ir.Procedure{}
 			p.Name = k
+			p.Mod = mod
 			p.ConstDecl = cdecl(v.ConstDecl)
 			p.VarDecl = vdecl(v.VarDecl)
-			p.ProcDecl = pdecl(v.ProcDecl)
+			p.ProcDecl = pdecl(mod, v.ProcDecl)
 			p.Modifier = modifiers.ModMap[v.Modifier]
 			for _, v := range v.Infix {
 				p.Infix = append(p.Infix, m.that(v).(*ir.Variable))
@@ -405,6 +406,7 @@ func internalize(m *Module) (ret *ir.Module) {
 			p.this.VarDecl = make(map[string]*ir.Variable)
 			p.this.Name = k
 			p.this.Modifier = modifiers.ModMap[v.Modifier]
+			p.this.Mod = il.Name
 			m.that(v.Uuid, p.this)
 			i.ProcDecl[k] = p
 			for k, x := range v.VarDecl {
@@ -420,7 +422,7 @@ func internalize(m *Module) (ret *ir.Module) {
 		prepareImp(rt.StdImp)
 		ret.ConstDecl = cdecl(m.ConstDecl)
 		ret.VarDecl = vdecl(m.VarDecl)
-		ret.ProcDecl = pdecl(m.ProcDecl)
+		ret.ProcDecl = pdecl(m.Name, m.ProcDecl)
 		for _, v := range m.ImpSeq {
 			ret.ImportSeq = append(ret.ImportSeq, imp(v))
 		}

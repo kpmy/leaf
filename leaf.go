@@ -39,8 +39,8 @@ var debug bool
 
 func init() {
 	root, _ = os.Getwd()
-	flag.StringVar(&build, "b", "", "-b Module")
-	flag.BoolVar(&debug, "debug", false, "-debug true/false")
+	flag.StringVar(&build, "b", "", "-b=Module")
+	flag.BoolVar(&debug, "debug", false, "-debug=true/false")
 }
 
 func splitName(_n string) (sub []string) {
