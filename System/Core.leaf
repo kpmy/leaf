@@ -1,16 +1,28 @@
 MODULE Core
-	CONST
-		type; data; action
-		
+
 	PROCEDURE LoadMod+
 		VAR mod- STRING
 		VAR msg MAP
 		PRE mod # ""
 	BEGIN
-		msg.type := "kernel"
-		msg.action := "load"
-		msg.data := mod
+		msg."type" := "kernel"
+		msg."action" := "load"
+		msg."data" := mod
 		PROCESS(to<-msg)
 	END LoadMod
-	
+
+	PROCEDURE Listen+
+		VAR msg+ MAP; timeout- INTEGER
+		VAR i, o MAP; x ANY
+	BEGIN
+		o."type" := "kernel"
+		o."action" := "event"
+		o."timeout" := timeout
+		PROCESS(to <-o, from -> i)
+		x:=i."type"
+		CHOOSE x AS STRING: ASSERT(cond: x = "kernel", code: 99) ELSE HALT(code: 100) END
+		x:=i."data"
+		CHOOSE x AS MAP: msg := x ELSE HALT(code: 101) END
+	END Listen
+
 END Core.

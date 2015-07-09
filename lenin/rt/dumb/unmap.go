@@ -17,6 +17,8 @@ func Unvalue(_i interface{}) (ret *trav.Any) {
 		ret = trav.NewAny(types.PTR, p)
 	case string:
 		ret = trav.NewAny(types.STRING, i)
+	case map[interface{}]interface{}:
+		ret = trav.NewAny(types.MAP, Unmap(i))
 	default:
 		halt.As(100, reflect.TypeOf(i))
 	}

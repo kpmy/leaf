@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"time"
 )
 
 const STORAGE = ".store"
@@ -135,6 +136,7 @@ func (r *raw) UnmarshalXML(d *xml.Decoder, start xml.StartElement) (err error) {
 type mach struct {
 	ch  chan rt.Message
 	ctx rt.Context
+	in  chan rt.Message
 }
 
 func TypeOf(msg rt.Message) (ret Type) {
@@ -163,6 +165,33 @@ func (m *mach) Do(msg rt.Message) (ret rt.Message, stop bool) {
 		switch msg["action"].(string) {
 		case "load":
 			m.ctx.Queue(msg["data"].(string))
+		case "event":
+			to := msg["timeout"].(int64)
+			delay := make(chan int64)
+			if to > 0 {
+				go func(to int64) {
+					<-time.After(time.Millisecond * time.Duration(to))
+					delay <- to
+				}(to)
+			}
+			select {
+			case nm := <-m.Input():
+				ret = make(map[interface{}]interface{})
+				ret["type"] = "kernel"
+				ret["action"] = "event"
+				ret["data"] = nm
+			case <-delay:
+				ret = make(map[interface{}]interface{})
+				ret["type"] = "kernel"
+				ret["action"] = "event"
+				nm := make(map[interface{}]interface{})
+				nm["type"] = "sig"
+				nm["sig"] = "none"
+				ret["data"] = nm
+			}
+
+		default:
+			halt.As(100, "unknown method ", msg)
 		}
 	case Storage:
 		os.Mkdir(STORAGE, os.FileMode(0777))
@@ -191,6 +220,7 @@ func (m *mach) Do(msg rt.Message) (ret rt.Message, stop bool) {
 			key := msg["key"].(string)
 			fn := base64.StdEncoding.EncodeToString([]byte(key))
 			ret = make(map[interface{}]interface{})
+			ret["type"] = "storage"
 			ret["key"] = key
 			if f, err := os.Open(filepath.Join(STORAGE, fn)); err == nil {
 				buf := bytes.NewBuffer(nil)
@@ -202,11 +232,20 @@ func (m *mach) Do(msg rt.Message) (ret rt.Message, stop bool) {
 					halt.As(100, err)
 				}
 			}
+		default:
+			halt.As(100, "unknown method ", msg)
 		}
 	default:
 		halt.As(100, "wrong message ", msg)
 	}
 	return
+}
+
+func (m *mach) Input() chan rt.Message {
+	if m.in == nil {
+		m.in = make(chan rt.Message, 128)
+	}
+	return m.in
 }
 
 func (m *mach) Chan() chan rt.Message {

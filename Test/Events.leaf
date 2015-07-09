@@ -1,0 +1,22 @@
+MODULE TestEvents
+
+	IMPORT Log Core
+
+	PROCEDURE Do
+		VAR msg MAP; k, v LIST; i INTEGER
+	BEGIN
+		Core.Listen(msg -> msg, timeout: 1000)
+		k:=\KEYS msg
+		v:=\VALUES msg
+		WHILE i < \LEN k DO
+			Log.Print(x: k[i]); Log.String(s: ": "); Log.Print(x: v[i]); Log.Ln
+			INC(x -> i)
+		END;
+	END Do
+
+BEGIN
+	Log.Ln(s: "TestEvents started")
+	Do
+CLOSE
+	Log.Ln(s: "TestEvents end")
+END TestEvents.

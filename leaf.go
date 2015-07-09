@@ -273,7 +273,8 @@ func doBuild(name string) {
 func main() {
 	log.Println("Leaf framework, pk, 20150703")
 	flag.Parse()
-	//build = "TestBubble"
+	//build = "TestEvents"
+	//debug = true
 	switch {
 	case build != "":
 		log.Println("build", build)
