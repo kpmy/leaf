@@ -194,7 +194,7 @@ func (p *common) selector(b *selBuilder) {
 			p.next()
 			this := &ir.SelectInside{}
 			expr := &exprBuilder{sc: b.sc}
-			expr.factor(&ir.ConstExpr{Type: types.PTR})
+			expr.factor(&ir.ConstExpr{Type: types.Undef})
 			this.Expr = expr
 			b.join(this)
 		default:

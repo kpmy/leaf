@@ -130,6 +130,7 @@ BEGIN
 		INC(x<-i)
 	END;
 	val := \VALUES s
+	s:=~s
 END TestSet.
 
 MODULE TestMap

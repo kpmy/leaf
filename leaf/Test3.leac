@@ -19,7 +19,7 @@ BEGIN
 		x:=item$
 		CHOOSE x AS MAP:
 			y:=x.value
-			CHOOSE y AS INTEGER: i:=y ELSE END;
+			i:=y$
 			y:=x.parent
 			CHOOSE y AS PTR: item:=y ELSE item:=NIL END;
 		ELSE item:=NIL END;

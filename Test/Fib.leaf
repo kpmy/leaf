@@ -27,13 +27,13 @@ MODULE TestFib
 
 BEGIN
 	Log.Ln(s: "TestFib started")
-	max := 100
+	max := 20
 	RESIZE(list<-cache, n: max)
 	WHILE n < max DO
 		Fib(n: n, fast: TRUE, f -> res)
 		INC(x -> n)
+		Log.Print(x: n-1); Log.String(s: ": "); Log.Print(x: res); Log.Ln
 	END
-	Log.Print(x: n-1); Log.String(s: ": "); Log.Print(x: res); Log.Ln
 CLOSE
 	Log.Ln(s: "TestFib end")
 END TestFib.

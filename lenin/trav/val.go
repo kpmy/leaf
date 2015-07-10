@@ -266,7 +266,7 @@ func cval(e *ir.ConstExpr) (ret *value) {
 		}
 	case types.ANY:
 		ret = &value{typ: t, val: &Any{}}
-	case types.PTR:
+	case types.PTR, types.Undef:
 		ret = &value{typ: t, val: &Ptr{}}
 	default:
 		halt.As(100, "unknown type ", t, " for ", e)

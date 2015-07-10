@@ -32,6 +32,8 @@ var TypMap map[string]Type
 
 func (t Type) String() (ret string) {
 	switch t {
+	case Undef:
+		return "NONE"
 	case INTEGER:
 		return "INTEGER"
 	case BOOLEAN:

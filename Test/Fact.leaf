@@ -11,11 +11,24 @@ MODULE TestFact
 		ELSE res := 1 END
 	END Fact
 
+	PROCEDURE Fact2
+		VAR i, x-, res+ INTEGER
+	BEGIN
+		res:=1;
+		i:=1;
+		WHILE i<=x DO
+			res := res * i
+			INC(x->i)
+		END;
+	END Fact2
+
 BEGIN
 	Log.Ln(s: "TestFact started")
 	max := 10
 	res := \Fact max
 	Log.Print(x: max); Log.String(s: "! "); Log.Print(x: res); Log.Ln
+	Fact2(x: max+1, res -> res)
+	Log.Print(x: max+1); Log.String(s: "! "); Log.Print(x: res); Log.Ln
 CLOSE
 	Log.Ln(s: "TestFact end")
 END TestFact.

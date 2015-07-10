@@ -148,6 +148,7 @@ func typeFix(e *ir.ConstExpr) {
 	switch e.Type {
 	case types.INTEGER, types.BOOLEAN, types.TRILEAN, types.CHAR, types.STRING, types.REAL, types.ANY, types.PTR:
 		//TODO реализовать конвертацию из прочитанного при маршаллинге golang-типа в тип рантайма LEAF
+	case types.Undef:
 	default:
 		halt.As(100, "unknown constant type ", e.Type)
 	}

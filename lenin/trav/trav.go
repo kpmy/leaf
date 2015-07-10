@@ -570,6 +570,11 @@ func (ctx *context) expr(_e ir.Expression) {
 				case types.TRILEAN:
 					t := v.toTril()
 					ctx.push(&value{typ: v.typ, val: tri.Not(t)})
+				case types.SET:
+					s := v.toSet()
+					ns := ThisSet(s)
+					ns.inv = !ns.inv
+					ctx.push(&value{typ: v.typ, val: ns})
 				default:
 					halt.As(100, "unexpected logical type")
 				}
@@ -783,14 +788,30 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 						m := in.asMap()
 						data := m.Get(i)
 						out = &value{typ: types.ANY, val: data}
-					case types.PTR:
-						_ = iv.toPtr()
-						p := in.toPtr()
-						if p.adr != 0 {
-							data := p.link.Get()
-							out = &value{typ: types.ANY, val: data}
-						} else {
-							halt.As(100, "nil dereference read")
+					case types.PTR, types.ANY:
+						switch iv.typ {
+						case types.Undef: //dereference
+							switch in.typ {
+							case types.PTR:
+								p := in.toPtr()
+								if p.adr != 0 {
+									data := p.link.Get()
+									out = &value{typ: types.ANY, val: data}
+								} else {
+									halt.As(100, "nil dereference read")
+								}
+							case types.ANY:
+								a := in.toAny()
+								if !fn.IsNil(a.x) {
+									out = &value{typ: a.typ, val: a.x}
+								} else {
+									halt.As(100, "undef dereference read")
+								}
+							default:
+								halt.As(100, "cannot deref ", in.typ)
+							}
+						default:
+							halt.As(100, "unknown selector type")
 						}
 					default:
 						halt.As(100, "unknown base type ", in.typ)
@@ -816,14 +837,35 @@ func (ctx *context) sel(_s ir.Selector, in, out *value, end func(*value) *value)
 						m := out.toMap()
 						m.Set(i, ThisAny(data))
 						in = &value{typ: types.MAP, val: m}
-					case types.PTR:
-						_ = iv.toPtr()
-						p := out.toPtr()
-						if p.adr != 0 {
-							p.link.Set(ThisAny(data))
-							in = &value{typ: types.PTR, val: ThisPtr(p)}
-						} else {
-							halt.As(100, "nil dereference write")
+					case types.PTR, types.ANY:
+						switch iv.typ {
+						case types.Undef: //dereference
+							switch out.typ {
+							case types.PTR:
+								p := out.toPtr()
+								if p.adr != 0 {
+									p.link.Set(ThisAny(data))
+									in = &value{typ: types.PTR, val: ThisPtr(p)}
+								} else {
+									halt.As(100, "nil dereference write")
+								}
+							case types.ANY:
+								a := out.toAny()
+								if !fn.IsNil(a.x) {
+									if data.typ == a.typ && data.typ != types.ANY {
+										a.x = data.val
+										out = &value{typ: a.typ, val: a.x}
+									} else {
+										halt.As(100, "incompatible types")
+									}
+								} else {
+									halt.As(100, "undef dereference write")
+								}
+							default:
+								halt.As(100, "cannot deref ", out.typ)
+							}
+						default:
+							halt.As(100, "unknown selector type")
 						}
 					default:
 						halt.As(100, "unknown base type ", out.typ)

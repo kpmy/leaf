@@ -152,7 +152,8 @@ func (m *Map) Get(i *Any) (ret *Any) {
 }
 
 type Set struct {
-	x []*Any
+	inv bool
+	x   []*Any
 }
 
 func (s *Set) String() (ret string) {
@@ -162,7 +163,11 @@ func (s *Set) String() (ret string) {
 		}
 		ret = fmt.Sprint(ret, x)
 	}
-	return fmt.Sprint("{", ret, "}")
+	if s.inv {
+		return fmt.Sprint("}", ret, "{")
+	} else {
+		return fmt.Sprint("{", ret, "}")
+	}
 }
 
 func (s *Set) In(a *Any) (idx int) {
@@ -258,6 +263,7 @@ func NewSet(v ...*value) (s *Set) {
 
 func ThisSet(s *Set) (ret *Set) {
 	ret = &Set{}
+	ret.inv = s.inv
 	for _, i := range s.x {
 		n := &Any{typ: i.typ, x: i.x}
 		ret.x = append(ret.x, n)
