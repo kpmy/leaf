@@ -11,6 +11,7 @@ import (
 	"leaf/lead"
 	def "leaf/lead/target"
 	_ "leaf/lead/target/tt"
+	"leaf/leaf"
 	"leaf/leap"
 	"leaf/lem"
 	_ "leaf/lem/lenin"
@@ -19,7 +20,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"unicode"
 )
 
 const codeExt = ".li"
@@ -40,71 +40,6 @@ func init() {
 	flag.BoolVar(&debug, "debug", false, "-debug=true/false")
 }
 
-func splitName(_n string) (sub []string) {
-	n := []rune(_n)
-	p := 0
-	var ch rune
-	var buf []rune
-	stop := func() bool {
-		return p == len(n)
-	}
-	up := func() bool {
-		ch = n[p]
-		if ch == '.' {
-			log.Fatal("invalid character `.`")
-		}
-		p++
-		return unicode.IsUpper(ch)
-	}
-	grow := func() {
-		if ch != 0 {
-			buf = append(buf, ch)
-		}
-	}
-	low := func() {
-		for {
-			grow()
-			if stop() || up() {
-				break
-			}
-		}
-	}
-	big := func() {
-		for {
-			grow()
-			if stop() || !up() {
-				break
-			}
-		}
-	}
-	litOrBig := func() {
-		grow()
-		if !up() {
-			for {
-				grow()
-				if stop() || up() {
-					break
-				}
-			}
-		} else {
-			big()
-		}
-	}
-	name := func() string {
-		buf = nil
-		grow()
-		if up() {
-			litOrBig()
-		} else {
-			low()
-		}
-		return string(buf)
-	}
-	for p < len(n) {
-		sub = append(sub, name())
-	}
-	return
-}
 func exists(fullpath string) (ret bool) {
 	ret = false
 	if fi, err := os.Stat(fullpath); err == nil {
@@ -176,7 +111,7 @@ func open(do func(string), typ string, name string, ext string, path ...string) 
 }
 
 func doFind(name string, do func(string)) {
-	n := splitName(name)
+	n := leaf.SplitName(name)
 	if len(n) > 0 {
 		mod := n[len(n)-1]
 		var sub []string
@@ -199,7 +134,7 @@ func doBuild(name string) {
 	resolve = func(name string) (ret *ir.Import, err error) {
 		var mod string
 		var sub []string
-		n := splitName(name)
+		n := leaf.SplitName(name)
 		if len(n) > 0 {
 			mod = n[len(n)-1]
 			for i := len(n) - 2; i >= 0; i-- {
@@ -252,7 +187,7 @@ func doBuild(name string) {
 			log.Fatal(err)
 		}
 	}
-	n := splitName(name)
+	n := leaf.SplitName(name)
 	if len(n) > 0 {
 		mod = n[len(n)-1]
 		for i := len(n) - 2; i >= 0; i-- {
