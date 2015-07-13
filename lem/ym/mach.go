@@ -66,7 +66,7 @@ func (x *kv) UnmarshalXML(d *xml.Decoder, start xml.StartElement) (err error) {
 	return err
 }
 
-func (r *raw) Value() *trav.Any { return r.x }
+func (r *raw) Value() interface{} { return r.x }
 
 func (r *raw) UnmarshalXML(d *xml.Decoder, start xml.StartElement) (err error) {
 	var t types.Type
@@ -189,7 +189,8 @@ func (m *mach) Do(msg rt.Message) (ret rt.Message, stop bool) {
 				nm["sig"] = "none"
 				ret["data"] = nm
 			}
-
+		case "broadcast":
+			m.ctx.Queue(msg["data"])
 		default:
 			halt.As(100, "unknown method ", msg)
 		}

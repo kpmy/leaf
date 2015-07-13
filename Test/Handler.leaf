@@ -1,0 +1,10 @@
+MODULE TestHandler
+	IMPORT Log
+
+	PROCEDURE HANDLE
+		VAR msg- MAP
+	BEGIN
+		Log.Ln(s: "HANDLER 2")
+	END HANDLE
+
+END TestHandler.

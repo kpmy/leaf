@@ -13,7 +13,7 @@ func Unvalue(_i interface{}) (ret *trav.Any) {
 	case lem.Object:
 		p := &trav.Ptr{}
 		x := i.Value()
-		prepare(p, x)
+		prepare(p, x.(*trav.Any))
 		ret = trav.NewAny(types.PTR, p)
 	case string:
 		ret = trav.NewAny(types.STRING, i)

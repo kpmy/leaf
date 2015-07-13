@@ -11,6 +11,7 @@ import (
 	"leaf/ir/modifiers"
 	"leaf/ir/operation"
 	"leaf/ir/types"
+	"leaf/lem"
 	"leaf/lenin"
 	"leaf/lenin/rt"
 	"math/big"
@@ -1170,6 +1171,20 @@ func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 			}
 		} else {
 			halt.As(100, "error loading module ", this, " ", err)
+		}
+	case lem.Object: //broadcast
+		for _, v := range ctx.data.store {
+			am := this.Value().(*Any)
+			assert.For(am.typ == types.MAP, 20)
+			m := am.x.(*Map)
+			if p := v.root.ProcDecl[rt.HANDLE]; p != nil {
+				if v := p.VarDecl[rt.MSG]; v != nil {
+					par := &param{}
+					par.obj = v
+					par.val = &value{typ: types.MAP, val: m}
+					ctx.do(p, par)
+				}
+			}
 		}
 	case *ir.Module:
 		for _, i := range this.ImportSeq {

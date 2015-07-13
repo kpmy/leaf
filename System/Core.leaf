@@ -25,4 +25,16 @@ MODULE Core
 		CHOOSE x AS MAP: msg := x ELSE HALT(code: 101) END
 	END Listen
 
+	PROCEDURE Broadcast+
+		VAR msg- MAP
+		VAR o MAP; p PTR
+	BEGIN
+		o."type" := "kernel"
+		o."action" := "broadcast"
+		NEW(p -> p)
+		p$ := msg
+		o."data" := p
+		PROCESS(to <- o)
+	END Broadcast
+
 END Core.

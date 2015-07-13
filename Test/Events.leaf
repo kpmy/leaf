@@ -12,7 +12,14 @@ MODULE TestEvents
 			Log.Print(x: k[i]); Log.String(s: ": "); Log.Print(x: v[i]); Log.Ln
 			INC(x -> i)
 		END;
+		Core.Broadcast(msg: msg)
 	END Do
+
+	PROCEDURE HANDLE+
+		VAR msg+ MAP
+	BEGIN
+		Log.Ln(s: "HANDLER")
+	END HANDLE
 
 BEGIN
 	Log.Ln(s: "TestEvents started")

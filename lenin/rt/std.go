@@ -140,6 +140,9 @@ var StdImp *ir.Import
 var StdProc map[Qualident]Proc
 var Special map[Qualident]Prop
 
+const HANDLE = "HANDLE"
+const MSG = "msg"
+
 func init() {
 	StdImp = &ir.Import{}
 	StdImp.Init()

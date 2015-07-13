@@ -11,7 +11,7 @@ type raw struct {
 	x *trav.Any
 }
 
-func (r *raw) Convert() {}
+func (r *raw) Value() interface{} { return r.x }
 
 func (r *raw) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 	if start.Name.Local == "raw" {
