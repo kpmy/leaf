@@ -135,7 +135,7 @@ END TestSet.
 
 MODULE TestMap
 	CONST
-		type; value;
+		type; value;unknown
 		ml = <<type: 3.14, value: "OBERON FOR THE GOOD!">>
 		l = [123, 124124, "LITERAL"]
 	VAR m MAP; x ANY
@@ -151,6 +151,7 @@ BEGIN
 	m."memory":=1812
 	k := \KEYS m
 	v := \VALUES m
+	x := m.unknown
 END TestMap.
 
 MODULE TestPtr
