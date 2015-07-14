@@ -10,6 +10,7 @@ import (
 	"io"
 	"leaf/ir"
 	"leaf/ir/types"
+	"log"
 )
 
 const VERSION = 0.3
@@ -155,6 +156,11 @@ func typeFix(e *ir.ConstExpr) {
 }
 
 func Store(mod *ir.Module, tg io.Writer) {
+	defer func() {
+		if x := recover(); x != nil {
+			log.Println(x) // later errors from parser
+		}
+	}()
 	m := externalize(mod)
 	if data, err := yaml.Marshal(m); err == nil {
 		wrote, err := tg.Write(data)

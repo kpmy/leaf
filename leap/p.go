@@ -1,6 +1,7 @@
 package leap
 
 import (
+	"errors"
 	"github.com/kpmy/ypk/assert"
 	"leaf/ir"
 	"leaf/ir/modifiers"
@@ -8,6 +9,7 @@ import (
 	"leaf/ir/types"
 	"leaf/lead"
 	"leaf/lss"
+	"log"
 )
 
 type Type struct {
@@ -125,7 +127,7 @@ func (p *pr) constDecl(b *constBuilder) {
 				obj.Expr = &ir.AtomExpr{Value: id}
 				p.next()
 			} else {
-				p.mark("delimiter or expression expected")
+				p.mark("delimiter or = expected")
 			}
 			b.decl(id, obj)
 		} else {
@@ -173,7 +175,7 @@ func (p *pr) varDecl(b *varBuilder) {
 					obj.Type = types.PROC
 				}
 			} else {
-				p.mark("identifier expected")
+				p.mark("type or identifier expected")
 			}
 		} else {
 			break
@@ -236,6 +238,7 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 					p.mark("illegal statement ", p.sym.Code)
 				}
 			} else {
+				p.mark()
 				var param []*forwardParam
 				if p.await(lss.Lparen, lss.Separator, lss.Delimiter) {
 					p.next()
@@ -280,6 +283,12 @@ func (p *pr) stmtSeq(b *blockBuilder) {
 					}
 					p.expect(lss.Rparen, "no ) found", lss.Separator, lss.Delimiter)
 					p.next()
+				} else if p.is(lss.Becomes) {
+					if b.sc.cm[id] != nil {
+						p.mark("variable expected")
+					} else {
+						p.mark("identifier not found")
+					}
 				}
 				stmt := b.call(cm, id, param)
 				b.put(stmt)
@@ -632,6 +641,14 @@ func (p *pr) block(bl *block, typ lss.Symbol) {
 }
 
 func (p *pr) Module() (ret *ir.Module, err error) {
+	if !p.debug {
+		defer func() {
+			if x := recover(); x != nil {
+				log.Println(x) // later errors from parser
+			}
+		}()
+	}
+	err = errors.New("compiler error")
 	if !p.await(lss.Module, lss.Delimiter, lss.Separator) {
 		if p.sc.Error() != nil {
 			return nil, p.sc.Error()
@@ -672,6 +689,7 @@ func (p *pr) Module() (ret *ir.Module, err error) {
 	if p.ident() != p.top.Name {
 		p.mark("module name does not match")
 	}
+	err = nil
 	ret = p.top
 	return
 }

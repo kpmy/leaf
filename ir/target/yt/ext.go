@@ -349,7 +349,6 @@ func externalize(mod *ir.Module) (ret *Module) {
 		}
 		return imp
 	}
-
 	{
 		prepareImp(lem.StdImp)
 		for _, v := range mod.ImportSeq {

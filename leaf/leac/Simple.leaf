@@ -2,5 +2,8 @@
 	** (** азазаза **) **
 **)
 MODULE Simple
-	CONST a = 14; b = c
+	CONST a = 14; b = c + 3; c = 15
+	VAR i INTEGER
+BEGIN
+	i := 4
 END Simple
