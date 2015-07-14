@@ -147,7 +147,7 @@ func TypeOf(msg lem.Message) (ret Type) {
 }
 
 func (m *mach) Do(mod *ir.Module, ld lem.Loader) {
-	_run(mod, ld, m.Chan())
+	_run(mod, ld, m)
 }
 
 func (m *mach) Process(msg lem.Message) (ret lem.Message, stop bool) {

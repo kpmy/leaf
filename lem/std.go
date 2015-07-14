@@ -1,5 +1,11 @@
 package lem
 
+import (
+	"leaf/ir"
+	"leaf/ir/operation"
+	"leaf/ir/types"
+)
+
 const StdDef = ` (* Builtin procedures definition *)
 DEFINITION STD
 
@@ -102,4 +108,32 @@ END STD.
 const HANDLE = "HANDLE"
 const MSG = "msg"
 
-var Debug = false
+type Qualident struct {
+	Mod  string
+	Proc string
+}
+
+type Prop struct {
+	Variadic bool
+}
+
+type VarPar struct {
+	Name string
+	Val  interface{}
+	Sel  ir.Selector
+}
+
+type Proc func(Context, Storage, Calc, ...VarPar)
+
+type Calc func(types.Type, interface{}, operation.Operation, types.Type, interface{}, types.Type) interface{}
+
+var StdImp *ir.Import
+var StdProc map[Qualident]Proc
+var Special map[Qualident]Prop
+
+func init() {
+	StdImp = &ir.Import{}
+	StdImp.Init()
+	StdProc = make(map[Qualident]Proc)
+	Special = make(map[Qualident]Prop)
+}
