@@ -6,7 +6,7 @@ import (
 	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
 	"leaf/ir/target/yt/fldz"
-	"leaf/lenin/rt"
+	"leaf/lem"
 	"reflect"
 )
 
@@ -351,7 +351,7 @@ func externalize(mod *ir.Module) (ret *Module) {
 	}
 
 	{
-		prepareImp(rt.StdImp)
+		prepareImp(lem.StdImp)
 		for _, v := range mod.ImportSeq {
 			ret.ImpSeq = append(ret.ImpSeq, imp(v))
 		}

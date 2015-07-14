@@ -8,7 +8,7 @@ import (
 	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
 	"leaf/ir/modifiers"
-	"leaf/lenin/rt"
+	"leaf/lem"
 	"reflect"
 )
 
@@ -160,12 +160,12 @@ func (e *forwardInfix) Eval() (ret ir.Expression) {
 		assert.For(len(p.Infix)-1 == e.args, 20)
 		i := &ir.Infix{Proc: p, Len: e.args}
 		return i
-	} else if p := rt.StdImp.ProcDecl[e.name]; p != nil {
+	} else if p := lem.StdImp.ProcDecl[e.name]; p != nil {
 		assert.For(len(p.This().Infix)-1 == e.args, 20)
-		i := &ir.InvokeInfix{Mod: rt.StdImp.Name, Proc: p.Name(), Len: e.args}
+		i := &ir.InvokeInfix{Mod: lem.StdImp.Name, Proc: p.Name(), Len: e.args}
 		return i
 	} else {
-		halt.As(100, "undefined procedure ", rt.StdImp.Name, ".", e.name)
+		halt.As(100, "undefined procedure ", lem.StdImp.Name, ".", e.name)
 	}
 	panic(0)
 }
@@ -204,8 +204,8 @@ func (s *forwardCall) Fwd() ir.Statement {
 	}
 	if p, _ := s.sc.find(s.name).(*ir.Procedure); p != nil {
 		return &ir.CallStmt{Proc: p, Par: params(p, false)}
-	} else if p := rt.StdImp.ProcDecl[s.name]; p != nil {
-		return &ir.InvokeStmt{Mod: rt.StdImp.Name, Proc: p.Name(), Par: params(p.This(), rt.Special[rt.Qualident{Mod: rt.StdImp.Name, Proc: p.Name()}].Variadic)}
+	} else if p := lem.StdImp.ProcDecl[s.name]; p != nil {
+		return &ir.InvokeStmt{Mod: lem.StdImp.Name, Proc: p.Name(), Par: params(p.This(), lem.Special[lem.Qualident{Mod: lem.StdImp.Name, Proc: p.Name()}].Variadic)}
 	} else {
 		halt.As(100, "undefined procedure ", s.name, s.sc)
 	}

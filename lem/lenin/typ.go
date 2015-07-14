@@ -1,4 +1,4 @@
-package trav
+package lenin
 
 import (
 	"fmt"

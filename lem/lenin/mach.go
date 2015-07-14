@@ -1,4 +1,4 @@
-package ym
+package lenin
 
 import (
 	"bytes"
@@ -7,10 +7,9 @@ import (
 	"fmt"
 	"github.com/kpmy/ypk/halt"
 	"io"
+	"leaf/ir"
 	"leaf/ir/types"
 	"leaf/lem"
-	"leaf/lenin/rt"
-	"leaf/lenin/trav"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -31,12 +30,12 @@ const (
 
 var TypMap map[string]Type
 
-type raw struct {
-	x *trav.Any
+type unraw struct {
+	x *Any
 }
 
 type kv struct {
-	k, v *raw
+	k, v *unraw
 }
 
 func (x *kv) UnmarshalXML(d *xml.Decoder, start xml.StartElement) (err error) {
@@ -45,13 +44,13 @@ func (x *kv) UnmarshalXML(d *xml.Decoder, start xml.StartElement) (err error) {
 		_t, err = d.Token()
 		switch tok := _t.(type) {
 		case xml.StartElement:
-			var z *raw
+			var z *unraw
 			switch tok.Name.Local {
 			case "key":
-				x.k = &raw{}
+				x.k = &unraw{}
 				z = x.k
 			case "value":
-				x.v = &raw{}
+				x.v = &unraw{}
 				z = x.v
 			default:
 				halt.As(100, tok.Name)
@@ -66,9 +65,9 @@ func (x *kv) UnmarshalXML(d *xml.Decoder, start xml.StartElement) (err error) {
 	return err
 }
 
-func (r *raw) Value() interface{} { return r.x }
+func (r *unraw) Value() interface{} { return r.x }
 
-func (r *raw) UnmarshalXML(d *xml.Decoder, start xml.StartElement) (err error) {
+func (r *unraw) UnmarshalXML(d *xml.Decoder, start xml.StartElement) (err error) {
 	var t types.Type
 	for _, a := range start.Attr {
 		switch a.Name.Local {
@@ -80,7 +79,7 @@ func (r *raw) UnmarshalXML(d *xml.Decoder, start xml.StartElement) (err error) {
 	}
 	switch t {
 	case types.MAP:
-		m := &trav.Map{}
+		m := &Map{}
 		var _t xml.Token
 		for stop := false; !stop && err == nil; {
 			_t, err = d.Token()
@@ -95,21 +94,21 @@ func (r *raw) UnmarshalXML(d *xml.Decoder, start xml.StartElement) (err error) {
 				halt.As(100, reflect.TypeOf(tok), tok)
 			}
 		}
-		r.x = trav.NewAny(t, m)
+		r.x = NewAny(t, m)
 	case types.STRING:
 		var sd xml.Token
 		sd, err = d.Token()
 		x := string(sd.(xml.CharData))
-		r.x = trav.NewAny(t, x)
+		r.x = NewAny(t, x)
 		_, err = d.Token()
 	case types.LIST:
-		l := &trav.List{}
+		l := &List{}
 		var _t xml.Token
 		for stop := false; !stop && err == nil; {
 			_t, err = d.Token()
 			switch tok := _t.(type) {
 			case xml.StartElement:
-				i := &raw{}
+				i := &unraw{}
 				err = d.DecodeElement(i, &tok)
 				l.Len(l.Len() + 1)
 				l.SetVal(l.Len()-1, i.x)
@@ -119,13 +118,13 @@ func (r *raw) UnmarshalXML(d *xml.Decoder, start xml.StartElement) (err error) {
 				halt.As(100, reflect.TypeOf(tok), tok)
 			}
 		}
-		r.x = trav.NewAny(t, l)
+		r.x = NewAny(t, l)
 	case types.REAL:
 		var sd xml.Token
 		sd, err = d.Token()
-		rr := &trav.Rat{}
+		rr := &Rat{}
 		rr.UnmarshalText(sd.(xml.CharData))
-		r.x = trav.NewAny(t, rr)
+		r.x = NewAny(t, rr)
 		_, err = d.Token()
 	default:
 		halt.As(100, t)
@@ -134,12 +133,12 @@ func (r *raw) UnmarshalXML(d *xml.Decoder, start xml.StartElement) (err error) {
 }
 
 type mach struct {
-	ch  chan rt.Message
-	ctx rt.Context
-	in  chan rt.Message
+	ch  chan lem.Message
+	ctx lem.Context
+	in  chan lem.Message
 }
 
-func TypeOf(msg rt.Message) (ret Type) {
+func TypeOf(msg lem.Message) (ret Type) {
 	ret = Wrong
 	if t, ok := msg["type"].(string); ok {
 		ret = TypMap[t]
@@ -147,12 +146,16 @@ func TypeOf(msg rt.Message) (ret Type) {
 	return
 }
 
-func (m *mach) Do(msg rt.Message) (ret rt.Message, stop bool) {
+func (m *mach) Do(mod *ir.Module, ld lem.Loader) {
+	_run(mod, ld, m.Chan())
+}
+
+func (m *mach) Process(msg lem.Message) (ret lem.Message, stop bool) {
 	t := TypeOf(msg)
 	switch t {
 	case Machine:
 		if msg["context"] != nil {
-			m.ctx = msg["context"].(rt.Context)
+			m.ctx = msg["context"].(lem.Context)
 		} else {
 			stop = true
 		}
@@ -226,7 +229,7 @@ func (m *mach) Do(msg rt.Message) (ret rt.Message, stop bool) {
 			if f, err := os.Open(filepath.Join(STORAGE, fn)); err == nil {
 				buf := bytes.NewBuffer(nil)
 				io.Copy(buf, f)
-				x := &raw{}
+				x := &unraw{}
 				if err := xml.Unmarshal(buf.Bytes(), x); err == nil {
 					ret["object"] = x
 				} else {
@@ -242,19 +245,19 @@ func (m *mach) Do(msg rt.Message) (ret rt.Message, stop bool) {
 	return
 }
 
-func (m *mach) Input() chan rt.Message {
+func (m *mach) Input() chan lem.Message {
 	if m.in == nil {
-		m.in = make(chan rt.Message, 128)
+		m.in = make(chan lem.Message, 128)
 	}
 	return m.in
 }
 
-func (m *mach) Chan() chan rt.Message {
+func (m *mach) Chan() chan lem.Message {
 	if m.ch == nil {
-		m.ch = make(chan rt.Message)
-		go func(ch chan rt.Message) {
+		m.ch = make(chan lem.Message)
+		go func(ch chan lem.Message) {
 			for {
-				msg, stop := m.Do(<-ch)
+				msg, stop := m.Process(<-ch)
 				if stop {
 					break
 				}

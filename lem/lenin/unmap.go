@@ -1,32 +1,31 @@
-package dumb
+package lenin
 
 import (
 	"github.com/kpmy/ypk/halt"
 	"leaf/ir/types"
 	"leaf/lem"
-	"leaf/lenin/trav"
 	"reflect"
 )
 
-func Unvalue(_i interface{}) (ret *trav.Any) {
+func Unvalue(_i interface{}) (ret *Any) {
 	switch i := _i.(type) {
 	case lem.Object:
-		p := &trav.Ptr{}
+		p := &Ptr{}
 		x := i.Value()
-		prepare(p, x.(*trav.Any))
-		ret = trav.NewAny(types.PTR, p)
+		prepare(p, x.(*Any))
+		ret = NewAny(types.PTR, p)
 	case string:
-		ret = trav.NewAny(types.STRING, i)
+		ret = NewAny(types.STRING, i)
 	case map[interface{}]interface{}:
-		ret = trav.NewAny(types.MAP, Unmap(i))
+		ret = NewAny(types.MAP, Unmap(i))
 	default:
 		halt.As(100, reflect.TypeOf(i))
 	}
 	return
 }
 
-func Unmap(m map[interface{}]interface{}) (ret *trav.Map) {
-	ret = &trav.Map{}
+func Unmap(m map[interface{}]interface{}) (ret *Map) {
+	ret = &Map{}
 	for k, v := range m {
 		kv := Unvalue(k)
 		vv := Unvalue(v)

@@ -12,10 +12,7 @@ import (
 	_ "leaf/lead/target/tt"
 	"leaf/leap"
 	"leaf/lem"
-	_ "leaf/lem/ym"
-	"leaf/lenin"
-	_ "leaf/lenin/rt/dumb"
-	_ "leaf/lenin/trav"
+	_ "leaf/lem/lenin"
 	scanner "leaf/lss"
 	"log"
 	"os"
@@ -73,9 +70,9 @@ func main() {
 			}
 			if interp {
 				log.Println(name, "running...")
-				mach := lem.Run()
-				lenin.Debug = debug
-				lenin.Do(ir, load, mach.Chan())
+				mach := lem.Start()
+				lem.Debug = debug
+				mach.Do(ir, load)
 				mach.Stop()
 			}
 		}

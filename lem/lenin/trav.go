@@ -1,4 +1,4 @@
-package trav
+package lenin
 
 import (
 	"container/list"
@@ -12,8 +12,6 @@ import (
 	"leaf/ir/operation"
 	"leaf/ir/types"
 	"leaf/lem"
-	"leaf/lenin"
-	"leaf/lenin/rt"
 	"math/big"
 	"reflect"
 )
@@ -24,8 +22,8 @@ type context struct {
 	begin    []*ir.Module
 	end      []*ir.Module
 	tgt      *targetStack
-	universe chan rt.Message
-	loader   lenin.Loader
+	universe chan lem.Message
+	loader   lem.Loader
 	queue    []*later
 }
 
@@ -199,7 +197,7 @@ func (s *storeStack) alloc(_x interface{}) {
 		d.init()
 		d.alloc(x.VarDecl)
 		s.store[x.Name] = d
-		if lenin.Debug {
+		if lem.Debug {
 			fmt.Println("alloc", x.Name, d.data)
 		}
 	case *ir.Procedure:
@@ -208,7 +206,7 @@ func (s *storeStack) alloc(_x interface{}) {
 		d.init()
 		d.alloc(x.VarDecl)
 		s.push(d)
-		if lenin.Debug {
+		if lem.Debug {
 			fmt.Println("alloc", x.Name, d.data)
 		}
 	case ir.ImportProcedure:
@@ -217,7 +215,7 @@ func (s *storeStack) alloc(_x interface{}) {
 		d.init()
 		d.alloc(x.This().VarDecl)
 		s.push(d)
-		if lenin.Debug {
+		if lem.Debug {
 			fmt.Println("alloc", x.Name(), d.data)
 		}
 	default:
@@ -228,21 +226,21 @@ func (s *storeStack) alloc(_x interface{}) {
 func (s *storeStack) dealloc(_x interface{}) (ret *storage) {
 	switch x := _x.(type) {
 	case *ir.Module:
-		if lenin.Debug {
+		if lem.Debug {
 			fmt.Println("dealloc", x.Name, s.store[x.Name].data)
 		}
 		s.store[x.Name] = nil
 		//TODO проверить наличие связанных элементов стека
 	case *ir.Procedure:
 		assert.For(s.top() != nil && s.top().link == x, 20)
-		if lenin.Debug {
+		if lem.Debug {
 			fmt.Println("dealloc", x.Name, s.top().data)
 		}
 		ret = s.top()
 		s.pop()
 	case ir.ImportProcedure:
 		assert.For(s.top() != nil && s.top().link == x, 20)
-		if lenin.Debug {
+		if lem.Debug {
 			fmt.Println("dealloc", x.Name(), s.top().data)
 		}
 		ret = s.top()
@@ -370,7 +368,7 @@ func (st *storeStack) find(s *storage, o *ir.Variable, fn func(*value) *value) (
 			assert.For(compTypes(nv.typ, o.Type), 40, "provided ", nv.typ, " != expected ", o.Type)
 			nv = conv(nv, o.Type)
 			s.data[o.Name].write(nv.val)
-			if lenin.Debug {
+			if lem.Debug {
 				fmt.Println("touch", o.Name, nv.val)
 			}
 		}
@@ -693,8 +691,8 @@ func (ctx *context) expr(_e ir.Expression) {
 				halt.As(100, "no result from infix")
 			}
 		case *ir.InvokeInfix:
-			assert.For(rt.StdImp.Name == this.Mod, 20)
-			proc := rt.StdImp.ProcDecl[this.Proc].This()
+			assert.For(lem.StdImp.Name == this.Mod, 20)
+			proc := lem.StdImp.ProcDecl[this.Proc].This()
 			var vl []*value
 			for _, e := range this.Args {
 				eval(e)
@@ -1095,10 +1093,10 @@ func (ctx *context) imp(i *ir.Import) {
 }
 
 func (ctx *context) invoke(mod, proc string, par ...interface{}) (ret interface{}) {
-	assert.For(rt.StdImp.Name == mod, 20)
-	p := rt.StdImp.ProcDecl[proc]
+	assert.For(lem.StdImp.Name == mod, 20)
+	p := lem.StdImp.ProcDecl[proc]
 	ctx.data.alloc(p)
-	var varPar []rt.VarPar
+	var varPar []lem.VarPar
 	for _, _v := range par {
 		switch v := _v.(type) {
 		case *param:
@@ -1109,7 +1107,7 @@ func (ctx *context) invoke(mod, proc string, par ...interface{}) (ret interface{
 					ctx.data.ref(v.obj, v.sel)
 				}
 			} else {
-				x := rt.VarPar{}
+				x := lem.VarPar{}
 				x.Name = v.name
 				x.Sel = v.sel
 				x.Val = v.val
@@ -1124,7 +1122,7 @@ func (ctx *context) invoke(mod, proc string, par ...interface{}) (ret interface{
 		val := ctx.pop()
 		assert.For(val.toBool(), 20+i)
 	}
-	if p := rt.StdProc[rt.Qualident{mod, proc}]; p != nil {
+	if p := lem.StdProc[lem.Qualident{mod, proc}]; p != nil {
 		p(ctx, ctx.data.top(), func(lt types.Type, l interface{}, op operation.Operation, rt types.Type, r interface{}, t types.Type) interface{} {
 			rv := &value{typ: rt, val: r}
 			lv := &value{typ: lt, val: l}
@@ -1177,8 +1175,8 @@ func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 			am := this.Value().(*Any)
 			assert.For(am.typ == types.MAP, 20)
 			m := am.x.(*Map)
-			if p := v.root.ProcDecl[rt.HANDLE]; p != nil {
-				if v := p.VarDecl[rt.MSG]; v != nil {
+			if p := v.root.ProcDecl[lem.HANDLE]; p != nil {
+				if v := p.VarDecl[lem.MSG]; v != nil {
 					par := &param{}
 					par.obj = v
 					par.val = &value{typ: types.MAP, val: m}
@@ -1205,7 +1203,7 @@ func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 		old := ctx.data.mt
 		ctx.Mt(ctx.ModuleOf(this))
 		ctx.data.alloc(this)
-		if lenin.Debug {
+		if lem.Debug {
 			fmt.Println("PARAMS", len(par), fmt.Sprint(par...))
 		}
 		for _, _v := range par {
@@ -1216,7 +1214,7 @@ func (ctx *context) do(_t interface{}, par ...interface{}) (ret interface{}) {
 				} else {
 					ctx.data.ref(v.obj, v.sel)
 				}
-			case rt.VarPar:
+			case lem.VarPar:
 				obj := ctx.data.top().schema[v.Name]
 				assert.For(obj != nil, 30)
 				if val := v.Val.(*value); val != nil {
@@ -1272,7 +1270,7 @@ func (c *context) doLater(x interface{}, par ...interface{}) {
 	c.queue = append(c.queue, tmp...)
 }
 
-func (c *context) Queue(x interface{}, par ...rt.VarPar) {
+func (c *context) Queue(x interface{}, par ...lem.VarPar) {
 	var p []interface{}
 	for _, x := range par {
 		p = append(p, x)
@@ -1305,14 +1303,14 @@ func (c *context) stop() {
 	}
 }
 
-func (c *context) Handler() func(rt.Message) rt.Message {
-	return func(in rt.Message) rt.Message {
+func (c *context) Handler() func(lem.Message) lem.Message {
+	return func(in lem.Message) lem.Message {
 		c.universe <- in
 		return <-c.universe
 	}
 }
 
-func connectTo(universe chan rt.Message, ld lenin.Loader, m ...*ir.Module) (ret *context) {
+func connectTo(universe chan lem.Message, ld lem.Loader, m ...*ir.Module) (ret *context) {
 	assert.For(len(m) > 0, 20)
 	ret = &context{}
 	ret.begin = m
@@ -1326,7 +1324,7 @@ func connectTo(universe chan rt.Message, ld lenin.Loader, m ...*ir.Module) (ret 
 	return
 }
 
-func importChain(main *ir.Module, ld lenin.Loader) []*ir.Module {
+func importChain(main *ir.Module, ld lem.Loader) []*ir.Module {
 	assert.For(main != nil, 20)
 	cache := make(map[string]*ir.Module)
 	var ml []string
@@ -1357,7 +1355,7 @@ func importChain(main *ir.Module, ld lenin.Loader) []*ir.Module {
 	return mm
 }
 
-func run(main *ir.Module, ld lenin.Loader, universe chan rt.Message) {
+func _run(main *ir.Module, ld lem.Loader, universe chan lem.Message) {
 	modList := importChain(main, ld)
 	ctx := connectTo(universe, ld, modList...)
 	msg := map[interface{}]interface{}{"type": "machine", "context": ctx}
@@ -1365,8 +1363,4 @@ func run(main *ir.Module, ld lenin.Loader, universe chan rt.Message) {
 	<-universe
 	ctx.start()
 	ctx.stop()
-}
-
-func init() {
-	lenin.Run = run
 }

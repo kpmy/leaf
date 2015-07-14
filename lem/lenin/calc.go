@@ -1,4 +1,4 @@
-package trav
+package lenin
 
 import (
 	"github.com/kpmy/trigo"
@@ -479,9 +479,9 @@ func b_z_set_(fn func(*Any, *Set) bool) func(*Any, *value) bool {
 }
 
 const (
-	lss = -1
-	eq  = 0
-	gtr = 1
+	less = -1
+	eq   = 0
+	gtr  = 1
 )
 
 func dyINTEGER() {
@@ -514,7 +514,7 @@ func dyINTEGER() {
 	putDyadic(types.INTEGER, types.INTEGER, operation.Lss,
 		b_(b_i_(b_i_i_(func(l *big.Int, r *big.Int) bool {
 			res := l.Cmp(r)
-			return res == lss
+			return res == less
 		}))))
 	putDyadic(types.INTEGER, types.INTEGER, operation.Gtr,
 		b_(b_i_(b_i_i_(func(l *big.Int, r *big.Int) bool {
@@ -529,7 +529,7 @@ func dyINTEGER() {
 	putDyadic(types.INTEGER, types.INTEGER, operation.Geq,
 		b_(b_i_(b_i_i_(func(l *big.Int, r *big.Int) bool {
 			res := l.Cmp(r)
-			return res != lss
+			return res != less
 		}))))
 	putDyadic(types.INTEGER, types.INTEGER, operation.Eq,
 		b_(b_i_(b_i_i_(func(l *big.Int, r *big.Int) bool {
@@ -564,7 +564,7 @@ func dyREAL() {
 	putDyadic(types.REAL, types.REAL, operation.Lss,
 		b_(b_r_(b_r_r_(func(l *big.Rat, r *big.Rat) bool {
 			res := l.Cmp(r)
-			return res == lss
+			return res == less
 		}))))
 	putDyadic(types.REAL, types.REAL, operation.Gtr,
 		b_(b_r_(b_r_r_(func(l *big.Rat, r *big.Rat) bool {
@@ -579,7 +579,7 @@ func dyREAL() {
 	putDyadic(types.REAL, types.REAL, operation.Geq,
 		b_(b_r_(b_r_r_(func(l *big.Rat, r *big.Rat) bool {
 			res := l.Cmp(r)
-			return res != lss
+			return res != less
 		}))))
 	putDyadic(types.REAL, types.REAL, operation.Eq,
 		b_(b_r_(b_r_r_(func(l *big.Rat, r *big.Rat) bool {

@@ -13,10 +13,7 @@ import (
 	_ "leaf/lead/target/tt"
 	"leaf/leap"
 	"leaf/lem"
-	_ "leaf/lem/ym"
-	"leaf/lenin"
-	_ "leaf/lenin/rt/dumb"
-	_ "leaf/lenin/trav"
+	_ "leaf/lem/lenin"
 	"leaf/lss"
 	"log"
 	"os"
@@ -132,11 +129,11 @@ func load(n string) (ret *ir.Module, rerr error) {
 }
 
 func do(fullpath string) {
-	lenin.Debug = debug
+	lem.Debug = debug
 	if li, err := os.Open(fullpath); err == nil {
 		m := target.Old(li)
-		mach := lem.Run()
-		lenin.Do(m, load, mach.Chan())
+		mach := lem.Start()
+		mach.Do(m, load)
 		mach.Stop()
 	} else {
 		log.Fatal(err)

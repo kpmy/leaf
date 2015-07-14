@@ -1,18 +1,17 @@
-package dumb
+package lenin
 
 import (
 	"fmt"
-	"leaf/lenin"
-	"leaf/lenin/trav"
+	"leaf/lem"
 )
 
 type heap struct {
-	data map[int64]*trav.Any
+	data map[int64]*Any
 	next int64
 }
 
 func (h *heap) New() (ret int64) {
-	h.data[h.next] = &trav.Any{}
+	h.data[h.next] = &Any{}
 	ret = h.next
 	h.next++
 	return
@@ -23,23 +22,23 @@ type heapy struct {
 	h   *heap
 }
 
-func (h *heapy) Get() *trav.Any {
+func (h *heapy) Get() *Any {
 	return h.h.data[h.adr]
 }
 
-func (h *heapy) Set(x *trav.Any) {
-	if lenin.Debug {
+func (h *heapy) Set(x *Any) {
+	if lem.Debug {
 		fmt.Println("heap touch", fmt.Sprintf("%X", h.adr), x)
 	}
 	h.h.data[h.adr] = x
-	if lenin.Debug {
+	if lem.Debug {
 		fmt.Println(h.h)
 	}
 }
 
 func newHeap() *heap {
 	ret := &heap{}
-	ret.data = make(map[int64]*trav.Any)
+	ret.data = make(map[int64]*Any)
 	ret.next = 4096
 	return ret
 }

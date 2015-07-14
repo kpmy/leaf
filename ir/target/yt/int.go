@@ -8,7 +8,7 @@ import (
 	"leaf/ir/operation"
 	"leaf/ir/target/yt/fldz"
 	"leaf/ir/types"
-	"leaf/lenin/rt"
+	"leaf/lem"
 )
 
 func internalize(m *Module) (ret *ir.Module) {
@@ -419,7 +419,7 @@ func internalize(m *Module) (ret *ir.Module) {
 		return
 	}
 	{
-		prepareImp(rt.StdImp)
+		prepareImp(lem.StdImp)
 		ret.ConstDecl = cdecl(m.ConstDecl)
 		ret.VarDecl = vdecl(m.VarDecl)
 		ret.ProcDecl = pdecl(m.Name, m.ProcDecl)

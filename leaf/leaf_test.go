@@ -11,10 +11,7 @@ import (
 	_ "leaf/lead/target/tt"
 	"leaf/leap"
 	"leaf/lem"
-	_ "leaf/lem/ym"
-	"leaf/lenin"
-	_ "leaf/lenin/rt/dumb"
-	_ "leaf/lenin/trav"
+	_ "leaf/lem/lenin"
 	scanner "leaf/lss"
 	"log"
 	"os"
@@ -120,16 +117,16 @@ func TestInterp(t *testing.T) {
 				defer f.Close()
 				p := leap.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)), resolve)
 				ir, _ := p.Module()
-				mach := lem.Run()
-				lenin.Debug = true
-				lenin.Do(ir, load, mach.Chan())
+				mach := lem.Start()
+				lem.Debug = true
+				mach.Do(ir, load)
 			}
 		}
 	}
 }
 
 func TestCollection(t *testing.T) {
-	lenin.Debug = true
+	lem.Debug = true
 	var err error
 	for i := int64(0); err == nil; i++ {
 		mname := "Test" + strconv.FormatInt(i, 16)
@@ -158,8 +155,8 @@ func TestCollection(t *testing.T) {
 						if t, err := os.Open(ast.Name + ".li"); err == nil {
 							defer t.Close()
 							ast := code.Old(t)
-							mach := lem.Run()
-							lenin.Do(ast, load, mach.Chan())
+							mach := lem.Start()
+							mach.Do(ast, load)
 							mach.Stop()
 						}
 					}
