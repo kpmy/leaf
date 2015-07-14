@@ -1,3 +1,6 @@
-(* dummy *)
+(** мультикоммент
+	** (** азазаза **) **
+**)
 MODULE Simple
-END Simple.
+	CONST a = 14; b = c
+END Simple

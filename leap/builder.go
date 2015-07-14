@@ -132,8 +132,9 @@ type exprItem struct {
 }
 
 type forwardNamedConstExpr struct {
-	name string
-	sc   *block
+	name   string
+	sc     *block
+	marker Marker
 }
 
 func (e *forwardNamedConstExpr) Self() {}
@@ -142,7 +143,7 @@ func (e *forwardNamedConstExpr) Eval() (ret ir.Expression) {
 	if c, _ := e.sc.find(e.name).(*ir.Const); c != nil {
 		return &ir.NamedConstExpr{Named: c}
 	} else {
-		halt.As(100, "undefined constant ", e.name)
+		e.marker.Mark("undefined constant ", e.name)
 	}
 	panic(0)
 }
@@ -219,8 +220,9 @@ type forwardParam struct {
 }
 
 type exprBuilder struct {
-	sc    *block
-	stack []*exprItem
+	sc     *block
+	stack  []*exprItem
+	marker Marker
 }
 
 func (e *exprBuilder) Self() {}
@@ -494,7 +496,7 @@ func (e *exprBuilder) as(id string) ir.Expression {
 			halt.As(100, "unexpected ", reflect.TypeOf(v))
 		}
 	} else {
-		return &forwardNamedConstExpr{name: id, sc: e.sc}
+		return &forwardNamedConstExpr{name: id, sc: e.sc, marker: e.marker.FutureMark()}
 	}
 	panic(0)
 }

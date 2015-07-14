@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"flag"
+	"fmt"
 	"github.com/kpmy/ypk/assert"
 	"leaf/ir"
 	code "leaf/ir/target"
@@ -53,14 +54,22 @@ func main() {
 	if f, err := os.Open(sname); err == nil {
 		defer f.Close()
 		p := leap.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)), resolve)
-		ir, _ := p.Module()
-		if d, err := os.Open(name + ".ld"); err == nil {
-			log.Println("definition already exists")
-			d.Close()
-		}
-		if t, err := os.Create(name + ".li"); err == nil {
-			code.New(ir, t)
-			t.Close()
+		if ir, err := p.Module(); err == nil {
+			defer func() {
+				if x := recover(); x != nil {
+					fmt.Println(x)
+				}
+			}()
+			if d, err := os.Open(name + ".ld"); err == nil {
+				log.Println("definition already exists")
+				d.Close()
+			}
+			if t, err := os.Create(name + ".li"); err == nil {
+				code.New(ir, t)
+				t.Close()
+			}
+		} else {
+			panic(err)
 		}
 		if z, err := os.Open(name + ".li"); err == nil {
 			ir := code.Old(z)

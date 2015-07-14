@@ -24,7 +24,7 @@ MODULE TestDefinition
 		POST x # 0
 	BEGIN
 	END Do2
-END TestDefinition.
+END TestDefinition
 
 MODULE TestService
 
@@ -65,7 +65,7 @@ MODULE TestService
 		z := x * au
 	END Do0
 
-END TestService.
+END TestService
 
 MODULE TestClient
 
@@ -87,4 +87,4 @@ CLOSE
 	Service.Calc(n: 10, res<- Service.x)
 	z:= 6 \Service.Do 4
 	z:= \TestService.Do0 4
-END TestClient.
+END TestClient

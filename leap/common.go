@@ -3,6 +3,7 @@ package leap
 import (
 	"fmt"
 	"github.com/kpmy/ypk/assert"
+	"github.com/kpmy/ypk/halt"
 	"leaf/ir"
 	"leaf/ir/operation"
 	"leaf/ir/types"
@@ -10,16 +11,50 @@ import (
 	"strconv"
 )
 
+type mark struct {
+	rd        int
+	line, col int
+	marker    Marker
+}
+
+func (m *mark) Mark(msg ...interface{}) {
+	m.marker.(*common).m = m
+	m.marker.Mark(msg...)
+}
+
+func (m *mark) FutureMark() Marker { halt.As(100); return nil }
+
 type common struct {
 	sc    lss.Scanner
 	sym   lss.Sym
 	done  bool
 	debug bool
+	m     *mark
+}
+
+func (p *common) Mark(msg ...interface{}) {
+	p.mark(msg...)
+}
+
+func (p *common) FutureMark() Marker {
+	rd := p.sc.Read()
+	str, pos := p.sc.Pos()
+	m := &mark{marker: p, rd: rd, line: str, col: pos}
+	return m
 }
 
 func (p *common) mark(msg ...interface{}) {
+	rd := p.sc.Read()
 	str, pos := p.sc.Pos()
-	panic(fmt.Sprint("parser: ", "at pos ", str, " ", pos, " ", fmt.Sprint(msg...)))
+	if len(msg) == 0 {
+		p.m = &mark{rd: rd, line: str, col: pos}
+	} else if p.m != nil {
+		rd, str, pos = p.m.rd, p.m.line, p.m.col
+		p.m = nil
+	}
+	if p.m == nil {
+		panic(lss.Err("parser", rd, str, pos, msg...))
+	}
 }
 
 func (p *common) next() lss.Sym {
@@ -204,6 +239,7 @@ func (p *common) selector(b *selBuilder) {
 }
 
 func (p *common) factor(b *exprBuilder) {
+	b.marker = p
 	switch p.sym.Code {
 	case lss.String:
 		val := &ir.ConstExpr{}
@@ -391,6 +427,7 @@ func (p *common) factor(b *exprBuilder) {
 }
 
 func (p *common) cpx(b *exprBuilder) {
+	b.marker = p
 	p.factor(b)
 	p.pass(lss.Separator)
 	switch p.sym.Code {
@@ -409,6 +446,7 @@ func (p *common) cpx(b *exprBuilder) {
 }
 
 func (p *common) power(b *exprBuilder) {
+	b.marker = p
 	p.cpx(b)
 	for stop := false; !stop; {
 		p.pass(lss.Separator)
@@ -426,6 +464,7 @@ func (p *common) power(b *exprBuilder) {
 }
 
 func (p *common) product(b *exprBuilder) {
+	b.marker = p
 	p.power(b)
 	for stop := false; !stop; {
 		p.pass(lss.Separator)
@@ -443,6 +482,7 @@ func (p *common) product(b *exprBuilder) {
 }
 
 func (p *common) quantum(b *exprBuilder) {
+	b.marker = p
 	if p.is(lss.Minus) {
 		p.next()
 		p.pass(lss.Separator)
@@ -472,6 +512,7 @@ func (p *common) quantum(b *exprBuilder) {
 }
 
 func (p *common) expression(b *exprBuilder) {
+	b.marker = p
 	p.quantum(b)
 	p.pass(lss.Separator)
 	switch p.sym.Code {

@@ -13,7 +13,7 @@ BEGIN
 	END
 	s:="a"
 	s[0] :=  \CAP s[0]
-END TestStd.
+END TestStd
 
 MODULE TestStd2
 	CONST
@@ -32,7 +32,7 @@ BEGIN
 		INC(x<-i)
 	END
 	b:=\ODD i
-END TestStd2.
+END TestStd2
 
 MODULE TestAny
 	VAR
@@ -71,7 +71,7 @@ BEGIN
 		OR INTEGER: a := a + 55
 		OR UNDEF: a := t
 	END;
-END TestAny.
+END TestAny
 
 
 MODULE TestList
@@ -109,7 +109,7 @@ BEGIN
 	Item(l <- l, idx: 0, res <- c)
 	Item(l <- l, idx: 1, res <- c)
 	l2 := li
-END TestList.
+END TestList
 
 MODULE TestSet
 	CONST und = UNDEF
@@ -131,7 +131,7 @@ BEGIN
 	END;
 	val := \VALUES s
 	s:=~s
-END TestSet.
+END TestSet
 
 MODULE TestMap
 	CONST
@@ -152,7 +152,7 @@ BEGIN
 	k := \KEYS m
 	v := \VALUES m
 	x := m.unknown
-END TestMap.
+END TestMap
 
 MODULE TestPtr
 	VAR
@@ -172,4 +172,4 @@ BEGIN
 	b:=p1=p0
 	a:=p1$
 	t := p0 IS INTEGER
-END TestPtr.
+END TestPtr

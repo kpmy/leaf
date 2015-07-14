@@ -2,11 +2,11 @@
 module TestEvil
 	var i integer
 begin
-end TestEvil.
+end TestEvil
 
 (* empty module *)
 MODULE TestEmpty
-END TestEmpty.
+END TestEmpty
 
 (* assign statement *)
 MODULE TestAssign
@@ -16,7 +16,7 @@ BEGIN
 	i := 1
 CLOSE
 	i := I
-END TestAssign.
+END TestAssign
 
 (* arithmetics *)
 MODULE TestArithmetics
@@ -33,7 +33,7 @@ BEGIN
 	k := i * 2
 	j := k  // 2 + 1 - 89 * 4 * 4
 	i := (i + 5) // (1 + j % 7)
-END TestArithmetics.
+END TestArithmetics
 
 (* logic *)
 MODULE TestLogic
@@ -48,7 +48,7 @@ CLOSE
 	q := FALSE
 	r := NULL
 	r:= p & ~q | r | TRUE
-END TestLogic.
+END TestLogic
 
 (* comparisions, braces *)
 MODULE TestComp
@@ -63,7 +63,7 @@ BEGIN
 	ok := i > 4
 	ok := ((i + 4) >= (j+ 49)) & (i <= 144)
 	ok := ok & (i # j) | (i = j)
-END TestComp.
+END TestComp
 
 (* forwarding expr in CONST *)
 MODULE TestExpr
@@ -74,7 +74,7 @@ MODULE TestExpr
 	VAR i INTEGER
 BEGIN
 	i:= count - num
-END TestExpr.
+END TestExpr
 
 (* pow and long sequences *)
 MODULE TestExpr2
@@ -90,7 +90,7 @@ BEGIN
 	q := 2/1
 	p := p ^ q
 	q := 9 ^ q
-END TestExpr2.
+END TestExpr2
 
 (* chars and complex comparisions *)
 MODULE TestChars
@@ -121,7 +121,7 @@ CLOSE
 	ok := (NULL # TRUE)
 	ok := (TRUE # NULL)
 	ok := (TRUE = NULL)
-END TestChars.
+END TestChars
 
 (* strings and string comparision *)
 MODULE TestStrings
@@ -143,7 +143,7 @@ BEGIN
 	t := "baab"
 	ok := (s > t) | (s >= t) & (t < s) | (t <= s)
 	s := '1' + '4' + hello
-END TestStrings.
+END TestStrings
 
 (* integers without visible limit *)
 MODULE TestBig
@@ -151,7 +151,7 @@ MODULE TestBig
 	VAR i INTEGER
 BEGIN
 	i := max + max + max
-END TestBig.
+END TestBig
 
 MODULE TestAtom
 	CONST A; B; C
@@ -167,7 +167,7 @@ BEGIN
 	ok := c # UNDEF
 	a := b
 	ok := (a = b)
-END TestAtom.
+END TestAtom
 
 MODULE TestReal
 	CONST
@@ -192,7 +192,7 @@ BEGIN
 	s := s / i + s * i
 	ok := (s > t) | (s >= t) & (s < t) | (s <= t)
 	ok := (s = t) & (s # t)
-END TestReal.
+END TestReal
 
 MODULE TestComplex
 	CONST
@@ -205,7 +205,7 @@ MODULE TestComplex
 	VAR x COMPLEX
 BEGIN
 	x:=cmp + cmp2 + i
-END TestComplex.
+END TestComplex
 
 MODULE TestSelector
 	CONST hw = "Hello, World!"
@@ -219,7 +219,7 @@ BEGIN
 	s[0] := 044U
 	ok := s[0] # 043U
 	t:=s[0]+s[1]+s[2]+s[3]+s[4]
-END TestSelector.
+END TestSelector
 
 MODULE TestIF
 	VAR x BOOLEAN
@@ -244,7 +244,7 @@ BEGIN
 		i := 2
 		j := j + i
 	END
-END TestIF.
+END TestIF
 
 MODULE TestCycles
 	VAR i INTEGER
@@ -265,7 +265,7 @@ BEGIN
 		i := i - 1
 	UNTIL  i = 0
 	IF i = 0 THEN r:=0.0 END
-END TestCycles.
+END TestCycles
 
 MODULE TestProcCall
 	VAR i INTEGER
@@ -283,7 +283,7 @@ MODULE TestProcCall
 
 BEGIN
 	Init
-END TestProcCall.
+END TestProcCall
 
 MODULE TestScopes
 	CONST hw = "Hello, world"
@@ -299,7 +299,7 @@ MODULE TestScopes
 
 BEGIN
 	Init
-END TestScopes.
+END TestScopes
 
 MODULE TestChoose
 	VAR i INTEGER; s STRING
@@ -328,7 +328,7 @@ BEGIN
 		ELSE s:="big" END
 		i:=i+1
 	END
-END TestChoose.
+END TestChoose
 
 MODULE TestParams
 VAR
@@ -352,7 +352,7 @@ VAR
 BEGIN
 	i := 4
 	Do(x: i + 4,  y: i ^ i)
-END TestParams.
+END TestParams
 
 MODULE TestVarPar
 	VAR
@@ -380,7 +380,7 @@ MODULE TestVarPar
 
 BEGIN
 	Do0
-END TestVarPar.
+END TestVarPar
 
 MODULE TestInfix
 
@@ -403,7 +403,7 @@ MODULE TestInfix
 BEGIN
 	z := 1 \Add3 4, (8 + 33)
 	z := 1.0 \Add2 z
-END TestInfix.
+END TestInfix
 
 MODULE TestRecursion
 
@@ -422,7 +422,7 @@ MODULE TestRecursion
 BEGIN
 	i:=10
 	Do(res<- i, max: 5)
-END TestRecursion.
+END TestRecursion
 
 MODULE TestPrecondition
 
@@ -437,4 +437,4 @@ MODULE TestPrecondition
 
 BEGIN
 	Do(x: 4, y: 3)
-END TestPrecondition.
+END TestPrecondition

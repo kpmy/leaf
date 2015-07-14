@@ -24,7 +24,7 @@ BEGIN
 			CHOOSE y AS PTR: item:=y ELSE item:=NIL END;
 		ELSE item:=NIL END;
 	END
-END TestLinked.
+END TestLinked
 
 MODULE TestHandle
 	CONST
@@ -36,7 +36,7 @@ BEGIN
 	msg.data := "Hello, World!"
 	msg."ln" := TRUE
 	PROCESS(to<-msg, from->anwser)
-END TestHandle.
+END TestHandle
 
 MODULE TestAssert
 	VAR s STRING
@@ -47,7 +47,7 @@ BEGIN
 	IF s = "" THEN
 		HALT(code: 100)
 	END
-END TestAssert.
+END TestAssert
 
 MODULE TestProcVar
 	VAR
@@ -71,4 +71,4 @@ BEGIN
 	IF do # UNDEF THEN
 		RUN(proc: do, up: 42, z<-x)
 	END
-END TestProcVar.
+END TestProcVar

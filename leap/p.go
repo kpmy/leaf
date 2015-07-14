@@ -69,6 +69,11 @@ func init() {
 	lead.ConnectTo = leadp
 }
 
+type Marker interface {
+	Mark(...interface{})
+	FutureMark() Marker
+}
+
 type Parser interface {
 	Module() (*ir.Module, error)
 }
@@ -631,7 +636,7 @@ func (p *pr) Module() (ret *ir.Module, err error) {
 		if p.sc.Error() != nil {
 			return nil, p.sc.Error()
 		} else {
-			p.mark("MODULE expected")
+			p.mark("MODULE expected, but", p.sym)
 		}
 	}
 	p.next()
@@ -660,14 +665,13 @@ func (p *pr) Module() (ret *ir.Module, err error) {
 		p.top.CloseSeq = b.seq
 	}
 	//p.run(lss.End)
-	p.expect(lss.End, "no END", lss.Delimiter, lss.Separator)
+	p.expect(lss.End, "END expected", lss.Delimiter, lss.Separator)
 	p.next()
+	p.mark()
 	p.expect(lss.Ident, "module name expected", lss.Separator)
 	if p.ident() != p.top.Name {
 		p.mark("module name does not match")
 	}
-	p.next()
-	p.expect(lss.Period, "end of module expected")
 	ret = p.top
 	return
 }

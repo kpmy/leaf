@@ -225,6 +225,7 @@ type Scanner interface {
 	Get() Sym
 	Error() error
 	Register(Foreign, string)
+	Read() int
 	Pos() (int, int)
 }
 
@@ -247,6 +248,7 @@ type sc struct {
 		count int
 		last  int
 		crlf  bool
+		lens  map[int]func() (int, int)
 	}
 }
 
@@ -258,13 +260,15 @@ func (s *sc) Register(f Foreign, name string) {
 
 func (s *sc) Error() error { return s.err }
 
+func (s *sc) Read() int { return s.pos }
 func (s *sc) Pos() (int, int) {
-	return s.lines.count, s.pos - s.lines.last
+	return s.lines.count, s.lines.last
 }
 
 func (s *sc) mark(msg ...interface{}) {
 	//log.Println("at pos ", s.pos, " ", fmt.Sprintln(msg...))
-	panic(fmt.Sprint("scanner: ", "at pos ", fmt.Sprint(s.Pos()), " ", fmt.Sprint(msg...)))
+	l, c := s.Pos()
+	panic(Err("scanner", s.Read(), l, c, msg...))
 }
 
 func (s *sc) next() rune {
@@ -273,6 +277,8 @@ func (s *sc) next() rune {
 	s.ch, read, s.err = s.rd.ReadRune()
 	if s.ch == '\r' || s.ch == '\n' {
 		s.line()
+	} else {
+		s.lines.last++
 	}
 	if s.err == nil {
 		s.pos += read
@@ -284,13 +290,14 @@ func (s *sc) line() {
 	if s.ch == '\r' {
 		s.lines.crlf = true
 	}
-	if (s.lines.crlf && s.ch == '\r') || !s.lines.crlf {
-		s.lines.count++
-		if s.lines.crlf {
-			s.lines.last = s.pos + 2
-		} else {
-			s.lines.last = s.pos + 1
+	if (s.lines.crlf && s.ch == '\r') || (!s.lines.crlf && s.ch == '\n') {
+		s.lines.lens[s.lines.count] = func() (int, int) {
+			return s.lines.count, s.pos
 		}
+		s.lines.count++
+		s.lines.last = 1
+	} else if s.lines.crlf && s.ch == '\n' {
+		s.lines.last--
 	}
 }
 
@@ -606,5 +613,7 @@ func (s *sc) Init(head Symbol, use ...Symbol) {
 	s.foreignTab = make(map[string]Foreign)
 	s.useTab = append(s.useTab, head)
 	s.useTab = append(s.useTab, use...)
+	s.lines.lens = make(map[int]func() (int, int))
+	s.lines.count++
 	s.next()
 }
