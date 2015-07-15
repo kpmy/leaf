@@ -5,5 +5,5 @@ MODULE Simple
 	CONST a = 14; b = c + 3; c = 15
 	VAR i INTEGER
 BEGIN
-	i := 4
+	i := 4+48
 END Simple

@@ -406,9 +406,10 @@ func (s *sc) str() string {
 
 const dec = "0123456789"
 const hex = dec + "ABCDEF"
-const non = "01234WXYZ"
-const tri = "-0+"
-const modifier = "BHNTU"
+
+//const non = "01234WXYZ"
+//const tri = "-0+"
+const modifier = "U"
 
 func (s *sc) is(pattern string, x rune) bool {
 	ep := pattern
@@ -435,7 +436,7 @@ func (s *sc) num() (sym Sym) {
 				s.mark("dot unexpected")
 			}
 		}
-		if s.err != nil || !(s.ch == '.' || s.is(hex, s.ch) || s.is(non, s.ch) || s.is(tri, s.ch)) {
+		if s.err != nil || !(s.ch == '.' || s.is(hex, s.ch)) {
 			break
 		}
 	}

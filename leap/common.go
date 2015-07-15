@@ -422,7 +422,7 @@ func (p *common) factor(b *exprBuilder) {
 		}
 		b.factor(b.infix(mid, id, limit))
 	default:
-		p.mark("not implemented for ", p.sym)
+		p.mark(p.sym, " is not an expression")
 	}
 }
 

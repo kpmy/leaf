@@ -699,7 +699,7 @@ func ConnectTo(s lss.Scanner, rs Resolver) Parser {
 	s.Init(lss.Module, lss.End, lss.Do, lss.While, lss.Elsif, lss.Import, lss.Const, lss.Of, lss.Pre, lss.Post, lss.Proc, lss.Var, lss.Begin, lss.Close, lss.If, lss.Then, lss.Repeat, lss.Until, lss.Else, lss.True, lss.False, lss.Null, lss.Nil, lss.Inf, lss.Choose, lss.Opt, lss.Infix, lss.Is, lss.Undef, lss.As, lss.In, lss.Rbrux, lss.Lbrux, lss.Deref)
 	ret := &pr{resolver: rs}
 	ret.sc = s
-	ret.debug = false
+	ret.debug = true
 	ret.init()
 	return ret
 }
