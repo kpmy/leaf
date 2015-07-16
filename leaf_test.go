@@ -1,4 +1,4 @@
-package leaf
+package main
 
 import (
 	"bufio"
