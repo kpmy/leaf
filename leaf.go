@@ -8,14 +8,13 @@ import (
 	"leaf/ir"
 	"leaf/ir/target"
 	_ "leaf/ir/target/yt/z"
-	"leaf/lead"
-	def "leaf/lead/target"
-	_ "leaf/lead/target/tt"
 	"leaf/leaf"
 	"leaf/leap"
+	"leaf/leap/def"
+	_ "leaf/leap/def/tt"
+	"leaf/leap/lss"
 	"leaf/lem"
 	_ "leaf/lem/lenin"
-	"leaf/lss"
 	"log"
 	"os"
 	"path/filepath"
@@ -145,7 +144,7 @@ func doBuild(name string) {
 			}
 			open(func(fullpath string) {
 				if d, err := os.Open(fullpath); err == nil {
-					p := lead.ConnectTo(lss.ConnectTo(bufio.NewReader(d)), resolve)
+					p := leap.ConnectToDef(lss.ConnectTo(bufio.NewReader(d)), resolve)
 					ret, _ = p.Import()
 				}
 			}, DEF, mod, defExt, sub...)
@@ -160,7 +159,7 @@ func doBuild(name string) {
 		if f, err := os.Open(fullpath); err == nil {
 			defer f.Close()
 			log.Println("compiling", name)
-			p := leap.ConnectTo(lss.ConnectTo(bufio.NewReader(f)), resolve)
+			p := leap.ConnectToMod(lss.ConnectTo(bufio.NewReader(f)), resolve)
 			code, _ := p.Module()
 			msg = fmt.Sprint("compiled ", name)
 			create(func(fullpath string) {

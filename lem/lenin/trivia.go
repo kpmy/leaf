@@ -9,10 +9,10 @@ import (
 	"leaf/ir"
 	"leaf/ir/operation"
 	"leaf/ir/types"
-	"leaf/lead"
-	_ "leaf/leap"
+	"leaf/leap"
+	"leaf/leap/lss"
+	_ "leaf/leap/p"
 	"leaf/lem"
-	"leaf/lss"
 	"math/big"
 	"reflect"
 	"runtime"
@@ -228,7 +228,7 @@ func run(ctx lem.Context, st lem.Storage, calc lem.Calc, par ...lem.VarPar) {
 
 func init() {
 	buf := bytes.NewBufferString(lem.StdDef)
-	p := lead.ConnectTo(lss.ConnectTo(bufio.NewReader(buf)), func(string) (*ir.Import, error) {
+	p := leap.ConnectToDef(lss.ConnectTo(bufio.NewReader(buf)), func(string) (*ir.Import, error) {
 		halt.As(100, "imports not allowed here")
 		return nil, errors.New("not allowed")
 	})

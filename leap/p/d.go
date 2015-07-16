@@ -1,18 +1,18 @@
-package leap
+package p
 
 import (
 	"github.com/kpmy/ypk/assert"
 	"leaf/ir"
 	"leaf/ir/modifiers"
 	"leaf/ir/types"
-	"leaf/lead"
-	"leaf/lss"
+	"leaf/leap"
+	"leaf/leap/lss"
 )
 
 type pd struct {
 	common
 	imported
-	resolver lead.Resolver
+	resolver leap.DefResolver
 }
 
 func (p *pd) init() {
@@ -330,7 +330,7 @@ func (p *pd) Import() (*ir.Import, error) {
 	return p.top, nil
 }
 
-func leadp(s lss.Scanner, rs lead.Resolver) lead.Parser {
+func leadp(s lss.Scanner, rs leap.DefResolver) leap.DefParser {
 	assert.For(s != nil, 20)
 	s.Init(lss.Definition, lss.End, lss.Import, lss.Const, lss.Pre, lss.Post, lss.Proc, lss.Var, lss.True, lss.False, lss.Null, lss.Nil, lss.Inf, lss.Choose, lss.Opt, lss.Infix, lss.Undef, lss.Is, lss.In, lss.Rbrux, lss.Lbrux)
 	ret := &pd{resolver: rs}

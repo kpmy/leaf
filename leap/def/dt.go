@@ -1,4 +1,4 @@
-package target
+package def
 
 import (
 	"github.com/kpmy/ypk/assert"

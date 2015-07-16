@@ -7,13 +7,12 @@ import (
 	"leaf/ir"
 	code "leaf/ir/target"
 	_ "leaf/ir/target/yt/z"
-	"leaf/lead"
-	def "leaf/lead/target"
-	_ "leaf/lead/target/tt"
 	"leaf/leap"
+	"leaf/leap/def"
+	_ "leaf/leap/def/tt"
+	scanner "leaf/leap/lss"
 	"leaf/lem"
 	_ "leaf/lem/lenin"
-	scanner "leaf/lss"
 	"log"
 	"os"
 )
@@ -30,7 +29,7 @@ func init() {
 
 func resolve(name string) (ret *ir.Import, err error) {
 	if d, err := os.Open(name + ".ld"); err == nil {
-		p := lead.ConnectTo(scanner.ConnectTo(bufio.NewReader(d)), resolve)
+		p := leap.ConnectToDef(scanner.ConnectTo(bufio.NewReader(d)), resolve)
 		ret, _ = p.Import()
 	}
 	return
@@ -52,7 +51,7 @@ func main() {
 	log.Println(name, "compiling...")
 	if f, err := os.Open(sname); err == nil {
 		defer f.Close()
-		p := leap.ConnectTo(scanner.ConnectTo(bufio.NewReader(f)), resolve)
+		p := leap.ConnectToMod(scanner.ConnectTo(bufio.NewReader(f)), resolve)
 		if ir, err := p.Module(); err == nil {
 			if d, err := os.Open(name + ".ld"); err == nil {
 				log.Println("definition already exists")

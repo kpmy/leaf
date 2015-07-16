@@ -8,7 +8,7 @@ import (
 	"leaf/ir"
 	"leaf/ir/modifiers"
 	"leaf/ir/types"
-	"leaf/lead/target"
+	"leaf/leap/def"
 	"reflect"
 	"sort"
 )
@@ -203,6 +203,6 @@ func store(mod *ir.Module, tg io.Writer) {
 }
 
 func init() {
-	target.Ext = store
-	target.Int = load
+	def.Ext = store
+	def.Int = load
 }

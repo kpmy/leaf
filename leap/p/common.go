@@ -1,4 +1,4 @@
-package leap
+package p
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"leaf/ir"
 	"leaf/ir/operation"
 	"leaf/ir/types"
-	"leaf/lss"
+	"leaf/leap/lss"
 	"strconv"
 )
 
