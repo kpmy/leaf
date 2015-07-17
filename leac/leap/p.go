@@ -2,7 +2,7 @@ package leap
 
 import (
 	"leaf/ir"
-	"leaf/leap/lss"
+	"leaf/leac/lss"
 )
 
 type DefResolver func(name string) (*ir.Import, error)

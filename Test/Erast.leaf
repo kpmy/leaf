@@ -1,0 +1,56 @@
+MODULE TestErast
+
+	IMPORT Log
+
+	VAR x LIST
+
+	PROCEDURE Print
+		VAR l- LIST
+		VAR i, len INTEGER; x ANY;
+	BEGIN
+		len := \LEN l
+		WHILE i < len DO
+			x := l[i]
+			IF x$ # 0 THEN
+				Log.Print(x: l[i]); Log.String(s: " ")
+			END
+			INC(x->i)
+		END
+		Log.Ln
+	END Print
+
+	PROCEDURE Do
+		VAR i, k, p, len INTEGER; e, ne ANY;
+	BEGIN
+		len := \LEN x
+		WHILE i<len DO
+			e := x[i]
+			IF e$ # 0 THEN
+				k := 2
+				WHILE k <= 102 DO
+					p := i + 1
+					WHILE p < len DO
+						ne := x[p]
+						IF (ne$ = e$ * k) | (ne$ = (e$ ^ 2) * k ) THEN x[p] := 0 END
+						INC(x<-p)
+					END;
+					INC(x<-k)
+				END
+			END
+			INC(x<-i)
+		END;
+	END Do
+
+	PROCEDURE Init
+		CONST N = 100
+		VAR i INTEGER
+	BEGIN
+		RESIZE(list<-x, n: N)
+		i:=0; WHILE i<N DO x[i]:=i+2; INC(x->i) END
+	END Init
+
+BEGIN
+	Init
+	Do
+	Print(l: x)
+END TestErast

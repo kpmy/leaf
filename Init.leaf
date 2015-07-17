@@ -5,6 +5,7 @@ BEGIN
 	Core.LoadMod(mod: "TestFib")
 	Core.LoadMod(mod: "TestFact")
 	Core.LoadMod(mod: "TestBubble")
+	Core.LoadMod(mod: "TestErast")
 	Core.LoadMod(mod: "TestObjects")
 	Core.LoadMod(mod: "TestHandler")
 	Core.LoadMod(mod: "TestEvents")

@@ -7,7 +7,7 @@ import (
 	"leaf/ir"
 	"leaf/ir/operation"
 	"leaf/ir/types"
-	"leaf/leap/lss"
+	"leaf/leac/lss"
 	"strconv"
 )
 

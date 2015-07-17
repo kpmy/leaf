@@ -2,7 +2,7 @@ package operation
 
 import (
 	"github.com/kpmy/ypk/assert"
-	scanner "leaf/leap/lss"
+	scanner "leaf/leac/lss"
 	"strconv"
 )
 
