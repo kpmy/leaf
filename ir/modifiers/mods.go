@@ -1,7 +1,7 @@
 package modifiers
 
 import (
-	"leaf/leap/lss"
+	"leaf/leac/lss"
 	"strconv"
 )
 

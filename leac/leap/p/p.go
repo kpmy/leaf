@@ -7,8 +7,8 @@ import (
 	"leaf/ir/modifiers"
 	"leaf/ir/operation"
 	"leaf/ir/types"
-	"leaf/leap"
-	"leaf/leap/lss"
+	"leaf/leac/leap"
+	"leaf/leac/lss"
 	"log"
 )
 

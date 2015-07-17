@@ -5,8 +5,8 @@ import (
 	"leaf/ir"
 	"leaf/ir/modifiers"
 	"leaf/ir/types"
-	"leaf/leap"
-	"leaf/leap/lss"
+	"leaf/leac/leap"
+	"leaf/leac/lss"
 )
 
 type pd struct {
