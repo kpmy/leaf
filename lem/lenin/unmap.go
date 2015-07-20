@@ -15,7 +15,7 @@ type doraw struct {
 func (r *doraw) Value() interface{} { return r.x }
 
 func (r *doraw) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
-	if start.Name.Local == "raw" {
+	if start.Name.Local == "doraw" {
 		start.Name.Local = "any"
 	}
 	t, x := r.x.This()
