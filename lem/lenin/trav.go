@@ -907,7 +907,7 @@ func importChain(main *ir.Module, ld lem.Loader) []*ir.Module {
 			assert.For(main.Name != v.Name, 30, "cyclic import from ", v.Name)
 			if x := cache[v.Name]; x == nil {
 				x, _ = ld(v.Name)
-				assert.For(x != nil, 40)
+				assert.For(x != nil, 40, v.Name)
 				cache[v.Name] = x
 				do(x)
 			} else {

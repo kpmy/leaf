@@ -110,6 +110,8 @@ func Unvalue(h *heap, _i interface{}) (ret *Any) {
 		ret = NewAny(types.STRING, i)
 	case map[interface{}]interface{}:
 		ret = NewAny(types.MAP, Unmap(h, i))
+	case lem.Message:
+		ret = NewAny(types.MAP, Unmap(h, i))
 	default:
 		halt.As(100, reflect.TypeOf(i))
 	}

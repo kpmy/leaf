@@ -247,7 +247,7 @@ func (m *mach) Process(msg lem.Message) (ret lem.Message, stop bool) {
 
 func (m *mach) Input() chan lem.Message {
 	if m.in == nil {
-		m.in = make(chan lem.Message, 128)
+		m.in = make(chan lem.Message)
 	}
 	return m.in
 }

@@ -1,0 +1,15 @@
+MODULE TestEcho
+
+	IMPORT Core
+
+	VAR recv MAP
+
+	PROCEDURE HANDLE
+		VAR msg+ MAP
+	BEGIN
+		HALT
+	END HANDLE
+
+BEGIN
+	Core.Listen(msg -> recv)
+END TestEcho

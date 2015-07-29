@@ -84,11 +84,13 @@ func create(do func(string), typ string, name string, ext string, path ...string
 	}
 }
 
-func open(do func(string), typ string, name string, ext string, path ...string) {
+func open(do func(string), typ string, name string, ext string, path ...string) (err error) {
 	if path != nil {
 		try := filepath.Join(root, filepath.Join(path...), typ, name+ext)
 		if exists(try) {
 			do(try)
+		} else {
+			err = errors.New(try + " doesn't exists")
 		}
 	} else { //System?
 		try := filepath.Join(root, typ, name+ext)
@@ -98,12 +100,15 @@ func open(do func(string), typ string, name string, ext string, path ...string) 
 			try := filepath.Join(root, SYSTEM, typ, name+ext)
 			if exists(try) {
 				do(try)
+			} else {
+				err = errors.New(try + " doesn't exists")
 			}
 		}
 	}
+	return
 }
 
-func doFind(name string, do func(string)) {
+func doFind(name string, do func(string)) (err error) {
 	n := SplitName(name)
 	if len(n) > 0 {
 		mod := n[len(n)-1]
@@ -114,11 +119,29 @@ func doFind(name string, do func(string)) {
 		if len(sub) == 1 && sub[0] == SYSTEM {
 			sub = nil
 		}
-		open(do, CODE, mod, codeExt, sub...)
+		err = open(do, CODE, mod, codeExt, sub...)
 	} else {
 		log.Fatal("wrong name")
 	}
+	return
 }
+
+func Prepare(name string, _debug bool) (ret func() (lem.Machine, func()), err error) {
+	err = doFind(name, func(fullpath string) {
+		lem.Debug = debug
+		if li, e := os.Open(fullpath); e == nil {
+			m := target.Old(li)
+			ret = func() (lem.Machine, func()) {
+				mach := lem.Start()
+				return mach, func() { mach.Do(m, load) }
+			}
+		} else {
+			err = e
+		}
+	})
+	return
+}
+
 func Do(name string, _debug bool) {
 	doFind(name, do)
 }

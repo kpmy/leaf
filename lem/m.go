@@ -25,6 +25,7 @@ type Object interface {
 }
 
 type Machine interface {
+	Input() chan Message
 	Chan() chan Message
 	Do(m *ir.Module, ld Loader)
 	Stop()
