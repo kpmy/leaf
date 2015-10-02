@@ -2,9 +2,9 @@ package lenin
 
 import (
 	"encoding/xml"
+	"github.com/kpmy/leaf/ir/types"
+	"github.com/kpmy/leaf/lem"
 	"github.com/kpmy/ypk/halt"
-	"leaf/ir/types"
-	"leaf/lem"
 	"reflect"
 )
 

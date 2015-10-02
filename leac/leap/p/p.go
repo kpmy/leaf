@@ -2,13 +2,13 @@ package p
 
 import (
 	"errors"
+	"github.com/kpmy/leaf/ir"
+	"github.com/kpmy/leaf/ir/modifiers"
+	"github.com/kpmy/leaf/ir/operation"
+	"github.com/kpmy/leaf/ir/types"
+	"github.com/kpmy/leaf/leac/leap"
+	"github.com/kpmy/leaf/leac/lss"
 	"github.com/kpmy/ypk/assert"
-	"leaf/ir"
-	"leaf/ir/modifiers"
-	"leaf/ir/operation"
-	"leaf/ir/types"
-	"leaf/leac/leap"
-	"leaf/leac/lss"
 	"log"
 )
 

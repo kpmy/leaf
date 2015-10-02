@@ -1,9 +1,9 @@
 package lem
 
 import (
-	"leaf/ir"
-	"leaf/ir/operation"
-	"leaf/ir/types"
+	"github.com/kpmy/leaf/ir"
+	"github.com/kpmy/leaf/ir/operation"
+	"github.com/kpmy/leaf/ir/types"
 )
 
 const StdDef = ` (* Builtin procedures definition *)

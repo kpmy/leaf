@@ -1,8 +1,8 @@
 package ir
 
 import (
-	"leaf/ir/modifiers"
-	"leaf/ir/types"
+	"github.com/kpmy/leaf/ir/modifiers"
+	"github.com/kpmy/leaf/ir/types"
 )
 
 type Import struct {

@@ -3,14 +3,14 @@ package lenin
 import (
 	"container/list"
 	"fmt"
+	"github.com/kpmy/leaf/ir"
+	"github.com/kpmy/leaf/ir/modifiers"
+	"github.com/kpmy/leaf/ir/types"
+	"github.com/kpmy/leaf/lem"
 	"github.com/kpmy/trigo"
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/fn"
 	"github.com/kpmy/ypk/halt"
-	"leaf/ir"
-	"leaf/ir/modifiers"
-	"leaf/ir/types"
-	"leaf/lem"
 	"reflect"
 )
 

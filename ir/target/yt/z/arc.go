@@ -3,12 +3,12 @@ package z
 import (
 	"archive/zip"
 	"bytes"
+	"github.com/kpmy/leaf/ir"
+	"github.com/kpmy/leaf/ir/target"
+	"github.com/kpmy/leaf/ir/target/yt"
 	"github.com/kpmy/ypk/assert"
 	"gopkg.in/yaml.v2"
 	"io"
-	"leaf/ir"
-	"leaf/ir/target"
-	"leaf/ir/target/yt"
 	"time"
 )
 

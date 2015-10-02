@@ -1,8 +1,8 @@
 package lem
 
 import (
+	"github.com/kpmy/leaf/ir"
 	"github.com/kpmy/ypk/assert"
-	"leaf/ir"
 )
 
 type Context interface {

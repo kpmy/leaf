@@ -1,9 +1,9 @@
 package target
 
 import (
+	"github.com/kpmy/leaf/ir"
 	"github.com/kpmy/ypk/assert"
 	"io"
-	"leaf/ir"
 )
 
 var Ext func(*ir.Module, io.Writer)

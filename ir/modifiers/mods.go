@@ -1,7 +1,7 @@
 package modifiers
 
 import (
-	"leaf/leac/lss"
+	"github.com/kpmy/leaf/leac/lss"
 	"strconv"
 )
 

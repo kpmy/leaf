@@ -2,11 +2,11 @@ package lenin
 
 import (
 	"fmt"
+	"github.com/kpmy/leaf/ir"
+	"github.com/kpmy/leaf/ir/types"
 	"github.com/kpmy/trigo"
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
-	"leaf/ir"
-	"leaf/ir/types"
 	"math/big"
 	"reflect"
 )

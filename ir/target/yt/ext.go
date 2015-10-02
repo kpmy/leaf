@@ -1,12 +1,12 @@
 package yt
 
 import (
+	"github.com/kpmy/leaf/ir"
+	"github.com/kpmy/leaf/ir/target/yt/fldz"
+	"github.com/kpmy/leaf/lem"
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/fn"
 	"github.com/kpmy/ypk/halt"
-	"leaf/ir"
-	"leaf/ir/target/yt/fldz"
-	"leaf/lem"
 	"reflect"
 )
 

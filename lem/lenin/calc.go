@@ -1,11 +1,11 @@
 package lenin
 
 import (
+	"github.com/kpmy/leaf/ir/operation"
+	"github.com/kpmy/leaf/ir/types"
 	"github.com/kpmy/trigo"
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
-	"leaf/ir/operation"
-	"leaf/ir/types"
 	"math/big"
 )
 

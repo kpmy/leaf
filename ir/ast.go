@@ -1,9 +1,9 @@
 package ir
 
 import (
-	"leaf/ir/modifiers"
-	"leaf/ir/operation"
-	"leaf/ir/types"
+	"github.com/kpmy/leaf/ir/modifiers"
+	"github.com/kpmy/leaf/ir/operation"
+	"github.com/kpmy/leaf/ir/types"
 )
 
 type Module struct {

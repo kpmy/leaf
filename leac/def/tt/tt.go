@@ -3,12 +3,12 @@ package tt
 import (
 	"bufio"
 	"fmt"
+	"github.com/kpmy/leaf/ir"
+	"github.com/kpmy/leaf/ir/modifiers"
+	"github.com/kpmy/leaf/ir/types"
+	"github.com/kpmy/leaf/leac/def"
 	"github.com/kpmy/ypk/halt"
 	"io"
-	"leaf/ir"
-	"leaf/ir/modifiers"
-	"leaf/ir/types"
-	"leaf/leac/def"
 	"reflect"
 	"sort"
 )

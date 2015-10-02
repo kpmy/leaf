@@ -4,12 +4,12 @@ package yt
 import (
 	"bytes"
 	"fmt"
+	"github.com/kpmy/leaf/ir"
+	"github.com/kpmy/leaf/ir/types"
 	"github.com/kpmy/ypk/fn"
 	"github.com/kpmy/ypk/halt"
 	"gopkg.in/yaml.v2"
 	"io"
-	"leaf/ir"
-	"leaf/ir/types"
 	"log"
 )
 

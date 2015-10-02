@@ -1,14 +1,14 @@
 package yt
 
 import (
+	"github.com/kpmy/leaf/ir"
+	"github.com/kpmy/leaf/ir/modifiers"
+	"github.com/kpmy/leaf/ir/operation"
+	"github.com/kpmy/leaf/ir/target/yt/fldz"
+	"github.com/kpmy/leaf/ir/types"
+	"github.com/kpmy/leaf/lem"
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
-	"leaf/ir"
-	"leaf/ir/modifiers"
-	"leaf/ir/operation"
-	"leaf/ir/target/yt/fldz"
-	"leaf/ir/types"
-	"leaf/lem"
 )
 
 func internalize(m *Module) (ret *ir.Module) {

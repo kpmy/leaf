@@ -1,11 +1,11 @@
 package yt
 
 import (
+	"github.com/kpmy/leaf/ir"
+	"github.com/kpmy/leaf/ir/modifiers"
+	"github.com/kpmy/leaf/ir/target/yt/fldz"
+	"github.com/kpmy/leaf/ir/types"
 	"github.com/kpmy/ypk/halt"
-	"leaf/ir"
-	"leaf/ir/modifiers"
-	"leaf/ir/target/yt/fldz"
-	"leaf/ir/types"
 )
 
 type ic struct {

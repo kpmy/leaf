@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"leaf/leaf"
+	"github.com/kpmy/leaf/leaf"
 	"log"
 	"strings"
 )

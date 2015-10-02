@@ -2,12 +2,12 @@ package p
 
 import (
 	"fmt"
+	"github.com/kpmy/leaf/ir"
+	"github.com/kpmy/leaf/ir/operation"
+	"github.com/kpmy/leaf/ir/types"
+	"github.com/kpmy/leaf/leac/lss"
 	"github.com/kpmy/ypk/assert"
 	"github.com/kpmy/ypk/halt"
-	"leaf/ir"
-	"leaf/ir/operation"
-	"leaf/ir/types"
-	"leaf/leac/lss"
 	"strconv"
 )
 

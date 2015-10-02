@@ -1,8 +1,8 @@
 package leap
 
 import (
-	"leaf/ir"
-	"leaf/leac/lss"
+	"github.com/kpmy/leaf/ir"
+	"github.com/kpmy/leaf/leac/lss"
 )
 
 type DefResolver func(name string) (*ir.Import, error)

@@ -1,8 +1,8 @@
 package operation
 
 import (
+	scanner "github.com/kpmy/leaf/leac/lss"
 	"github.com/kpmy/ypk/assert"
-	scanner "leaf/leac/lss"
 	"strconv"
 )
 
