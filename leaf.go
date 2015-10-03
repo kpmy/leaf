@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"github.com/kpmy/leaf/leaf"
+	"github.com/kpmy/leaf/leafaux"
 	"log"
 	"strings"
 )
@@ -24,9 +24,9 @@ func main() {
 	case build != "":
 		log.Println("build", build)
 		for _, n := range strings.Split(build, " ") {
-			leaf.DoBuild(n, debug)
+			leafaux.DoBuild(n, debug)
 		}
 	default:
-		leaf.Do("Init", debug)
+		leafaux.Do("Init", debug)
 	}
 }
